@@ -47,7 +47,8 @@ Antes de habilitarlo se requiere:
 
 1. Completar la revisión cruzada de respuestas, ejemplos, restricciones condicionales y
    normalización con los RF/HU/ADR vigentes.
-2. Alinear Maven y `tools/spec_lint.py` con identidad, contrato y paquetes del registro.
+2. Ejecutar el [validador documental](../../tools/README.md), ya adaptado al registro. Maven
+   apunta al contrato y a mx.com.fredkorlabs.registration; falta comprobar la generación.
 3. Ejecutar validación OpenAPI y generación con la configuración alineada, comprobando
    especialmente null, propiedades omitidas y desconocidas y restricciones condicionales.
 4. Verificar comportamiento mediante pruebas de las capas cuando exista implementación.

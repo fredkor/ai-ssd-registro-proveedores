@@ -5,8 +5,8 @@ info:
   description: 'Borrador de la primera etapa: aviso, Firma Electrónica, token de registro, expediente, Datos
     Generales, cédula fiscal y CUCoP. IDs de catálogos enteros y resultado del componente conforme a ResultadoFirma.
     No listo para generación hasta cerrar las decisiones restantes.'
-x-contract-status: DRAFT
-x-implementation-ready: false
+x-contract-status: READY
+x-implementation-ready: true
 x-pending-decisions: []
 servers:
 - url: /
@@ -29,7 +29,7 @@ paths:
       - RF-REG-03
       - US03
       x-use-case: GetRegistrationNoticeUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Operación completada correctamente.
@@ -51,7 +51,7 @@ paths:
       - RF-REG-03
       - US03
       x-use-case: AcceptRegistrationNoticeUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Operación completada correctamente.
@@ -89,7 +89,7 @@ paths:
       - US01
       - US03
       x-use-case: IdentifyApplicantUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Operación completada correctamente.
@@ -122,7 +122,7 @@ paths:
       - RF-REG-02
       - US02
       x-use-case: CheckRegistrationExistenceUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Operación completada correctamente.
@@ -154,7 +154,7 @@ paths:
       - RF-REG-04
       - US04
       x-use-case: StartSupplierRegistrationUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '201':
           description: Operación completada correctamente.
@@ -196,7 +196,7 @@ paths:
       - RF-REG-06
       - US05
       x-use-case: ResumeSupplierRegistrationUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Operación completada correctamente.
@@ -237,7 +237,7 @@ paths:
       - US09
       - US10
       x-use-case: SaveGeneralDataUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Operación completada correctamente.
@@ -283,7 +283,7 @@ paths:
       - US11
       - US06
       x-use-case: SaveCucopParticipationUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Operación completada correctamente.
@@ -325,7 +325,7 @@ paths:
       - RF-REG-05
       - US10
       x-use-case: UploadFiscalDocumentUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Operación completada correctamente.
@@ -381,7 +381,7 @@ paths:
       - RF-REG-05
       - US10
       x-use-case: DownloadFiscalDocumentUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Contenido del PDF asociado.
@@ -419,7 +419,7 @@ paths:
       - RF-REG-05
       - US10
       x-use-case: DeleteFiscalDocumentUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '204':
           description: Desasociación, marca de metadatos y progreso confirmados en BD; el borrado físico queda al proceso diario.
@@ -451,7 +451,7 @@ paths:
       - RF-REG-05
       - US08
       x-use-case: GetGeneralDataCatalogsUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Operación completada correctamente.
@@ -492,7 +492,7 @@ paths:
       - RF-REG-08
       - US11
       x-use-case: GetCucopCatalogUseCase
-      x-implementation-ready: false
+      x-implementation-ready: true
       responses:
         '200':
           description: Operación completada correctamente.
@@ -813,6 +813,8 @@ components:
         los tokens previos del mismo RFC. No invalida tokens de otros solicitantes.
     RegistrationExistenceResponse:
       type: object
+      example:
+        exists: false
       properties:
         exists:
           type: boolean
@@ -1040,6 +1042,7 @@ components:
           uniqueItems: true
         specificItems:
           type: array
+          description: Solo partidas específicas de nivel 4, con parentId de su partida genérica; no incluye capítulos, conceptos ni partidas genéricas.
           items:
             $ref: '#/components/schemas/CucopNodeResponse'
           minItems: 1
@@ -1049,6 +1052,12 @@ components:
       additionalProperties: false
     FiscalDocumentResponse:
       type: object
+      example:
+        id: 8bd04b95-88ae-4dd8-bd19-27229040225e
+        originalName: cedula-fiscal.pdf
+        extension: pdf
+        sizeBytes: 5242880
+        uploadedAt: '2026-10-19T18:00:00Z'
       properties:
         id:
           type: string
@@ -1063,6 +1072,7 @@ components:
           type: integer
           format: int64
           minimum: 0
+          maximum: 5242880
         uploadedAt:
           type: string
           format: date-time
@@ -1077,6 +1087,31 @@ components:
         ADR-0010.
     SupplierRegistrationResponse:
       type: object
+      example:
+        id: f42d5ae0-9203-465d-ac1a-f96e205e9529
+        status: IN_PROGRESS
+        identity:
+          rfc: AAA010101AAA
+          legalName: Empresa de ejemplo
+          taxRegime: LEGAL_ENTITY
+          username: aaa010101aaa
+        noticeAcceptance:
+          version: '1.0'
+          acceptedAt: '2026-10-19T17:55:00Z'
+          acceptanceId: example-acceptance
+        progress:
+        - section: GENERAL_DATA
+          status: PENDING
+        - section: CUCOP
+          status: PENDING
+        - section: CONTACTS
+          status: PENDING
+        - section: FISCAL_ADDRESS
+          status: PENDING
+        - section: COVERAGE
+          status: PENDING
+        - section: ELECTRONIC_SIGNATURE
+          status: PENDING
       properties:
         id:
           $ref: '#/components/schemas/RegistrationId'
@@ -1107,6 +1142,11 @@ components:
         no se representan como null. No devuelve toda la evidencia de firma.
     SectionSaveResponse:
       type: object
+      example:
+        registrationId: f42d5ae0-9203-465d-ac1a-f96e205e9529
+        section: GENERAL_DATA
+        status: COMPLETED
+        nextSection: CUCOP
       properties:
         registrationId:
           $ref: '#/components/schemas/RegistrationId'
@@ -1274,7 +1314,8 @@ components:
           type: string
         countryCode:
           type: string
-          description: País de la titularidad, según el catálogo existente.
+          nullable: true
+          description: País de la titularidad, según el catálogo existente. Null cuando el registro no tiene país asociado, como una opción general NOT_DEF; no se inventa un código de país.
         taxRegime:
           $ref: '#/components/schemas/TaxRegime'
       required:
