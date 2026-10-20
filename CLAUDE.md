@@ -23,77 +23,37 @@ Leer los documentos aplicables antes de modificar o implementar una funcionalida
 10. [Convenciones](specs/conventions.md) y [stack](specs/architecture/tech-stack.md).
 11. [Trazabilidad](specs/traceability.md): operaciones, RF/HU, invariantes y verificación prevista del registro.
 
-El contrato YAML continúa con `x-implementation-ready: false`; requiere revisión final y
-alineación y verificación de herramientas antes de generar o implementar. La matriz ya representa el registro y
-distingue verificación prevista de ejecución real. El validador está adaptado al registro y sus controles se describen en
-[tools/README.md](tools/README.md); un resultado correcto no habilita el borrador ni acredita implementación.
 
-## Alcance y cambios de especificación
+## Reglas obligatorias
+1. **Si la spec no alcanza, DETENTE.** No inventes campos, reglas, estados, rutas ni códigos de error.
+   Explica el vacío y propone el cambio a la spec; solo se continúa cuando la spec esté actualizada.
+2. **Contrato 1:1:** el controlador implementa la interfaz generada `ProductsApi`. Nunca escribas
+   a mano DTO web ni cambies rutas, nombres u operationId.
+3. **Arquitectura hexagonal (ADR-0001):**
+    - `domain`: Java puro. Sin Spring, sin JPA, sin puertos. Las reglas INV-xx viven aquí.
+    - `application.port.in`: interfaces `*UseCase` + Commands, Queries y Results (`record`).
+    - `application.port.out`: `ProductPersistencePort`.
+    - `application.service`: un servicio por caso de uso; orquesta, no contiene reglas de negocio.
+    - `adapter.in.web`: solo traduce HTTP <-> Command/Result y excepciones -> ErrorResponse.
+    - `adapter.out.persistence`: implementa el puerto con JPA.
+4. **El dominio nunca sale de `application`:** el controlador recibe `ProductResult`, nunca `Product`.
+5. **Enums** idénticos a `specs/domain/` (mismos valores, mismo orden).
+6. **Errores** exactamente como ADR-0004 (HTTP + `code`).
+7. **Pruebas:** al menos una por criterio de aceptación, con el nombre
+   `USxx_CAyy_descripcionEnIngles` (ej. `US03_CA02_activateWithoutPrice_isRejected`).
+   Las reglas de dominio se prueban con JUnit puro, sin Spring.
+8. **Idioma (`specs/conventions.md`):** código en inglés; documentación en castellano.
+9. **Antes de cada commit:** `python tools/spec_lint.py` debe dar OK y `mvn test` debe pasar.
+10. **Commits:** prefijos `spec:`, `design:`, `contract:`, `tooling:`, `feat:`, `test:`, `fix:`.
 
-- La primera etapa comprende aceptación del aviso, identificación y existencia, inicio y
-  reanudación del expediente, Datos Generales con teléfonos y cédula fiscal, y CUCoP.
-  Contactos es el punto de continuación, sin implementar su captura ni la finalización.
-- Si una regla está incompleta o hay contradicción, identificar el vacío y consultarlo antes
-  de implementar la parte afectada. Puede continuarse con trabajo independiente ya definido.
-- No inventar campos, formatos, transiciones, algoritmos de clave, plazos o rutas para resolver un vacío.
-- Los artefactos se redactan como especificaciones de Fredkor Labs o la empresa, sin referencias
-  a ejercicios, historias de origen u otras plataformas.
-- Usar “Firma Electrónica del solicitante” como término de negocio.
+## Stack y comandos
+Stack: `specs/architecture/tech-stack.md`. No agregues dependencias sin un ADR.
 
-## Reglas de implementación
+| Acción | Comando |
+| :--- | :--- |
+| Validar specs y contrato | `python tools/spec_lint.py` |
+| Regenerar la API desde el contrato | `./mvnw clean generate-sources` |
+| Compilar y probar | `./mvnw test` |
+| Ejecutar la aplicación | `./mvnw spring-boot:run` |
 
-1. Leer las fuentes aplicables y respetar las fronteras de arquitectura: dominio JDK puro,
-   puertos en aplicación, un servicio por caso de uso y adaptadores separados.
-2. El controlador usa puertos de entrada y Results; no expone agregados ni entidades JPA.
-   Una vez validado el contrato, implementar interfaces y DTO generados; no duplicarlos
-   manualmente ni editar `target/generated-sources`.
-3. Mantener los identificadores RF/US/CA/INV y los códigos definidos en dominio. Los
-   catálogos dinámicos se consultan mediante puertos; no se convierten en enums.
-4. Aplicar identificación de ADR-0016, contexto de ADR-0015 y campos/null/normalización
-   de ADR-0009. Los errores HTTP se traducen conforme a ADR-0004 y ADR-0007,
-   sin introducir infraestructura en las excepciones puras de dominio.
-5. Usar el servicio general de archivos de ADR-0010: carga con asociación inmediata y
-   eliminación lógica transaccional de referencia, marca de metadatos y progreso, sin tocar disco
-   ni esperar Siguiente. Atrás no revierte operaciones documentales exitosas; el proceso diario
-   consulta metadatos no asociados para el borrado físico posterior.
-   No reconstruir referencias ni borrar archivos sin metadatos por el reinicio de H2.
-6. Inyectar `java.time.Clock` en aplicación con UTC; el dominio recibe instantes.
-7. No agregar ni actualizar dependencias sin ADR. Consultar versiones en Maven;
-   no asumir compatibilidad con otra versión del framework.
-8. Frontend conforme a ADR-0011 a ADR-0014: Angular 21, PrimeNG/Sakai, dominios y
-   formularios reactivos tipados. Mantener tipos visuales separados del negocio y DTO.
-   No instalar Nx ni crear guardados por cambios de control por inferencia.
-9. Los ADR están directamente en `specs/adr/`, con nombres `NNNN-ambito-descripcion.md`;
-   los ámbitos son `backend`, `frontend` y `shared`. Conservar IDs globales.
-
-## Idioma, pruebas y verificación
-
-- Documentación en castellano; clases, campos, métodos, rutas, operationId y códigos técnicos en inglés.
-- Las pruebas de comportamiento se vinculan a los criterios de aceptación. Convención:
-  `USxx_CAyyy_descriptionInEnglish`, por ejemplo `US01_CA010_missingRfc_isRejected`.
-- Probar reglas puras con JUnit sin Spring. Probar aplicación con dobles de puertos y usar
-  pruebas de adaptadores para unicidad concurrente, transacciones, archivos, firma y contrato.
-- No exigir infraestructura para probar una regla pura ni confundir revisión documental con pruebas ejecutadas.
-- En cambios de especificación, verificar formato, enlaces y referencias RF/US/INV aplicables.
-- Ejecutar `python3 tools/spec_lint.py` para cambios relacionados con las especificaciones.
-  Usar `--require-ready` solo al exigir habilitación del contrato. Una vez preparada y autorizada
-  la implementación, ejecutar generación y pruebas pertinentes.
-  Reportar las limitaciones reales mientras estos artefactos sigan pendientes; no afirmar que pasaron.
-- Antes de un commit, completar los controles aplicables al cambio. Los prefijos son
-  `spec:`, `design:`, `contract:`, `tooling:`, `feat:`, `test:` y `fix:`. No crear commits sin instrucción.
-
-## Comandos y preparación
-
-Ejecutar desde `SSD_REAL/`. El detalle y las precondiciones están en
-[tech-stack.md](specs/architecture/tech-stack.md).
-
-| Acción | Comando | Disponibilidad |
-| :--- | :--- | :--- |
-| Validar especificaciones y contrato | `python3 tools/spec_lint.py` | Disponible; requiere Python 3 y PyYAML. No habilita implementación. |
-| Generar interfaces y DTO | `mvn generate-sources` | Requiere contrato y Maven alineados. |
-| Compilar y probar | `mvn test` | Requiere implementación y generación preparadas. |
-| Ejecutar backend | `mvn spring-boot:run` | Requiere aplicación y configuración implementadas. |
-
-El módulo todavía no incluye wrapper Maven ni código Java. No usar `./mvnw` como comando
-disponible hasta incorporarlo. Maven ya apunta al contrato del registro y usa mx.com.fredkorlabs; el validador está adaptado.
-La generación y validación integral de OpenAPI siguen pendientes; no se declaran realizadas.
+Nunca edites archivos dentro de `target/generated-sources`: se regeneran desde el contrato.
