@@ -1,0 +1,1440 @@
+openapi: 3.0.3
+info:
+  title: Registro de proveedores de Fredkor Labs API
+  version: 0.1.0
+  description: 'Borrador de la primera etapa: aviso, Firma Electrónica, token de registro, expediente, Datos
+    Generales, cédula fiscal y CUCoP. IDs de catálogos enteros y resultado del componente conforme a ResultadoFirma.
+    No listo para generación hasta cerrar las decisiones restantes.'
+x-contract-status: DRAFT
+x-implementation-ready: false
+x-pending-decisions: []
+servers:
+- url: /
+  description: Mismo origen del servicio; configuración de despliegue por definir.
+tags:
+- name: RegistrationNotices
+- name: ApplicantIdentifications
+- name: SupplierRegistrations
+- name: FiscalDocuments
+- name: RegistrationCatalogs
+paths:
+  /api/v1/registration-notices/current:
+    get:
+      tags:
+      - RegistrationNotices
+      summary: Consultar Política de Aviso vigente
+      operationId: getRegistrationNotice
+      description: Presentar antes de ejecutar la firma inicial. Versión 1.0.
+      x-spec-refs:
+      - RF-REG-03
+      - US03
+      x-use-case: GetRegistrationNoticeUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationNoticeResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security: []
+  /api/v1/registration-notice-acceptances:
+    post:
+      tags:
+      - RegistrationNotices
+      summary: Registrar aceptación expresa del aviso
+      operationId: acceptRegistrationNotice
+      description: La aceptación no crea expediente. Hora del backend. Si falla, no habilita firma.
+      x-spec-refs:
+      - RF-REG-03
+      - US03
+      x-use-case: AcceptRegistrationNoticeUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticeAcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptRegistrationNoticeRequest'
+      security: []
+  /api/v1/applicant-identifications:
+    post:
+      tags:
+      - ApplicantIdentifications
+      summary: Procesar Firma Electrónica del solicitante
+      operationId: identifyApplicant
+      description: Requiere aceptación del aviso anterior a firmar. Verifica sello contra contenido y certificado
+        y conserva íntegro el resultado aceptado. El componente externo, no este endpoint, comprueba vigencia
+        y OCSP. Sin credenciales privadas. Usa noticeAcceptanceId para comprobar aceptación previa. Un resultado=false
+        no habilita identificación. Solo después de verificar y conservar el resultado emite registrationToken.
+        El token vence a los 60 minutos e invalida tokens anteriores del mismo RFC al emitirlo. El sello es
+        RSA PKCS#1 v1.5 con SHA-256 sobre los bytes UTF-8 de cadenaOriginal; el backend verifica con SHA256withRSA
+        según ADR-0016.
+      x-spec-refs:
+      - RF-REG-01
+      - RF-REG-03
+      - US01
+      - US03
+      x-use-case: IdentifyApplicantUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicantIdentificationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '422':
+          $ref: '#/components/responses/SignatureVerificationFailed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentifyApplicantRequest'
+      security: []
+  /api/v1/supplier-registrations/existence:
+    get:
+      tags:
+      - SupplierRegistrations
+      summary: Consultar existencia para la identidad aceptada
+      operationId: checkRegistrationExistence
+      description: No recibe RFC como filtro libre. La ausencia normal retorna exists=false; un error no se
+        convierte en inexistencia.
+      x-spec-refs:
+      - RF-REG-02
+      - US02
+      x-use-case: CheckRegistrationExistenceUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationExistenceResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+      x-requires-accepted-identification: true
+      security:
+      - RegistrationToken: []
+  /api/v1/supplier-registrations:
+    post:
+      tags:
+      - SupplierRegistrations
+      summary: Crear expediente de registro
+      operationId: startSupplierRegistration
+      description: Crea UUID en IN_PROGRESS solo tras aceptación, identificación exitosa e inexistencia comprobada.
+        Impide duplicidad concurrente. Abre Datos Generales. La identidad y aceptación se resuelven exclusivamente
+        desde el token; no requiere cuerpo de petición.
+      x-spec-refs:
+      - RF-REG-04
+      - US04
+      x-use-case: StartSupplierRegistrationUseCase
+      x-implementation-ready: false
+      responses:
+        '201':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierRegistrationResponse'
+          headers:
+            Location:
+              description: URL del expediente creado.
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '409':
+          $ref: '#/components/responses/DuplicateRfc'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+      x-requires-accepted-identification: true
+      x-transition: '- -> IN_PROGRESS'
+      security:
+      - RegistrationToken: []
+  /api/v1/supplier-registrations/{registrationId}/resume:
+    parameters:
+    - $ref: '#/components/parameters/RegistrationId'
+    post:
+      tags:
+      - SupplierRegistrations
+      summary: Reanudar expediente incompleto
+      operationId: resumeSupplierRegistration
+      description: Exige nueva identificación del mismo RFC. Recupera el mismo expediente y siempre abre Datos
+        Generales; no sobrescribe datos ante un fallo. REGISTERED no puede reanudarse como borrador. La identidad
+        y aceptación se resuelven exclusivamente desde el token; no requiere cuerpo de petición. Al reanudar se actualiza legalName desde el nuevo certificado verificado del mismo RFC y se vincula históricamente su evidencia sin sobrescribir las anteriores; ambas acciones se confirman en una transacción. Se conservan UUID, datos capturados, documentos confirmados y progreso, incluido CUCoP. Un fallo revierte la actualización del nombre y vínculo histórico sin eliminar la evidencia conservada al identificar.
+      x-spec-refs:
+      - RF-REG-06
+      - US05
+      x-use-case: ResumeSupplierRegistrationUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierRegistrationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '404':
+          $ref: '#/components/responses/RegistrationNotFound'
+        '409':
+          $ref: '#/components/responses/StateConflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+      x-requires-accepted-identification: true
+      security:
+      - RegistrationToken: []
+  /api/v1/supplier-registrations/{registrationId}/general-data:
+    parameters:
+    - $ref: '#/components/parameters/RegistrationId'
+    put:
+      tags:
+      - SupplierRegistrations
+      summary: Validar y guardar Datos Generales completos
+      operationId: saveGeneralData
+      description: Invocado por Siguiente. Valida datos, teléfonos y cédula previamente asociada, y guarda
+        datos y progreso en una transacción. No cambia estado global ni permite editar identidad. Atrás no
+        invoca esta operación.
+      x-spec-refs:
+      - RF-REG-05
+      - US06
+      - US08
+      - US09
+      - US10
+      x-use-case: SaveGeneralDataUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionSaveResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '404':
+          $ref: '#/components/responses/RegistrationNotFound'
+        '409':
+          $ref: '#/components/responses/StateConflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+      x-requires-accepted-identification: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeneralDataRequest'
+      security:
+      - RegistrationToken: []
+  /api/v1/supplier-registrations/{registrationId}/cucop:
+    parameters:
+    - $ref: '#/components/parameters/RegistrationId'
+    put:
+      tags:
+      - SupplierRegistrations
+      summary: Validar y guardar participación CUCoP
+      operationId: saveCucopParticipation
+      description: Requiere Datos Generales guardados, uno o ambos tipos y al menos una específica. Resuelve
+        catálogo y guarda sección y progreso atómicamente. Continúa hacia Contactos. Atrás, selección y Deshacer
+        no guardan.
+      x-spec-refs:
+      - RF-REG-08
+      - RF-REG-05
+      - US11
+      - US06
+      x-use-case: SaveCucopParticipationUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionSaveResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '404':
+          $ref: '#/components/responses/RegistrationNotFound'
+        '409':
+          $ref: '#/components/responses/StateConflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+      x-requires-accepted-identification: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CucopParticipationRequest'
+      security:
+      - RegistrationToken: []
+  /api/v1/supplier-registrations/{registrationId}/fiscal-document:
+    parameters:
+    - $ref: '#/components/parameters/RegistrationId'
+    post:
+      tags:
+      - FiscalDocuments
+      summary: Cargar la única cédula fiscal
+      operationId: uploadFiscalDocument
+      description: Guarda y asocia inmediatamente el PDF de máximo 5 MiB (5,242,880 bytes) al expediente y devuelve UUID y metadatos; disponible al regresar o reanudar sin Siguiente. No completa Datos Generales. No informa éxito parcial; seguir ADR-0010.
+      x-spec-refs:
+      - RF-REG-05
+      - US10
+      x-use-case: UploadFiscalDocumentUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalDocumentResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '404':
+          $ref: '#/components/responses/RegistrationNotFound'
+        '409':
+          $ref: '#/components/responses/DocumentConflict'
+        '413':
+          $ref: '#/components/responses/DocumentTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedDocument'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+      x-requires-accepted-identification: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Un único PDF, máximo 5 MiB (5,242,880 bytes) inclusive sobre el archivo. Extensión .pdf sin distinguir mayúsculas/minúsculas y contenido PDF comprobado en servidor; no basta el nombre ni el MIME declarado. No se interpreta maxLength como bytes.
+                  x-max-size-bytes: 5242880
+              required:
+              - file
+              additionalProperties: false
+            encoding:
+              file:
+                contentType: application/pdf
+      security:
+      - RegistrationToken: []
+    get:
+      tags:
+      - FiscalDocuments
+      summary: Descargar cédula fiscal asociada
+      operationId: downloadFiscalDocument
+      description: Solo para el expediente correspondiente a la identificación aceptada. Presenta nombre original
+        sin exponer ruta física.
+      x-spec-refs:
+      - RF-REG-05
+      - US10
+      x-use-case: DownloadFiscalDocumentUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Contenido del PDF asociado.
+          headers:
+            Content-Disposition:
+              description: Descarga usando nombre original conforme al formato del encabezado; sin ruta del
+                volumen.
+              schema:
+                type: string
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '404':
+          $ref: '#/components/responses/DocumentNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+      x-requires-accepted-identification: true
+      security:
+      - RegistrationToken: []
+    delete:
+      tags:
+      - FiscalDocuments
+      summary: Eliminar cédula fiscal asociada
+      operationId: deleteFiscalDocument
+      description: Requiere advertencia y confirmación. En una transacción de BD retira la referencia del expediente, marca associated=false en metadatos y deja Datos Generales PENDING sin afectar CUCoP. No borra ni mueve contenido físico y no espera Siguiente. Fallo hace rollback de referencia, marca y progreso; éxito solo después del commit. Los metadatos se conservan y el proceso diario borra físicamente los no asociados elegibles. El documento desasociado no se muestra ni descarga desde el expediente.
+      x-spec-refs:
+      - RF-REG-05
+      - US10
+      x-use-case: DeleteFiscalDocumentUseCase
+      x-implementation-ready: false
+      responses:
+        '204':
+          description: Desasociación, marca de metadatos y progreso confirmados en BD; el borrado físico queda al proceso diario.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '404':
+          $ref: '#/components/responses/DocumentNotFound'
+        '409':
+          $ref: '#/components/responses/StateConflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - RegistrationToken: []
+  /api/v1/registration-catalogs/general-data:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Cargar catálogos completos y dependientes de Datos Generales
+      operationId: getGeneralDataCatalogs
+      description: Catálogos completos de Datos Generales, excepto subsectors filtrado por sectorId cuando
+        se informa. Estratificación se devuelve completa, sin asociación ni filtro por régimen. Sin paginación. Si
+        sectorId no se informa, subsectors se omite; si se informa y no hay opciones, retorna lista vacía.
+        Las demás colecciones se devuelven completas. Titularidad jurídica se filtra en frontend por país y régimen para Nacional, y por país o key NOT_DEF para Extranjero sin filtro por régimen; orden ascendente por key.
+      x-spec-refs:
+      - RF-REG-05
+      - US08
+      x-use-case: GetGeneralDataCatalogsUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralDataCatalogsResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+      x-requires-accepted-identification: true
+      parameters:
+      - name: sectorId
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/CatalogId'
+        description: Cuando se informa, devolver los subsectores del sector seleccionado. Sin este parámetro
+          no se consulta ni incluye subsectors.
+      security:
+      - RegistrationToken: []
+  /api/v1/registration-catalogs/cucop:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Cargar el árbol CUCoP completo
+      operationId: getCucopCatalog
+      description: Devuelve todos los capítulos, conceptos, partidas genéricas y específicas, incluidos sus
+        IDs de padre, en una sola consulta sin paginación. El frontend reconstruye el árbol y busca por clave
+        o palabra desde el tercer carácter, sin peticiones por expansión ni búsqueda. El volumen aproximado
+        de 300 elementos no es un límite contractual. La tabla visual de seleccionadas pagina 10 filas.
+      x-spec-refs:
+      - RF-REG-08
+      - US11
+      x-use-case: GetCucopCatalogUseCase
+      x-implementation-ready: false
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CucopCatalogResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+      x-requires-accepted-identification: true
+      security:
+      - RegistrationToken: []
+components:
+  parameters:
+    RegistrationId:
+      name: registrationId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/RegistrationId'
+  schemas:
+    Rfc:
+      type: string
+      minLength: 12
+      maxLength: 13
+      description: RFC recibido de una Firma Electrónica aceptada. No se normaliza por este contrato.
+    RegistrationId:
+      type: string
+      format: uuid
+    CatalogId:
+      type: integer
+      description: Identificador entero de catálogo. No se impone tamaño físico ni rango adicional.
+    RegistrationStatus:
+      type: string
+      enum:
+      - IN_PROGRESS
+      - REGISTERED
+    SectionStatus:
+      type: string
+      enum:
+      - PENDING
+      - COMPLETED
+      - REQUIRES_REVIEW
+    RegistrationSection:
+      type: string
+      enum:
+      - GENERAL_DATA
+      - CUCOP
+      - CONTACTS
+      - FISCAL_ADDRESS
+      - COVERAGE
+      - ELECTRONIC_SIGNATURE
+    TaxRegime:
+      type: string
+      enum:
+      - LEGAL_ENTITY
+      - INDIVIDUAL
+    Origin:
+      type: string
+      enum:
+      - NATIONAL
+      - FOREIGN
+    ParticipationType:
+      type: string
+      enum:
+      - GOODS_AND_SERVICES_SUPPLIER
+      - PUBLIC_WORKS_CONTRACTOR
+    ErrorCode:
+      type: string
+      enum:
+      - VALIDATION_ERROR
+      - REGISTRATION_TOKEN_INVALID
+      - REGISTRATION_ACCESS_DENIED
+      - REGISTRATION_NOT_FOUND
+      - FISCAL_DOCUMENT_NOT_FOUND
+      - DUPLICATE_RFC
+      - INVALID_STATE_TRANSITION
+      - FISCAL_DOCUMENT_ALREADY_EXISTS
+      - DOCUMENT_TOO_LARGE
+      - DOCUMENT_FORMAT_NOT_SUPPORTED
+      - SIGNATURE_VERIFICATION_FAILED
+      - REGISTRATION_INCOMPLETE
+      - INTERNAL_ERROR
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+      required:
+      - code
+      - message
+      - details
+      additionalProperties: false
+      description: Formato común. No contiene trazas, rutas físicas ni evidencia completa.
+    RegistrationNoticeResponse:
+      type: object
+      properties:
+        version:
+          type: string
+          enum:
+          - '1.0'
+        text:
+          type: string
+          example: 'Al registrarse en el Sistema de Compras de "Fredkor Labs" MANIFIESTA SU CONFORMIDAD Y ACEPTACIÓN
+            para:
+
+
+            Que los actos pertinentes al sistema, desde su inicio hasta su conclusión, se realicen a través
+            de medios de comunicación electrónica usando su correo electrónico;
+
+
+            Que se dé por notificado de las actuaciones electrónicas que emita la empresa, en el mismo día
+            en que consulta el Sistema de Compras de Fredkor Labs, y
+
+
+            Que en el supuesto de que por causas imputables a la empresa se encuentre imposibilitado para consultar
+            el sistema, o abrir los documentos electrónicos que contengan la información depositada en dicho
+            sistema, en los días quince y último de cada mes o bien, el día hábil siguiente si alguno de éstos
+            fuera inhábil, lo hará del conocimiento de la empresa a más tardar dentro de los tres días hábiles
+            siguientes a aquél en que ocurra dicho impedimento, por medios de comunicación electrónica.'
+      required:
+      - version
+      - text
+      additionalProperties: false
+    AcceptRegistrationNoticeRequest:
+      type: object
+      properties:
+        version:
+          type: string
+          enum:
+          - '1.0'
+      required:
+      - version
+      additionalProperties: false
+      description: Invocar solo tras la aceptación expresa. Cancelar no llama a este endpoint.
+    NoticeAcceptanceResponse:
+      type: object
+      properties:
+        version:
+          type: string
+          enum:
+          - '1.0'
+        acceptedAt:
+          type: string
+          format: date-time
+        acceptanceId:
+          type: string
+          minLength: 1
+          description: Referencia opaca a la aceptación conservada por el backend. Se envía al procesar la
+            Firma Electrónica; no autoriza acceso al expediente.
+      required:
+      - version
+      - acceptedAt
+      - acceptanceId
+      additionalProperties: false
+      description: Versión y hora del backend, con referencia para correlacionar la aceptación antes de firmar.
+    SignatureResultRequest:
+      type: object
+      additionalProperties: false
+      description: Objeto completo ResultadoFirma del componente, sin renombrar propiedades. El tipo TypeScript
+        tiene propiedades opcionales en TypeScript; en el request todas deben estar presentes y las opcionales
+        sin valor se envían como null. El backend exige los datos necesarios para verificar el sello. Rechaza propiedades no definidas. No incluye llave privada ni contraseña.
+      properties:
+        resultado:
+          type: boolean
+          enum:
+          - true
+          description: Solo resultado=true permite procesar una identificación exitosa. Un resultado=false
+            se rechaza sin token.
+        fechaVigencia:
+          type: string
+          format: date-time
+          description: Date de TypeScript representado en JSON como cadena ISO 8601 con zona horaria.
+          nullable: true
+        mensaje:
+          type: string
+          nullable: true
+        cadenaOriginal:
+          type: string
+          enum:
+          - Temporal
+          description: Texto original firmado, codificado como UTF-8 antes de calcular SHA-256. En el registro
+            inicial es exactamente Temporal.
+        certificado:
+          type: string
+          description: Certificado entregado por el componente, codificado en Base64.
+          format: byte
+          nullable: true
+        cadenaFirma:
+          type: string
+          minLength: 1
+          description: Firma RSA PKCS#1 v1.5 con SHA-256 sobre los bytes UTF-8 de cadenaOriginal, codificada
+            en Base64. Verificación Java con SHA256withRSA.
+          format: byte
+        rfc:
+          $ref: '#/components/schemas/Rfc'
+        curp:
+          type: string
+          nullable: true
+        razonSocial:
+          type: string
+          minLength: 1
+        numeroSerie:
+          type: number
+          description: Tipo number según ResultadoFirma; no se cambia a string ni se trunca. La conservación
+            del resultado no reconstruye precisión perdida antes de recibirse.
+          nullable: true
+        tipoCertificado:
+          type: number
+          description: Código recibido del componente; no se inventan sus valores.
+          nullable: true
+        certificadoPem:
+          type: string
+          description: Certificado en representación PEM entregado por el componente.
+          nullable: true
+        isVigente:
+          type: boolean
+          description: Dato del componente, responsable de vigencia y OCSP.
+          nullable: true
+        origen:
+          type: string
+          description: Valor original del componente. No sustituye el Origen Nacional/Extranjero que el proveedor
+            selecciona en Datos Generales.
+          nullable: true
+      required:
+      - resultado
+      - fechaVigencia
+      - mensaje
+      - cadenaOriginal
+      - certificado
+      - cadenaFirma
+      - rfc
+      - curp
+      - razonSocial
+      - numeroSerie
+      - tipoCertificado
+      - certificadoPem
+      - isVigente
+      - origen
+      anyOf:
+      - required:
+        - certificado
+        properties:
+          certificado:
+            type: string
+            format: byte
+            minLength: 1
+            nullable: false
+      - required:
+        - certificadoPem
+        properties:
+          certificadoPem:
+            type: string
+            minLength: 1
+            nullable: false
+      x-domain-rules:
+      - 'Se exige un certificado utilizable: certificado Base64 o certificadoPem. Si certificado está presente
+        se utiliza para la verificación; si no, se utiliza certificadoPem. Se conserva el resultado completo
+        sin descartar ninguno de sus campos.'
+      - 'El RFC del titular se obtiene del atributo de sujeto 2.5.4.45 del mismo certificado utilizado para verificar el sello: dividir por / y tomar el segmento de índice 0. Debe tener 12 o 13 caracteres y coincidir exactamente con rfc, sin recorte ni conversión de mayúsculas/minúsculas. Los segmentos posteriores, incluido el RFC del apoderado, no son alternativas válidas.'
+      - 'Atributo ausente, primer segmento vacío o longitud inválida: VALIDATION_ERROR. RFC recibido distinto del extraído: SIGNATURE_VERIFICATION_FAILED. Ninguno emite token ni permite continuar o crear expediente.'
+      - 'legalName se extrae del primer atributo del sujeto del mismo certificado verificado cuyo OID sea 2.5.4.3, 2.5.4.41 o 2.5.4.10, respetando el orden original de los atributos, sin prioridad por OID, concatenación ni normalización. Aplica a persona física y moral. razonSocial recibido se conserva intacto como evidencia; si difiere, se utiliza el nombre del certificado para la identidad. Sin atributo coincidente o con su primer valor vacío se responde VALIDATION_ERROR, sin token ni continuación.'
+      - Solo resultado=true y datos obligatorios válidos permiten verificar el sello y emitir token.
+      - node-forge firma el digest SHA-256 de cadenaOriginal en UTF-8 con una clave privada RSA y el esquema
+        predeterminado PKCS#1 v1.5. El backend decodifica cadenaFirma y verifica con SHA256withRSA sobre los
+        bytes originales, sin aplicar un hash manual adicional.
+    ApplicantIdentityResponse:
+      type: object
+      properties:
+        rfc:
+          $ref: '#/components/schemas/Rfc'
+        legalName:
+          type: string
+          minLength: 1
+          description: Nombre extraído del primer atributo del sujeto del certificado con OID 2.5.4.3, 2.5.4.41 o 2.5.4.10, en su orden original; no se toma del campo razonSocial del request.
+        taxRegime:
+          $ref: '#/components/schemas/TaxRegime'
+        username:
+          type: string
+          minLength: 12
+          maxLength: 13
+          description: RFC convertido a minúsculas, de solo lectura.
+      required:
+      - rfc
+      - legalName
+      - taxRegime
+      - username
+      additionalProperties: false
+    ApplicantIdentificationResponse:
+      type: object
+      properties:
+        identity:
+          $ref: '#/components/schemas/ApplicantIdentityResponse'
+        registrationToken:
+          $ref: '#/components/schemas/RegistrationToken'
+        tokenExpiresAt:
+          type: string
+          format: date-time
+          description: 'Vencimiento en UTC: emisión + 60 minutos, calculado por el backend.'
+      required:
+      - identity
+      - registrationToken
+      - tokenExpiresAt
+      additionalProperties: false
+      description: Solo tras verificar y conservar el resultado se emite un token de 60 minutos y se invalidan
+        los tokens previos del mismo RFC. No invalida tokens de otros solicitantes.
+    RegistrationExistenceResponse:
+      type: object
+      properties:
+        exists:
+          type: boolean
+        registrationId:
+          $ref: '#/components/schemas/RegistrationId'
+        status:
+          $ref: '#/components/schemas/RegistrationStatus'
+      required:
+      - exists
+      additionalProperties: false
+      description: Si exists=false, no se informan registrationId ni status. Si existe, ambos se informan.
+        RFC procede del contexto aceptado; no es un filtro libre.
+    SectionProgressResponse:
+      type: object
+      properties:
+        section:
+          $ref: '#/components/schemas/RegistrationSection'
+        status:
+          $ref: '#/components/schemas/SectionStatus'
+      required:
+      - section
+      - status
+      additionalProperties: false
+    PhoneRequest:
+      type: object
+      properties:
+        number:
+          type: string
+          pattern: ^[0-9]{10}$
+        extension:
+          type: string
+          maxLength: 5
+          description: Opcional. No se impone formato numérico adicional.
+          nullable: true
+      required:
+      - number
+      - extension
+      additionalProperties: false
+      description: Toda fila agregada debe tener número válido. Extensión es opcional y admite null como ausencia;
+        si se informa, hasta 5 caracteres.
+    GeneralDataRequest:
+      type: object
+      properties:
+        origin:
+          $ref: '#/components/schemas/Origin'
+        countryId:
+          $ref: '#/components/schemas/CatalogId'
+        nationality:
+          type: string
+          minLength: 1
+          maxLength: 250
+        foreignFiscalCode:
+          type: string
+          minLength: 1
+          maxLength: 20
+          nullable: true
+          description: Admite null únicamente cuando no es obligatorio por el origen. Para FOREIGN se exige
+            texto no vacío de hasta 20 caracteres.
+        legalOwnershipId:
+          $ref: '#/components/schemas/CatalogId'
+        sectorId:
+          type: integer
+          nullable: true
+          description: ID entero de catálogo; obligatorio y no nulo para persona moral, no solicitado para
+            persona física y debe enviarse null.
+        subsectorId:
+          type: integer
+          nullable: true
+          description: ID entero de catálogo; obligatorio y no nulo para persona moral, no solicitado para
+            persona física y debe enviarse null.
+        businessActivityId:
+          $ref: '#/components/schemas/CatalogId'
+        stratificationId:
+          description: Selección obligatoria de exactamente una opción del catálogo de estratificación, sin asociación ni filtro por régimen.
+          allOf:
+          - $ref: '#/components/schemas/CatalogId'
+        primaryActivityId:
+          $ref: '#/components/schemas/CatalogId'
+        workerCountRangeId:
+          $ref: '#/components/schemas/CatalogId'
+        annualSalesRangeId:
+          $ref: '#/components/schemas/CatalogId'
+        website:
+          type: string
+          maxLength: 2048
+          format: uri
+          description: 'Opcional: null representa ausencia. Tras recortar extremos, vacío se convierte a null; si tiene valor debe ser URL absoluta con esquema http o https y host válido, de máximo 2048 caracteres. No se agrega protocolo automáticamente ni se consulta DNS o la URL para validar. La propiedad debe enviarse incluso si no tiene valor.'
+          nullable: true
+        phones:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhoneRequest'
+          description: 'Solo persona moral: colección no nula con al menos un teléfono válido. Para persona física debe enviarse null. El botón Eliminar retira filas localmente; Siguiente envía y guarda la colección completa restante. No existe borrado individual por teléfono; un fallo conserva la colección persistida.'
+          nullable: true
+      x-domain-rules:
+      - Todas las propiedades deben enviarse; los opcionales sin valor y los campos no aplicables se envían como null.
+      - Para persona física, sectorId, subsectorId y phones se envían explícitamente como null.
+      - 'NATIONAL: país México y nacionalidad Mexicana, ambos de solo lectura.'
+      - 'FOREIGN: país seleccionado, nacionalidad alfanumérica hasta 250 y código fiscal obligatorio hasta
+        20.'
+      - 'LEGAL_ENTITY: sector, subsector y al menos un teléfono obligatorios; subsector depende de sector.'
+      - 'Titularidad: NATIONAL exige countryCode del país y taxRegime del solicitante; FOREIGN admite countryCode del país o key igual a NOT_DEF, sin filtro por régimen. NOT_DEF se admite incluso si existen opciones del país. Orden ascendente por key. Si el resultado extranjero está vacío, consultar NOT_DEF; sin registros, mantener lista vacía sin crear opciones. El backend aplica las mismas condiciones al guardar.'
+      - Giro, estratificación, actividad preponderante, trabajadores y ventas obligatorios.
+      - Se validan registros de catálogo vigentes cuando aplique.
+      - Se exige cédula ya asociada al expediente mediante la operación de carga. Siguiente valida su presencia sin recibir UUID editable para confirmar o cambiar asociaciones. Carga y eliminación tienen efecto independiente del guardado de la sección.
+      - Los campos de selección dependientes dentro de Datos Generales deben seleccionarse nuevamente si cambia su dependencia.
+      - Los cambios en Datos Generales conservan intactos los tipos de participación, partidas seleccionadas y estado de progreso de CUCoP; no lo marcan para revisión.
+      - Un campo opcional puede ser null y queda sin valor; no significa conservar el dato anterior. Si el
+        campo es obligatorio por régimen u origen, null se rechaza.
+      - Estratificación exige exactamente una opción del catálogo; no tiene asociación ni filtro por régimen.
+      required:
+      - origin
+      - countryId
+      - nationality
+      - foreignFiscalCode
+      - legalOwnershipId
+      - sectorId
+      - subsectorId
+      - businessActivityId
+      - stratificationId
+      - primaryActivityId
+      - workerCountRangeId
+      - annualSalesRangeId
+      - website
+      - phones
+      additionalProperties: false
+      description: Guardado completo con Siguiente; no es PATCH. RFC, razón social, régimen, usuario, estado
+        y progreso no son editables. La cédula se obtiene de su asociación persistida, no se adjunta aquí.
+    GeneralDataResponse:
+      type: object
+      properties:
+        origin:
+          $ref: '#/components/schemas/Origin'
+        countryId:
+          $ref: '#/components/schemas/CatalogId'
+        nationality:
+          type: string
+          minLength: 1
+          maxLength: 250
+        foreignFiscalCode:
+          type: string
+          minLength: 1
+          maxLength: 20
+          nullable: true
+          description: Admite null únicamente cuando no es obligatorio por el origen. Para FOREIGN se exige
+            texto no vacío de hasta 20 caracteres.
+        legalOwnershipId:
+          $ref: '#/components/schemas/CatalogId'
+        sectorId:
+          type: integer
+          nullable: true
+          description: ID entero de catálogo; obligatorio y no nulo para persona moral, no solicitado para
+            persona física.
+        subsectorId:
+          type: integer
+          nullable: true
+          description: ID entero de catálogo; obligatorio y no nulo para persona moral, no solicitado para
+            persona física.
+        businessActivityId:
+          $ref: '#/components/schemas/CatalogId'
+        stratificationId:
+          description: Selección obligatoria de exactamente una opción del catálogo de estratificación, sin asociación ni filtro por régimen.
+          allOf:
+          - $ref: '#/components/schemas/CatalogId'
+        primaryActivityId:
+          $ref: '#/components/schemas/CatalogId'
+        workerCountRangeId:
+          $ref: '#/components/schemas/CatalogId'
+        annualSalesRangeId:
+          $ref: '#/components/schemas/CatalogId'
+        website:
+          type: string
+          maxLength: 2048
+          format: uri
+          description: 'Opcional: null representa ausencia. Tras recortar extremos, vacío se convierte a null; si tiene valor debe ser URL absoluta con esquema http o https y host válido, de máximo 2048 caracteres. No se agrega protocolo automáticamente ni se consulta DNS o la URL para validar. La propiedad debe enviarse incluso si no tiene valor.'
+          nullable: true
+        phones:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhoneRequest'
+          description: 'Solo persona moral: colección no nula con al menos un teléfono válido. Para persona
+            física no se solicita y admite null.'
+          nullable: true
+      required:
+      - origin
+      - countryId
+      - nationality
+      - legalOwnershipId
+      - businessActivityId
+      - stratificationId
+      - primaryActivityId
+      - workerCountRangeId
+      - annualSalesRangeId
+      additionalProperties: false
+      description: Datos guardados. Los campos opcionales admiten null. Los campos obligatorios, incluidos
+        los condicionales aplicables, deben cumplir sus reglas.
+    CucopParticipationRequest:
+      type: object
+      properties:
+        participationTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipationType'
+          minItems: 1
+          uniqueItems: true
+        specificItemIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogId'
+          minItems: 1
+      required:
+      - participationTypes
+      - specificItemIds
+      additionalProperties: false
+      description: Siguiente guarda selección validada y progreso en una transacción. Específicas se resuelven
+        contra el catálogo; genéricas y nodos visuales no son datos independientes del request.
+    CucopParticipationResponse:
+      type: object
+      properties:
+        participationTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipationType'
+          minItems: 1
+          uniqueItems: true
+        specificItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/CucopNodeResponse'
+          minItems: 1
+      required:
+      - participationTypes
+      - specificItems
+      additionalProperties: false
+    FiscalDocumentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        originalName:
+          type: string
+        extension:
+          type: string
+          enum:
+          - pdf
+        sizeBytes:
+          type: integer
+          format: int64
+          minimum: 0
+        uploadedAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - originalName
+      - extension
+      - sizeBytes
+      - uploadedAt
+      additionalProperties: false
+      description: Metadatos del PDF guardado y asociado inmediatamente al expediente al completar la carga. No expone ruta /repository. UUID propio del archivo según
+        ADR-0010.
+    SupplierRegistrationResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/RegistrationId'
+        status:
+          $ref: '#/components/schemas/RegistrationStatus'
+        identity:
+          $ref: '#/components/schemas/ApplicantIdentityResponse'
+        noticeAcceptance:
+          $ref: '#/components/schemas/NoticeAcceptanceResponse'
+        generalData:
+          $ref: '#/components/schemas/GeneralDataResponse'
+        fiscalDocument:
+          $ref: '#/components/schemas/FiscalDocumentResponse'
+        cucopParticipation:
+          $ref: '#/components/schemas/CucopParticipationResponse'
+        progress:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionProgressResponse'
+      required:
+      - id
+      - status
+      - identity
+      - noticeAcceptance
+      - progress
+      additionalProperties: false
+      description: Proyección del expediente. Secciones aún no guardadas y documento ausente no se incluyen;
+        no se representan como null. No devuelve toda la evidencia de firma.
+    SectionSaveResponse:
+      type: object
+      properties:
+        registrationId:
+          $ref: '#/components/schemas/RegistrationId'
+        section:
+          $ref: '#/components/schemas/RegistrationSection'
+        status:
+          type: string
+          enum:
+          - COMPLETED
+        nextSection:
+          $ref: '#/components/schemas/RegistrationSection'
+      required:
+      - registrationId
+      - section
+      - status
+      - nextSection
+      additionalProperties: false
+      description: Solo tras persistir datos y progreso correctamente. GENERAL_DATA continúa a CUCOP; CUCOP
+        a CONTACTS, fuera de captura en esta etapa.
+    CatalogOptionResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/CatalogId'
+        description:
+          type: string
+      required:
+      - id
+      - description
+      additionalProperties: false
+    GeneralDataCatalogsResponse:
+      type: object
+      properties:
+        countries:
+          type: array
+          items:
+            $ref: '#/components/schemas/CountryOptionResponse'
+        legalOwnerships:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegalOwnershipOptionResponse'
+        sectors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogOptionResponse'
+        subsectors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogOptionResponse'
+        businessActivities:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogOptionResponse'
+        stratifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogOptionResponse'
+        primaryActivities:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogOptionResponse'
+        workerCountRanges:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogOptionResponse'
+        annualSalesRanges:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogOptionResponse'
+      additionalProperties: false
+      description: Catálogos completos de Datos Generales, excepto subsectors filtrado por sectorId cuando
+        se informa. Estratificación se devuelve completa, sin asociación ni filtro por régimen. Sin paginación. Si
+        sectorId no se informa, subsectors se omite; si se informa y no hay opciones, retorna lista vacía.
+        Las demás colecciones se devuelven completas. Titularidad jurídica se filtra en frontend por país y régimen para Nacional, y por país o key NOT_DEF para Extranjero sin filtro por régimen; orden ascendente por key.
+      required:
+      - countries
+      - legalOwnerships
+      - sectors
+      - businessActivities
+      - stratifications
+      - primaryActivities
+      - workerCountRanges
+      - annualSalesRanges
+    CucopNodeResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/CatalogId'
+        key:
+          type: string
+        description:
+          type: string
+        level:
+          type: integer
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+        parentId:
+          $ref: '#/components/schemas/CatalogId'
+      required:
+      - id
+      - key
+      - description
+      - level
+      additionalProperties: false
+      description: Registro de catálogo. Capítulo raíz sin parentId; los demás niveles tienen el ID de su padre
+        inmediato. Solo niveles 3 y 4 tienen casillas editables. No prescribe estados visuales.
+    CucopCatalogResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CucopNodeResponse'
+      required:
+      - items
+      additionalProperties: false
+      description: Lista completa de nodos de los cuatro niveles, con IDs de padre para reconstruir todo el
+        árbol en frontend. Una sola respuesta, sin paginación ni búsqueda remota. Aproximadamente 300 elementos
+        es contexto de volumen, no máximo.
+    RegistrationToken:
+      type: string
+      minLength: 1
+      description: 'JWT firmado por el backend tras verificar la firma del solicitante, válido 60 minutos. Authorization Bearer. ADR-0015 exige firma RS256, claims sub/jti/iat/exp/iss/aud y comprobación de jti vigente por RFC. Nueva sesión invalida los JWT anteriores del mismo RFC. No es el UUID del expediente.'
+    IdentifyApplicantRequest:
+      type: object
+      properties:
+        noticeAcceptanceId:
+          type: string
+          minLength: 1
+        signatureResult:
+          $ref: '#/components/schemas/SignatureResultRequest'
+      required:
+      - noticeAcceptanceId
+      - signatureResult
+      additionalProperties: false
+      description: Referencia a aceptación previa y objeto íntegro ResultadoFirma. No acepta una fecha de aceptación
+        suministrada por el cliente.
+    CountryOptionResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/CatalogId'
+        description:
+          type: string
+        countryCode:
+          type: string
+          description: Código de país del catálogo; permite relacionarlo con titularidad jurídica.
+      required:
+      - id
+      - description
+      - countryCode
+      additionalProperties: false
+    LegalOwnershipOptionResponse:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Clave técnica del registro; permite identificar NOT_DEF sin depender del ID o descripción.
+        id:
+          $ref: '#/components/schemas/CatalogId'
+        description:
+          type: string
+        countryCode:
+          type: string
+          description: País de la titularidad, según el catálogo existente.
+        taxRegime:
+          $ref: '#/components/schemas/TaxRegime'
+      required:
+      - key
+      - id
+      - description
+      - countryCode
+      additionalProperties: false
+      description: 'Catálogo completo para filtrado local: Nacional exige país y régimen; Extranjero incluye país o key NOT_DEF sin filtro por régimen, también cuando hay opciones del país. Orden ascendente por key; respaldo NOT_DEF según domain/catalogs.md. La presencia de régimen depende del registro; no se inventa un valor cuando no existe.'
+  responses:
+    ValidationError:
+      description: Datos de entrada inválidos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - VALIDATION_ERROR
+    AccessDenied:
+      description: El contexto aceptado no corresponde al expediente.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - REGISTRATION_ACCESS_DENIED
+    RegistrationNotFound:
+      description: Expediente inexistente.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - REGISTRATION_NOT_FOUND
+    DocumentNotFound:
+      description: Expediente o cédula fiscal inexistentes.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - REGISTRATION_NOT_FOUND
+      - FISCAL_DOCUMENT_NOT_FOUND
+    DuplicateRfc:
+      description: Ya existe un expediente para el RFC.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - DUPLICATE_RFC
+    StateConflict:
+      description: Estado incompatible con la operación.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - INVALID_STATE_TRANSITION
+    DocumentConflict:
+      description: Estado incompatible o ya existe una cédula.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - INVALID_STATE_TRANSITION
+      - FISCAL_DOCUMENT_ALREADY_EXISTS
+    DocumentTooLarge:
+      description: El archivo supera el máximo de 5 MiB (5,242,880 bytes); el máximo exacto está permitido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - DOCUMENT_TOO_LARGE
+    UnsupportedDocument:
+      description: Se requiere extensión .pdf sin distinguir mayúsculas/minúsculas y contenido PDF comprobado en servidor; extensión o contenido incorrectos producen DOCUMENT_FORMAT_NOT_SUPPORTED.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - DOCUMENT_FORMAT_NOT_SUPPORTED
+    SignatureVerificationFailed:
+      description: El sello no corresponde a contenido y certificado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - SIGNATURE_VERIFICATION_FAILED
+    InternalError:
+      description: Fallo técnico; respuesta genérica sin detalles internos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: INTERNAL_ERROR
+            message: Unexpected error
+            details: []
+      x-error-codes:
+      - INTERNAL_ERROR
+    InvalidRegistrationToken:
+      description: Token de registro ausente, inválido, vencido a los 60 minutos o invalidado por una nueva
+        sesión del mismo solicitante.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+          description: Esquema Bearer.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      x-error-codes:
+      - REGISTRATION_TOKEN_INVALID
+  securitySchemes:
+    RegistrationToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'JWT firmado por Authorization Bearer conforme a ADR-0015. Verificar firma RS256, claims y jti vigente por RFC en cada operación protegida; vence a los 60 minutos. Nueva sesión invalida todos los JWT previos del mismo RFC. Evidencia y aceptación se resuelven desde el contexto backend.'
+
+x-section-progress-rules:
+- Una sección guardada permanece COMPLETED al editarla y tras un nuevo guardado válido.
+- Un fallo conserva los datos y el progreso previamente persistidos.
+- Eliminar lógicamente desasocia, marca metadatos y devuelve Datos Generales a PENDING en una transacción sin tocar el archivo físico ni modificar CUCoP o los demás datos. Fallar conserva referencia, marca y progreso. Cargar otra cédula no completa la sección hasta validar y guardar con Siguiente.
+- Una nueva carga exige validar y guardar Datos Generales para volver a COMPLETED.
+x-request-validation: Todos los requests y sus objetos anidados rechazan propiedades no definidas con VALIDATION_ERROR.
+
+x-request-field-presence: Todas las propiedades definidas de los requests deben enviarse, también en objetos anidados. Los campos opcionales sin valor y los no aplicables se envían como null; omitir una propiedad produce VALIDATION_ERROR.
+
+x-editable-text-normalization: >-
+  Recortar espacios en blanco del inicio y final antes de validar obligatoriedad, longitud y formato.
+  Conservar espacios interiores. Obligatorio vacío produce VALIDATION_ERROR; opcional vacío se convierte
+  a null. Aplica también a número y extensión telefónicos. No normalizar ResultadoFirma, RFC, valores
+  extraídos del certificado, identificadores, códigos de catálogo, tokens ni nombres originales de archivo.
+  Las restricciones de longitud y formato de los textos editables se aplican al valor normalizado.
+
+x-notice-acceptance-policy: >-
+  Aviso fijo versión 1.0. Cada nueva identificación requiere aceptación expresa previa.
+  El expediente conserva solo la última aceptación confirmada con fecha/hora del backend,
+  sin historial de aceptaciones. Reanudar sustituye la anterior en la misma transacción que
+  actualiza el nombre y vincula la evidencia de firma; un fallo conserva la aceptación anterior.
+  Las evidencias de firma históricas no se eliminan ni sobrescriben por esta sustitución.
+
+x-file-removal-policy: >-
+  La carga guarda y asocia inmediatamente. Eliminar requiere confirmación y ejecuta solo una
+  transacción de BD: retira la referencia de negocio, marca associated=false en metadatos y
+  actualiza el progreso aplicable. No borra ni mueve contenido físico. Solo informa éxito tras
+  commit; un fallo revierte esos cambios. Los metadatos y la ubicación permanecen para el
+  proceso diario, que borra físicamente los no asociados con más de 24 horas desde la carga.
+  Desasociar no reinicia la fecha de carga. El documento desasociado no se muestra ni descarga
+  desde el expediente. Atrás no revierte operaciones documentales exitosas.
+
+x-jwt-session-persistence: >-
+  RegistrationContextPort usa JPA en la misma BD del registro, con un contexto vigente por RFC:
+  jti unico, issued_at, expires_at y referencias de evidencia y aceptacion. Sustitucion transaccional,
+  token devuelto solo tras commit y consulta en cada peticion protegida. Un jti sustituido, contexto
+  ausente o vencido produce REGISTRATION_TOKEN_INVALID. Reiniciar H2 pierde contextos y requiere
+  nueva identificacion aunque el JWT no haya vencido. Ver ADR-0015.
