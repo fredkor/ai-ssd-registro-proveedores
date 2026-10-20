@@ -162,5 +162,6 @@ Los IDs pueden coincidir entre niveles; la selección del expediente referencia 
 2. Confirmar el mapeo de país/régimen en Titularidad Jurídica y los valores de `NOT_DEF`.
 3. Revisar si Estatus y Tipo de proveedor son dos catálogos distintos.
 4. Confirmar campos de vigencia existentes y restricciones de unicidad de claves.
-5. Incorporar después las FK desde los datos del expediente hacia estos catálogos;
-   el presente borrador cubre los catálogos, no el esquema completo del registro.
+5. Las FK desde el expediente y sus secciones se proponen en el
+   [diseño de persistencia del registro](registration-database-design.md), pendiente de revisión
+   independiente; la aprobación de este documento corresponde a los catálogos.

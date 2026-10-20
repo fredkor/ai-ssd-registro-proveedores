@@ -275,6 +275,10 @@ sequenceDiagram
 - Los fallos técnicos de contexto, consulta de catálogos o archivos también se traducen a
   INTERNAL_ERROR según ADR-0007, sin avanzar. La tabla de errores completa está en OpenAPI.
 
+El [diseño de persistencia del registro](registration-database-design.md) propone tablas y
+relaciones para revisar, complementando el esquema de catálogos aprobado. No representa
+migraciones ejecutadas ni implementación.
+
 ## 9. Estructura prevista
 
 Relativa al paquete base del registro, pendiente de alinear en Maven:

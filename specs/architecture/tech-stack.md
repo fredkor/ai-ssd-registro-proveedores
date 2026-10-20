@@ -24,7 +24,7 @@ Datos Generales y CUCoP, con continuación hacia Contactos.
 | Documentación API | springdoc-openapi-starter-webmvc-ui 3.1.1 | Swagger UI cargando el mismo YAML que genera interfaces y DTO. | ADR-0008. |
 | Pruebas backend | JUnit y starters de prueba de Spring Boot declarados en Maven | Dominio sin Spring; aplicación con dobles de puertos; adaptadores con infraestructura correspondiente. Las versiones efectivas proceden de Maven. | ADR-0001, ADR-0006. |
 | Fuente de tiempo | `java.time.Clock`, UTC | Hora controlable en aplicación y pruebas; instantes recibidos por el dominio. | ADR-0001; arquitectura. |
-| Validación documental | Python 3 y PyYAML | `tools/spec_lint.py`, pendiente de homologación con contrato, RF, estados y catálogos del registro. | Convenciones y flujo de verificación del proyecto. |
+| Validación documental | Python 3 y PyYAML | `tools/spec_lint.py`, adaptado al registro; alcance y pruebas en tools/README.md. | Convenciones y flujo de verificación del proyecto. |
 
 La configuración `openApiNullable=false` existente no define por sí misma la semántica de
 campos omitidos o null: se aplicará ADR-0009 y el contrato de cada esquema. No se configura
@@ -69,14 +69,15 @@ Los siguientes comandos se ejecutan desde `SSD_REAL/` cuando se cumplan sus prec
 
 | Acción | Comando | Precondición |
 | :--- | :--- | :--- |
-| Validar especificaciones y contrato | `python3 tools/spec_lint.py` | Contrato creado, validador homologado y PyYAML disponible. |
+| Validar especificaciones y contrato | `python3 tools/spec_lint.py` | Python 3 y PyYAML disponibles; valida coherencia aunque el contrato sea borrador. |
 | Generar interfaces y DTO | `mvn generate-sources` | YAML autoritativo existente y Maven alineado con su ruta y paquetes. |
 | Compilar y ejecutar pruebas | `mvn test` | Código y pruebas implementados, contrato y generación configurados. |
 | Ejecutar el backend | `mvn spring-boot:run` | Aplicación implementada, configuración de H2 y volumen preparada. |
 
 Actualmente existe un borrador YAML, pero no está listo para generación. No hay wrapper Maven
 ni código Java en `SSD_REAL/`. El archivo
-Maven y el validador todavía deben homologar identidad del módulo, contrato y paquetes.
+Maven usa mx.com.fredkorlabs:supplier-registration, paquete mx.com.fredkorlabs.registration
+y el contrato del registro. El validador está adaptado; la generación integral sigue pendiente.
 La matriz de trazabilidad ya documenta operaciones y criterios del registro, con verificación
 prevista. No declara pruebas implementadas ni comandos de generación ejecutados.
 
