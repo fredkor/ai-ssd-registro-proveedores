@@ -16,7 +16,7 @@ Implementa la capa domain del registro de proveedores siguiendo CLAUDE.md.
    - Limita el alcance a inicio/reanudación, Datos Generales, teléfonos, cédula y CUCoP.
      Contactos es continuación; no implementes su captura, finalización ni SupplierCode.
    - Revisa src/ y pom.xml. El paquete previsto del registro es mx.com.fredkorlabs.registration;
-     el arranque actual está en mx.com.fredkorlabs.sdd.supplier. Incluye en el plan cualquier
+     el arranque actual está en mx.com.fredkorlabs.registration. Incluye en el plan cualquier
      alineación necesaria, sin mover archivos ajenos por inferencia.
    - Reporta contradicciones o vacíos y consulta los que bloqueen reglas afectadas.
      Continúa con el análisis independiente; no inventes decisiones de negocio.

@@ -27,7 +27,7 @@ Implementa la operación {{OPERATION_ID}} siguiendo CLAUDE.md.
 
 2. PLANIFICA: lista archivos, capa, paquete, fuente y pruebas aplicables. Usa
    mx.com.fredkorlabs.registration y los paquetes generated del pom.xml. Considera el arranque
-   existente en mx.com.fredkorlabs.sdd.supplier y su escaneo de componentes/entidades.
+   existente en mx.com.fredkorlabs.registration y su escaneo de componentes/entidades.
    Espera mi aprobación antes de implementar.
 
 3. IMPLEMENTA dominio faltante -> puertos de aplicación -> servicio -> adaptadores.

@@ -23,7 +23,7 @@ CONSIDERACIONES PARA getRegistrationNotice:
 - El error técnico declarado es 500 INTERNAL_ERROR. Si agregas manejo común, respeta
   ErrorResponse y ADR-0007; no expongas excepciones, trazas ni rutas internas al cliente.
 - Verifica que el arranque Spring detecte los componentes bajo mx.com.fredkorlabs.registration:
-  la clase actual está en mx.com.fredkorlabs.sdd.supplier. Incluye la solución en el plan.
+  la clase actual está en mx.com.fredkorlabs.registration. Incluye la solución en el plan.
 - Prueba el servicio con el texto y versión oficiales y el adaptador web con 200, JSON y acceso
   sin token. Comprueba 500 con su code si existe una ruta de fallo técnico reproducible.
   Aceptar/cancelar y mostrar el aviso son CA de interfaz o de operaciones posteriores.
