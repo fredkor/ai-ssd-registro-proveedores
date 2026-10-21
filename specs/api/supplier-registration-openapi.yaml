@@ -2,9 +2,9 @@ openapi: 3.0.3
 info:
   title: Registro de proveedores de Fredkor Labs API
   version: 0.1.0
-  description: 'Borrador de la primera etapa: aviso, Firma Electrónica, token de registro, expediente, Datos
+  description: 'Primera etapa: aviso, Firma Electrónica, token de registro, expediente, Datos
     Generales, cédula fiscal y CUCoP. IDs de catálogos enteros y resultado del componente conforme a ResultadoFirma.
-    No listo para generación hasta cerrar las decisiones restantes.'
+    Habilitado para generación e implementación.'
 x-contract-status: READY
 x-implementation-ready: true
 x-pending-decisions: []
@@ -80,7 +80,7 @@ paths:
         y conserva íntegro el resultado aceptado. El componente externo, no este endpoint, comprueba vigencia
         y OCSP. Sin credenciales privadas. Usa noticeAcceptanceId para comprobar aceptación previa. Un resultado=false
         no habilita identificación. Solo después de verificar y conservar el resultado emite registrationToken.
-        El token vence a los 60 minutos e invalida tokens anteriores del mismo RFC al emitirlo. El sello es
+        El token vence a los 60 minutos y no invalida otros tokens vigentes del mismo RFC. El sello es
         RSA PKCS#1 v1.5 con SHA-256 sobre los bytes UTF-8 de cadenaOriginal; el backend verifica con SHA256withRSA
         según ADR-0016.
       x-spec-refs:
@@ -446,7 +446,7 @@ paths:
       description: Catálogos completos de Datos Generales, excepto subsectors filtrado por sectorId cuando
         se informa. Estratificación se devuelve completa, sin asociación ni filtro por régimen. Sin paginación. Si
         sectorId no se informa, subsectors se omite; si se informa y no hay opciones, retorna lista vacía.
-        Las demás colecciones se devuelven completas. Titularidad jurídica se filtra en frontend por país y régimen para Nacional, y por país o key NOT_DEF para Extranjero sin filtro por régimen; orden ascendente por key.
+        Las demás colecciones se devuelven completas. Los catálogos con campo activo (hoy Estratificación) solo devuelven registros activos; un ID inactivo se rechaza al guardar. Titularidad jurídica se filtra en frontend por país y régimen para Nacional, y por país o key NOT_DEF para Extranjero sin filtro por régimen; orden ascendente por key.
       x-spec-refs:
       - RF-REG-05
       - US08
@@ -809,8 +809,8 @@ components:
       - registrationToken
       - tokenExpiresAt
       additionalProperties: false
-      description: Solo tras verificar y conservar el resultado se emite un token de 60 minutos y se invalidan
-        los tokens previos del mismo RFC. No invalida tokens de otros solicitantes.
+      description: Solo tras verificar y conservar el resultado se emite un token de 60 minutos. No invalida
+        tokens previos del mismo RFC ni de otros solicitantes.
     RegistrationExistenceResponse:
       type: object
       example:
@@ -1220,7 +1220,7 @@ components:
       description: Catálogos completos de Datos Generales, excepto subsectors filtrado por sectorId cuando
         se informa. Estratificación se devuelve completa, sin asociación ni filtro por régimen. Sin paginación. Si
         sectorId no se informa, subsectors se omite; si se informa y no hay opciones, retorna lista vacía.
-        Las demás colecciones se devuelven completas. Titularidad jurídica se filtra en frontend por país y régimen para Nacional, y por país o key NOT_DEF para Extranjero sin filtro por régimen; orden ascendente por key.
+        Las demás colecciones se devuelven completas. Los catálogos con campo activo (hoy Estratificación) solo devuelven registros activos; un ID inactivo se rechaza al guardar. Titularidad jurídica se filtra en frontend por país y régimen para Nacional, y por país o key NOT_DEF para Extranjero sin filtro por régimen; orden ascendente por key.
       required:
       - countries
       - legalOwnerships
@@ -1272,7 +1272,7 @@ components:
     RegistrationToken:
       type: string
       minLength: 1
-      description: 'JWT firmado por el backend tras verificar la firma del solicitante, válido 60 minutos. Authorization Bearer. ADR-0015 exige firma RS256, claims sub/jti/iat/exp/iss/aud y comprobación de jti vigente por RFC. Nueva sesión invalida los JWT anteriores del mismo RFC. No es el UUID del expediente.'
+      description: 'JWT firmado por el backend tras verificar la firma del solicitante, válido 60 minutos. Authorization Bearer. ADR-0015 exige firma RS256, claims sub/jti/iat/exp/iss/aud y comprobación del contexto del jti. Un RFC puede tener varios JWT vigentes. No es el UUID del expediente.'
     IdentifyApplicantRequest:
       type: object
       properties:
@@ -1421,8 +1421,7 @@ components:
       x-error-codes:
       - INTERNAL_ERROR
     InvalidRegistrationToken:
-      description: Token de registro ausente, inválido, vencido a los 60 minutos o invalidado por una nueva
-        sesión del mismo solicitante.
+      description: Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend.
       headers:
         WWW-Authenticate:
           schema:
@@ -1439,7 +1438,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: 'JWT firmado por Authorization Bearer conforme a ADR-0015. Verificar firma RS256, claims y jti vigente por RFC en cada operación protegida; vence a los 60 minutos. Nueva sesión invalida todos los JWT previos del mismo RFC. Evidencia y aceptación se resuelven desde el contexto backend.'
+      description: 'JWT firmado por Authorization Bearer conforme a ADR-0015. Verificar firma RS256, claims y contexto del jti en cada operación protegida; vence a los 60 minutos. Un RFC puede tener varias sesiones vigentes. Evidencia y aceptación se resuelven desde el contexto backend.'
 
 x-section-progress-rules:
 - Una sección guardada permanece COMPLETED al editarla y tras un nuevo guardado válido.
@@ -1474,8 +1473,8 @@ x-file-removal-policy: >-
   desde el expediente. Atrás no revierte operaciones documentales exitosas.
 
 x-jwt-session-persistence: >-
-  RegistrationContextPort usa JPA en la misma BD del registro, con un contexto vigente por RFC:
-  jti unico, issued_at, expires_at y referencias de evidencia y aceptacion. Sustitucion transaccional,
-  token devuelto solo tras commit y consulta en cada peticion protegida. Un jti sustituido, contexto
+  RegistrationContextPort usa JPA en la misma BD del registro, con un contexto por token emitido:
+  jti, rfc, issued_at, expires_at y referencias de evidencia y aceptacion. Un RFC puede tener varios
+  contextos vigentes. Token devuelto solo tras commit y consulta en cada peticion protegida. Un contexto
   ausente o vencido produce REGISTRATION_TOKEN_INVALID. Reiniciar H2 pierde contextos y requiere
   nueva identificacion aunque el JWT no haya vencido. Ver ADR-0015.
