@@ -161,7 +161,7 @@ Los IDs pueden coincidir entre niveles; la selección del expediente referencia 
 
 ## Tipos SQL
 
-Aplican igual en H2 y PostgreSQL ([ADR-0017](../adr/0017-backend-postgresql-persistencia-duradera.md)).
+Tipos de PostgreSQL 17, en todos los entornos ([ADR-0017](../adr/0017-backend-postgresql-persistencia-duradera.md), [ADR-0018](../adr/0018-backend-postgresql-en-pruebas-y-desarrollo.md)). `INTEGER`, `VARCHAR(n)` y `BOOLEAN` equivalen a `integer`, `varchar(n)` y `boolean`.
 
 | Columna | Tipo SQL |
 | :--- | :--- |

@@ -20,7 +20,7 @@ Todos los ADR se almacenan directamente en `specs/adr/`, con el formato
 | [0002](0002-shared-transiciones-como-acciones.md) | Compartido | Acciones de registro y guardado explícito por sección | Aceptado |
 | [0003](0003-shared-identificador-uuid.md) | Compartido | UUID del expediente y RFC como identidad de negocio | Aceptado |
 | [0004](0004-shared-codigos-de-error.md) | Compartido | Errores del registro y representación HTTP | Aceptado |
-| [0005](0005-backend-base-de-datos-h2.md) | Backend | H2 en memoria para pruebas y pérdida de referencias al reiniciar | Aceptado |
+| [0005](0005-backend-base-de-datos-h2.md) | Backend | H2 en memoria para pruebas y pérdida de referencias al reiniciar | Reemplazado por ADR-0018 |
 | [0006](0006-backend-spring-boot-4.md) | Backend | Stack backend con Spring Boot 4.1 y Java 25 | Aceptado |
 | [0007](0007-backend-error-interno-generico.md) | Backend | Error interno genérico sin detalles de infraestructura | Aceptado |
 | [0008](0008-backend-swagger-ui-con-contrato.md) | Backend | Swagger UI con contrato autoritativo del registro | Aceptado |
@@ -33,14 +33,15 @@ Todos los ADR se almacenan directamente en `specs/adr/`, con el formato
 | [0015](0015-shared-token-de-registro.md) | Compartido | JWT de registro de 60 minutos y sesiones concurrentes por solicitante | Aceptado |
 | [0016](0016-backend-verificacion-firma-sha256-rsa.md) | Backend | Verificación RSA PKCS#1 v1.5 con SHA-256 y Java SHA256withRSA | Aceptado |
 | [0017](0017-backend-postgresql-persistencia-duradera.md) | Backend | PostgreSQL 17 con Flyway para persistencia duradera | Aceptado |
+| [0018](0018-backend-postgresql-en-pruebas-y-desarrollo.md) | Backend | PostgreSQL en pruebas y desarrollo con base de pruebas desechable | Aceptado |
 
 ## Preparación pendiente
 
-- Implementar el contexto JWT en la misma BD según ADR-0015 (Spring Security Resource Server, llaves PEM por entorno, varias sesiones por RFC).
-- Implementar y verificar interoperabilidad de firma (ADR-0016); el mecanismo ya está definido.
+- Contexto JWT implementado con `identifyApplicant` según ADR-0015 (2026-10-21).
+- Interoperabilidad de firma (ADR-0016) verificada con certificados y sellos de prueba generados con node-forge (`backend/src/test/resources/signature`).
 - Tipos SQL y vigencia de catálogos fijados el 2026-10-21; claves únicas por tabla y mapeo país/régimen de Titularidad Jurídica por código y texto. El esquema de archivos y la compensación de fallos de carga (ADR-0010) quedaron definidos el 2026-10-20.
 - Contrato, Maven y validador alineados; la generación se comprobó el 2026-10-20.
-- Persistencia duradera definida en ADR-0017; incorporar dependencias y migración inicial al preparar el primer entorno duradero.
+- PostgreSQL 17 en todos los entornos (ADR-0017, ADR-0018): incorporar driver, Flyway, Testcontainers y la migración inicial.
 - Versiones del frontend fijadas en `frontend/package.json` y `frontend/package-lock.json` (Sakai 21.0.0, Angular 21.0.6, PrimeNG 21.0.2).
 
 Las políticas de null, propiedades desconocidas, carga/asociación inmediata y limpieza están

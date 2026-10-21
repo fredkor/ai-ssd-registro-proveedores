@@ -1,10 +1,13 @@
 # ADR-0005: H2 en memoria para pruebas y pérdida de referencias al reiniciar
 
-- **Estado:** Aceptado
+- **Estado:** Reemplazado por ADR-0018
 - **Ámbito:** Backend
 - **Fecha:** 2026-09-26
 - **Actualización:** 2026-10-21
 - **Specs relacionadas:** RF-REG-04 a RF-REG-06; ADR-0010; `architecture/architecture.md`.
+
+> Reemplazado el 2026-10-21 por [ADR-0018](0018-backend-postgresql-en-pruebas-y-desarrollo.md):
+> PostgreSQL 17 en todos los entornos y base de pruebas desechable por ejecución.
 
 ## Contexto
 

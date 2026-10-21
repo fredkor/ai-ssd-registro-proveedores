@@ -9,8 +9,8 @@ documento; las relaciones representan el diseño físico de la primera etapa.
 Los diagramas se separan para facilitar su lectura. Una tabla repetida conserva la misma
 identidad en todos los grupos; los bloques abreviados solo muestran las claves necesarias.
 `uuid`, `string`, `text`, `int`, `bigint`, `boolean` y `datetime` son tipos conceptuales; su
-traducción SQL para H2 está en la [sección 7](#7-decisiones-de-diseño-físico) y su equivalente
-en PostgreSQL en [ADR-0017](../adr/0017-backend-postgresql-persistencia-duradera.md). Los instantes se representan en UTC; las
+traducción SQL a PostgreSQL 17 está en la [sección 7](#7-decisiones-de-diseño-físico)
+([ADR-0017](../adr/0017-backend-postgresql-persistencia-duradera.md), [ADR-0018](../adr/0018-backend-postgresql-en-pruebas-y-desarrollo.md)). Los instantes se representan en UTC; las
 horas locales de operación se mantienen en sus requisitos.
 
 ## 1. Expediente y progreso
@@ -180,7 +180,7 @@ erDiagram
 - La limpieza diaria de las 02:00 en America/Mexico_City consulta los no asociados con más de
   24 horas desde `uploaded_at`. Verifica nuevamente ausencia de referencias y borra primero
   contenido, después metadatos. Un fallo conserva información suficiente para reintentar.
-- Los archivos sin metadatos tras reiniciar H2 quedan fuera de la limpieza automática.
+- Los archivos sin metadatos (p. ej., tras una compensación fallida) quedan fuera de la limpieza automática.
 - Antes de añadir documentos de secciones futuras, definir sus asociaciones concretas y
   restricciones. El servicio general debe comprobar todas las referencias activas: no basta
   consultar únicamente la tabla de cédula para concluir que un archivo no está asociado.
@@ -218,14 +218,14 @@ erDiagram
         datetime issued_at
         datetime expires_at
         uuid signature_evidence_id FK,UK
-        uuid notice_acceptance_id FK
+        uuid notice_acceptance_id FK,UK "Aceptacion de un solo uso"
     }
     noticeAcceptance ||..o| supplierRegistration : "ultima aceptacion confirmada"
     applicantSignatureEvidence ||..o| supplierRegistration : "evidencia inicial"
     supplierRegistration ||..|{ registrationSignatureEvidence : "historial de firma"
     applicantSignatureEvidence ||..o| registrationSignatureEvidence : "resultado vinculado"
     applicantSignatureEvidence ||..o| registrationContext : "identificacion de sesion"
-    noticeAcceptance ||..o{ registrationContext : "aceptacion de sesion"
+    noticeAcceptance ||..o| registrationContext : "aceptacion de sesion"
 ```
 
 - Aviso y evidencia pueden existir antes de crear o reanudar el expediente. No se impone una FK
@@ -246,15 +246,16 @@ erDiagram
   aceptación del contexto mientras el expediente aún conserva la anterior hasta reanudar.
   Las aceptaciones de correlación que quedan sin referencia de contexto ni de expediente se
   conservan sin purga en la primera etapa; no constituyen historial del expediente ni se
-  consultan como tal. H2 en memoria las pierde al reiniciar. Una purga futura requiere su
+  consultan como tal. Una purga futura requiere su
   propia decisión.
 - `registration_context` guarda un registro por token emitido, no el JWT completo. Un RFC
   puede tener varias sesiones vigentes. `expires_at = issued_at + 60 minutos`; `jti` identifica
   el JWT. La inserción es transaccional y las peticiones protegidas consultan el contexto de su
-  `jti` conforme a ADR-0015. Los contextos vencidos se conservan sin purga en la primera etapa.
+  `jti` conforme a ADR-0015. `notice_acceptance_id` es único: una aceptación respalda un solo token
+  y la UK resuelve también el uso concurrente de la misma aceptación. Los contextos vencidos se conservan sin purga en la primera etapa.
 - Crear/reanudar vincula identidad, aceptación y evidencia exclusivamente desde contexto verificado,
-  no desde referencias editables del formulario. La ausencia de contexto después de reiniciar H2
-  invalida el uso del JWT aunque su firma y fecha de vencimiento aún sean correctas.
+  no desde referencias editables del formulario. La ausencia de contexto en la base invalida el
+  uso del JWT aunque su firma y fecha de vencimiento aún sean correctas.
 - Los IDs técnicos de aceptación, evidencia y `jti` se almacenan como UUID generados por el
   backend. La API los expone como texto opaco (forma canónica del UUID); el cliente no debe
   interpretar su formato y el contrato no le impone UUID.
@@ -283,24 +284,24 @@ No se fija retención para expedientes o evidencias a partir de los 30 días de 
 Aprobadas el 2026-10-20. Nombres, organización y relaciones de los diagramas quedan
 confirmados, incluidos `registration_fiscal_document` y la posición técnica de teléfonos.
 
-### 7.1. Tipos SQL en H2
+### 7.1. Tipos SQL
 
-El esquema de H2 se genera desde las entidades JPA del adaptador de persistencia, cuyas
-anotaciones reflejan esta tabla. No se incorpora una herramienta de migraciones (requeriría ADR).
+Tipos de PostgreSQL 17. Flyway crea el esquema con estas definiciones y las entidades JPA del
+adaptador de persistencia las reflejan; Hibernate solo valida (ADR-0017, ADR-0018).
 
-| Tipo conceptual | SQL H2 | Aplicación |
+| Tipo conceptual | SQL PostgreSQL | Aplicación |
 | :--- | :--- | :--- |
-| `uuid` | `UUID` | IDs técnicos, `jti` y referencias entre tablas del registro. |
-| `string` con máximo definido | `VARCHAR(n)` con el máximo de RF/contrato | `rfc` 13; `nationality` 250; `foreign_fiscal_code` 20; `website` 2048; `number` 10; `extension` 5. |
-| `string` de código | `VARCHAR(32)` | `status`, `section`, `participation_type`; check con los valores de `specs/domain/`. |
-| `string` de versión del aviso | `VARCHAR(3)` | `notice_acceptance.version`; check `= '1.0'`. |
-| `string` sin máximo de negocio | `VARCHAR` sin longitud (máximo del motor) | `legal_name`, `verified_legal_name`, `original_name`, `media_type`. No crea un límite de negocio. |
-| `string` técnico | `VARCHAR(255)` | `relative_path`; `extension` usa `VARCHAR(10)`. |
-| `text` | `CLOB` | `complete_result`: JSON original sin pérdida. |
-| `int` | `INTEGER` | FK a catálogos (IDs enteros; alinear con los tipos de catálogo al implementarlos). |
-| `bigint` | `BIGINT` | `size_bytes`. |
-| `boolean` | `BOOLEAN` | `associated`. |
-| `datetime` | `TIMESTAMP(6) WITH TIME ZONE`, en UTC | `accepted_at`, `issued_at`, `expires_at`, `uploaded_at`. |
+| `uuid` | `uuid` | IDs técnicos, `jti` y referencias entre tablas del registro. |
+| `string` con máximo definido | `varchar(n)` con el máximo de RF/contrato | `rfc` 13; `nationality` 250; `foreign_fiscal_code` 20; `website` 2048; `number` 10; `extension` 5. |
+| `string` de código | `varchar(32)` | `status`, `section`, `participation_type`; check con los valores de `specs/domain/`. |
+| `string` de versión del aviso | `varchar(3)` | `notice_acceptance.version`; check `= '1.0'`. |
+| `string` sin máximo de negocio | `text` | `legal_name`, `verified_legal_name`, `original_name`, `media_type`. No crea un límite de negocio. |
+| `string` técnico | `varchar(255)` | `relative_path`; `extension` usa `varchar(10)`. |
+| `text` | `text` | `complete_result`: JSON original sin pérdida. |
+| `int` | `integer` | FK a catálogos (IDs enteros; alinear con los tipos de catálogo al implementarlos). |
+| `bigint` | `bigint` | `size_bytes`. |
+| `boolean` | `boolean` | `associated`. |
+| `datetime` | `timestamptz(6)`, en UTC | `accepted_at`, `issued_at`, `expires_at`, `uploaded_at`. |
 
 Nulabilidad: PK, FK obligatorias y columnas sin anotación de opcionalidad son `NOT NULL`.
 Admiten null únicamente las columnas opcionales o condicionales de Datos Generales
@@ -323,7 +324,7 @@ resuelve por la UK de `rfc`. Expedientes distintos no se bloquean entre sí.
   transacción de metadatos y asociación. Si la transacción falla, se elimina el contenido
   escrito y no se informa éxito. Si esa eliminación también falla, se registra con nivel ERROR
   el UUID y la ruta relativa para reconciliación manual; el residuo queda sin metadatos y fuera
-  de la limpieza automática, igual que los archivos sin metadatos tras reiniciar H2 (ADR-0010).
+  de la limpieza automática (ADR-0010).
 
 Fuentes: [RF](../requirements/functional.md), [modelo](domain-model.md),
 [arquitectura](architecture.md), [ADR-0010](../adr/0010-backend-almacenamiento-documental-en-volumen.md),

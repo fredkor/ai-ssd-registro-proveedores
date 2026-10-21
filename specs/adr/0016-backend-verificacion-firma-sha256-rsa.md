@@ -3,6 +3,7 @@
 - **Estado:** Aceptado
 - **Ámbito:** Backend
 - **Fecha:** 2026-10-18
+- **Actualización:** 2026-10-21
 - **Specs relacionadas:** RF-REG-01; US01; INV-03 a INV-06; contrato OpenAPI; ADR-0015.
 
 ## Contexto
@@ -22,7 +23,8 @@ necesita verificar el mismo esquema con la clave pública del certificado del so
   mayúsculas o incorporación de saltos de línea. En la identificación inicial es `Temporal`.
 - `cadenaFirma` se decodifica desde Base64 para obtener los bytes de firma.
 - La clave pública se obtiene del certificado entregado por el componente: se decodifica
-  `certificado` desde Base64 cuando se informa; en su ausencia se utiliza `certificadoPem`.
+  `certificado` desde Base64. `certificado` y `certificadoPem` son obligatorios (2026-10-21);
+  `certificadoPem` se conserva como evidencia y no sustituye a `certificado`.
   La lectura del certificado y la verificación se encapsulan en `adapter.out.signature`.
 - El verificador SHA256withRSA recibe los bytes UTF-8 de la cadena original y los bytes
   decodificados de firma. No se calcula manualmente otro hash antes de alimentar a Signature,

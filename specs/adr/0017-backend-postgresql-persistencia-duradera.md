@@ -3,7 +3,8 @@
 - **Estado:** Aceptado
 - **Ámbito:** Backend
 - **Fecha:** 2026-10-21
-- **Specs relacionadas:** ADR-0005, ADR-0010, ADR-0015; `architecture/registration-database-design.md`; `architecture/catalog-database-proposal.md`; `architecture/tech-stack.md`.
+- **Actualización:** 2026-10-21 (todos los entornos, ADR-0018)
+- **Specs relacionadas:** ADR-0018, ADR-0010, ADR-0015; `architecture/registration-database-design.md`; `architecture/catalog-database-proposal.md`; `architecture/tech-stack.md`.
 
 ## Contexto
 
@@ -14,30 +15,20 @@ además un control versionado de su esquema.
 
 ## Decisión
 
-- Los entornos distintos de pruebas usan PostgreSQL 17 como única base de datos del registro:
-  expedientes, catálogos, contextos JWT y metadatos documentales comparten la misma base
-  (ADR-0001, ADR-0010, ADR-0015).
-- H2 en memoria sigue siendo la base de las pruebas automatizadas (ADR-0005), con el esquema
-  generado por Hibernate desde las entidades JPA.
-- PostgreSQL se activa con el perfil Spring `postgres`. URL, usuario y contraseña se leen de
-  variables de entorno; no se guardan credenciales en el repositorio.
-- El esquema de PostgreSQL lo crea y evoluciona Flyway mediante scripts SQL versionados en
-  `backend/src/main/resources/db/migration`. Con ese perfil Hibernate solo valida el esquema
-  (`ddl-auto=validate`) y Flyway queda habilitado; en H2 de pruebas Flyway permanece deshabilitado.
+- PostgreSQL 17 es la única base de datos del registro en todos los entornos (pruebas,
+  desarrollo y despliegues; ADR-0018): expedientes, catálogos, contextos JWT y metadatos
+  documentales comparten la misma base (ADR-0001, ADR-0010, ADR-0015).
+- URL, usuario y contraseña se leen de variables de entorno (`REGISTRATION_DB_URL`,
+  `REGISTRATION_DB_USERNAME`, `REGISTRATION_DB_PASSWORD`); no se guardan credenciales en el
+  repositorio. En las pruebas la conexión la aporta Testcontainers (ADR-0018).
+- El esquema lo crea y evoluciona Flyway mediante scripts SQL versionados en
+  `backend/src/main/resources/db/migration`, también en las pruebas. Hibernate solo valida el
+  esquema (`ddl-auto=validate`).
 - Dependencias, con versiones gestionadas por el parent de Spring Boot: `org.postgresql:postgresql`
-  (runtime), `org.flywaydb:flyway-core` y `org.flywaydb:flyway-database-postgresql`. Se incorporan
-  al preparar el primer entorno duradero, junto con la migración inicial.
-- Correspondencia de tipos con el diseño aprobado:
-
-| H2 | PostgreSQL |
-| :--- | :--- |
-| `UUID` | `uuid` |
-| `VARCHAR(n)` / `VARCHAR` sin longitud | `varchar(n)` / `text` |
-| `CLOB` | `text` |
-| `TIMESTAMP(6) WITH TIME ZONE` | `timestamptz(6)` |
-| `INTEGER`, `BIGINT`, `BOOLEAN` | `integer`, `bigint`, `boolean` |
-
-- El bloqueo pesimista del expediente usa `SELECT ... FOR UPDATE` también en PostgreSQL.
+  (runtime), `org.flywaydb:flyway-core` y `org.flywaydb:flyway-database-postgresql`.
+- Los tipos SQL son los del [diseño de persistencia](../architecture/registration-database-design.md#71-tipos-sql)
+  y del [esquema de catálogos](../architecture/catalog-database-proposal.md#tipos-sql).
+- El bloqueo pesimista del expediente usa `SELECT ... FOR UPDATE`.
 - Las migraciones crean exactamente las tablas, constraints e índices de los diseños aprobados
   y cargan los catálogos de `domain/catalog-values.md` con sus IDs originales. No añaden reglas.
 - El volumen documental de ADR-0010 sigue siendo independiente de la base de datos.
@@ -49,14 +40,13 @@ además un control versionado de su esquema.
 | PostgreSQL con Flyway | Esquema versionado y reproducible; validación de entidades al arrancar. | Mantener migraciones SQL además de las entidades; opción elegida. |
 | PostgreSQL con `ddl-auto` de Hibernate | Sin herramienta adicional. | Sin control de cambios en una base duradera. |
 | PostgreSQL con scripts manuales | Control total del DBA. | Proceso manual propenso a desalineación. |
-| Mantener solo H2 | Sin cambios. | Pierde todo al reiniciar; no apto fuera de pruebas. |
+| Mantener H2 | Sin cambios. | Pierde todo al reiniciar y no valida el motor real; retirado por ADR-0018. |
 
 ## Consecuencias y verificación
 
 - Cada cambio de entidad JPA requiere su migración Flyway; `validate` detecta la desalineación al arrancar.
-- Las pruebas automatizadas siguen en H2. Antes de habilitar un entorno duradero se verifica
-  que las migraciones se aplican en una instancia PostgreSQL vacía y que la aplicación arranca
-  con `ddl-auto=validate`.
+- Cada ejecución de pruebas aplica las migraciones sobre una base PostgreSQL vacía y arranca con
+  `ddl-auto=validate`, lo que verifica la alineación entre migraciones y entidades.
 - La versión del servidor es PostgreSQL 17. Respaldos y retención se definen al desplegar, sin
   cambiar este diseño.
-- La pérdida de datos al reiniciar descrita en ADR-0005 queda limitada a pruebas.
+- Reiniciar el backend no pierde datos; las pruebas empiezan con una base vacía por ejecución (ADR-0018).

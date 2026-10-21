@@ -30,6 +30,11 @@ del mismo expediente se resuelve con el bloqueo pesimista del
   por el backend al conservar versión y fecha/hora. El request de identificación envía
   `noticeAcceptanceId` y el objeto íntegro `signatureResult` conforme a ResultadoFirma.
   La referencia de aceptación no es un token de acceso ni sustituye verificar la firma.
+- La aceptación referida debe existir. Un `noticeAcceptanceId` inexistente o que no corresponda
+  al formato de las referencias emitidas responde 400 VALIDATION_ERROR, sin token.
+- Cada aceptación respalda una sola identificación exitosa: queda consumida al confirmarse el
+  contexto de su token. Reutilizarla responde 400 VALIDATION_ERROR. Un intento rechazado no la
+  consume, por lo que la firma puede reintentarse con la misma aceptación (decisión del 2026-10-21).
 - La respuesta de identificación entrega `registrationToken`, `tokenExpiresAt` e identidad.
 - El token vence 60 minutos después de emitirse. No se establece renovación automática
   por actividad. La hora y el vencimiento se obtienen del reloj del backend en UTC.
@@ -47,8 +52,8 @@ del mismo expediente se resuelve con el bloqueo pesimista del
   como parte de los datos de negocio del expediente.
 - El estado de tokens se gestiona en aplicación e infraestructura, no en el agregado de dominio.
   No se adopta Redis ni un servicio nuevo; JWT es el formato de intercambio elegido.
-- El contexto de cada sesión se conserva en la misma BD del registro mediante JPA. En H2 de
-  pruebas se pierde al reiniciar conforme a ADR-0005 y se requiere identificarse nuevamente.
+- El contexto de cada sesión se conserva en la misma BD del registro mediante JPA (PostgreSQL,
+  ADR-0017 y ADR-0018).
 
 ### Contenido y validación del JWT
 
@@ -84,8 +89,12 @@ del mismo expediente se resuelve con el bloqueo pesimista del
   La pertenencia del expediente sigue siendo comprobación de aplicación (403).
 - Las claves son un par RSA propio del backend, separado de la e.firma del solicitante. Las
   llaves pública y privada en PEM se leen de ubicaciones configuradas por variables de entorno;
-  no se distribuyen al frontend ni se guardan en el repositorio. Las pruebas generan un par
-  efímero. La rotación de claves queda fuera de la primera etapa.
+  no se distribuyen al frontend ni se guardan en el repositorio. La rotación de claves queda
+  fuera de la primera etapa.
+- Si las ubicaciones no están configuradas, el backend genera un par RSA efímero al arrancar y
+  registra una advertencia; los tokens dejan de validar al reiniciar porque cambia la llave.
+  Así funcionan las pruebas y el desarrollo local. Con el perfil `prod` (entornos desplegados,
+  ADR-0018) las llaves son obligatorias y el backend no arranca sin ellas.
 - Emisor y audiencia se configuran en `backend/src/main/resources/application.yaml` con las
   propiedades `registration.jwt.issuer` y `registration.jwt.audience`; se pueden sobrescribir
   por entorno. Las rutas de las llaves usan `registration.jwt.public-key-location` y
@@ -107,7 +116,7 @@ Tabla `registration_context`, con un registro por token emitido:
 | `issued_at` | Obligatorio; emisión UTC coincidente con `iat`. |
 | `expires_at` | Obligatorio; emisión más 60 minutos, coincidente con `exp`. |
 | `signature_evidence_id` | Referencia obligatoria y única a la evidencia aceptada y conservada. |
-| `notice_acceptance_id` | Referencia obligatoria a la aceptación procesada antes de identificar. |
+| `notice_acceptance_id` | Referencia obligatoria y única a la aceptación procesada antes de identificar; una aceptación respalda un solo token. |
 
 - Tras validar firma e identidad, preparar y firmar el nuevo JWT e insertar su contexto en una
   transacción de BD. Devolver el JWT solo después del commit; si falla la preparación, firma o
@@ -123,8 +132,8 @@ Tabla `registration_context`, con un registro por token emitido:
   los datos del expediente. La última aceptación del expediente se sustituye al reanudar.
 - Los contextos vencidos se conservan sin purga en la primera etapa, como las aceptaciones
   de correlación; ya no autorizan. Una purga futura requiere su propia decisión.
-- Al reiniciar H2 se pierden los contextos. Un JWT aún no vencido tampoco autoriza sin su
-  registro y se requiere una nueva identificación.
+- Un JWT aún no vencido no autoriza si su contexto no existe en la base de datos; se requiere
+  una nueva identificación.
 
 No se agrega un historial de sesiones consultable ni un endpoint de administración.
 
@@ -138,7 +147,7 @@ Las referencias de aceptación usadas antes de identificar correlacionan el fluj
 
 | Alternativa | A favor | En contra |
 | :--- | :--- | :--- |
-| JWT firmado con contexto por token y sesiones concurrentes | Formato estándar; implementación simple; H2 reiniciado invalida tokens. | Un RFC puede operar desde varias sesiones; opción elegida. |
+| JWT firmado con contexto por token y sesiones concurrentes | Formato estándar; implementación simple; un token sin contexto no autoriza. | Un RFC puede operar desde varias sesiones; opción elegida. |
 | Sesión única por RFC (decisión anterior) | Invalida inmediatamente tokens previos. | Exige sustitución atómica y serialización por RFC; retirada el 2026-10-21. |
 | Token opaco | Permite resolver toda la identidad en backend. | No es el formato de intercambio elegido. |
 | Sesión HTTP con cookie | Puede correlacionar el estado en servidor. | No es el transporte elegido. |
@@ -156,8 +165,8 @@ Las referencias de aceptación usadas antes de identificar correlacionan el fluj
   frontend no autoriza acceso.
 - Probar que los endpoints públicos responden sin token y que los rechazos usan `ErrorResponse`.
 - Una sesión nueva no crea por sí misma un expediente ni cambia su estado o progreso.
-- Probar rollback si falla la emisión/persistencia y rechazo de un JWT no vencido cuyo
-  contexto se perdió al reiniciar H2.
+- Probar rollback si falla la emisión/persistencia y rechazo de un JWT no vencido sin
+  contexto en la base de datos.
 
 ## Referencias
 

@@ -30,14 +30,14 @@ Los contratos autoritativos permanecen en `specs/api/` y se referencian desde ca
 | :--- | :--- | :--- | :--- |
 | Lenguaje | Java 25, propiedad `java.version` | Backend; dominio limitado al JDK. | ADR-0001, ADR-0006. |
 | Framework | Spring Boot 4.1.x; Maven declara 4.1.1 | Aplicación, ensamblaje, Web MVC, Validation y Data JPA. | ADR-0001, ADR-0006. |
-| Persistencia para pruebas | H2 en memoria con Spring Data JPA | Expedientes, aceptaciones, evidencias y metadatos documentales. | ADR-0005. |
-| Persistencia duradera | PostgreSQL 17 (perfil `postgres`) con Flyway; driver y Flyway gestionados por el parent de Spring Boot | Entornos distintos de pruebas; se incorporan al preparar el primer entorno duradero. | ADR-0017. |
-| Token de registro | Spring Security OAuth2 Resource Server (Nimbus JOSE+JWT), RS256 | Emisión y validación del JWT; se incorpora con la primera operación que lo usa. | ADR-0015. |
+| Pruebas de persistencia | Testcontainers con PostgreSQL 17: contenedor nuevo por ejecución en puerto aleatorio | Base vacía en cada `./mvnw test`; requiere Docker. | ADR-0018. |
+| Persistencia | PostgreSQL 17 con Spring Data JPA y Flyway; driver y Flyway gestionados por el parent de Spring Boot | Todos los entornos. En local, instancia propia vía `REGISTRATION_DB_URL`, `REGISTRATION_DB_USERNAME` y `REGISTRATION_DB_PASSWORD`. | ADR-0017, ADR-0018. |
+| Token de registro | Spring Security OAuth2 Resource Server (Nimbus JOSE+JWT), RS256 | Emisión y validación del JWT; incorporado con `identifyApplicant` (2026-10-21). | ADR-0015. |
 | Archivos | Volumen de sistema de archivos bajo `/repository` | Archivos de cualquier tipo admitido por sus especificaciones en `{year}/{month}/{day}/{rfc}/{uuid}.{extension}`; nombre original y referencia en base de datos. | ADR-0010. |
 | Build | Maven | Generación, compilación, pruebas y ejecución del backend mediante el wrapper `backend/mvnw`. | ADR-0006. |
 | Contrato | OpenAPI 3.0.3 | `specs/api/supplier-registration-openapi.yaml`, READY y habilitado para generación ([estado](../api/README.md)). | ADR-0002, ADR-0008, ADR-0009. |
 | Generación web | openapi-generator-maven-plugin 7.22.0, generador `spring` | Interfaces y DTO web dentro de `adapter.in.web.generated`. | ADR-0006, ADR-0008. |
-| Opciones de generación | `interfaceOnly`, `useSpringBoot4`, `useJackson3`, `useTags`, `useBeanValidation` | Configuración declarada en Maven; deberá verificarse contra el contrato de registro. | ADR-0006, ADR-0008. |
+| Opciones de generación | `interfaceOnly`, `useSpringBoot4`, `useJackson3`, `useTags`, `useBeanValidation` | Configuración declarada en Maven. Una plantilla propia en `backend/src/main/resources/openapi-templates` omite `@NotNull` en propiedades `nullable` (2026-10-21); la presencia de la propiedad se valida aparte (ADR-0009). | ADR-0006, ADR-0008. |
 | Documentación API | springdoc-openapi-starter-webmvc-ui 3.1.1 | Swagger UI cargando el mismo YAML que genera interfaces y DTO. | ADR-0008. |
 | Pruebas backend | JUnit y starters de prueba de Spring Boot declarados en Maven | Dominio sin Spring; aplicación con dobles de puertos; adaptadores con infraestructura correspondiente. Las versiones efectivas proceden de Maven. | ADR-0001, ADR-0006. |
 | Fuente de tiempo | `java.time.Clock`, UTC | Hora controlable en aplicación y pruebas; instantes recibidos por el dominio. | ADR-0001; arquitectura. |
@@ -70,15 +70,16 @@ y quedan fijadas en `frontend/package-lock.json`, que es la fuente para consulta
 | Contexto de identificación | JWT firmado con Spring Security OAuth2 Resource Server y contexto JPA por jti en la misma BD; varias sesiones por RFC; ADR-0015. |
 | Archivos | Servicio interno general, volumen y metadatos en la misma BD; ADR-0010. |
 
-## 4. Conservación en pruebas
+## 4. Conservación de datos
 
-H2 en memoria pierde expedientes, aceptaciones, evidencias, metadatos y referencias de archivos
-al reiniciar el backend. Los archivos permanecen mientras se conserve el volumen, pero la
-aplicación no puede recuperarlos mediante sus operaciones normales sin las referencias.
-Esta limitación está aceptada para pruebas en ADR-0005 y ADR-0010.
+Expedientes, aceptaciones, evidencias, contextos y metadatos de archivos se conservan en
+PostgreSQL y sobreviven a los reinicios del backend (ADR-0017). Cada ejecución de pruebas usa
+una base nueva y vacía que se destruye al terminar (ADR-0018). Los archivos permanecen mientras
+se conserve el volumen.
 
-Salir de la interfaz y reanudar mientras la instancia sigue activa conserva los datos ya
-guardados y el archivo asociado inmediatamente al cargar, incluso sin Siguiente. La limpieza diaria de ADR-0010 elimina únicamente temporales registrados no asociados con más de 24 horas. No recupera referencias ni borra archivos sin metadatos tras reiniciar.
+Salir de la interfaz y reanudar conserva los datos ya guardados y el archivo asociado
+inmediatamente al cargar, incluso sin Siguiente. La limpieza diaria de ADR-0010 elimina
+únicamente temporales registrados no asociados con más de 24 horas y no borra archivos sin metadatos.
 
 ## 5. Preparación y comandos
 
@@ -88,8 +89,8 @@ Los comandos de Python se ejecutan desde la raíz del repositorio y los de Maven
 | :--- | :--- | :--- |
 | Validar especificaciones y contrato | `python3 tools/spec_lint.py` | Python 3 y PyYAML disponibles; `--require-ready` exige además el contrato habilitado. |
 | Generar interfaces y DTO | `./mvnw clean generate-sources` | YAML autoritativo existente y Maven alineado con su ruta y paquetes. |
-| Compilar y ejecutar pruebas | `./mvnw test` | Código y pruebas implementados, contrato y generación configurados. |
-| Ejecutar el backend | `./mvnw spring-boot:run` | Aplicación implementada, configuración de H2 y volumen preparada. |
+| Compilar y ejecutar pruebas | `./mvnw test` | Docker disponible para Testcontainers (ADR-0018). |
+| Ejecutar el backend | `./mvnw spring-boot:run` | PostgreSQL 17 accesible con las variables `REGISTRATION_DB_*` y volumen preparado. |
 
 Maven usa mx.com.fredkorlabs:supplier-registration, paquete mx.com.fredkorlabs.registration
 y el contrato del registro; la generación y la compilación se comprobaron el 2026-10-20.

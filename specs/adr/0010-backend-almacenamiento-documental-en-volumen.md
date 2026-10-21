@@ -112,7 +112,7 @@ La autorización y la garantía de cantidad se sostienen también ante operacion
   Si falta contenido por una ejecución previa interrumpida, completar la retirada de metadatos.
 - El proceso es reintentable y registra fallos. La interrupción entre disco y BD no deja una
   referencia de negocio a contenido borrado, porque el archivo ya estaba desasociado.
-- No borrar archivos sin metadatos tras reiniciar H2 ni reconstruir referencias desde rutas.
+- No borrar archivos sin metadatos (p. ej., tras una compensación fallida) ni reconstruir referencias desde rutas.
   Los residuos de carga con metadatos que acrediten ausencia de asociación siguen la misma regla.
 
 ### Validación por tipo de documento
@@ -146,7 +146,7 @@ Estas restricciones no se trasladan automáticamente a documentos futuros.
   recuperación al regresar/reanudar; carga sin completar sección; eliminación exitosa y fallida,
   progreso local y persistido, máximo de archivos y concurrencia. Verificar límites de 24 horas,
   exclusión de asociados y reintentos de limpieza con reloj fijo.
-- H2 en memoria pierde metadatos al reiniciar (ADR-0005). Los archivos sin metadatos recuperables
-  quedan fuera de la limpieza diaria: no puede probarse que no estaban asociados. No se deduce
+- Los metadatos se conservan en PostgreSQL (ADR-0017, ADR-0018). Los archivos sin metadatos
+  recuperables quedan fuera de la limpieza diaria: no puede probarse que no estaban asociados. No se deduce
   su condición desde rutas, no se reconstruyen referencias ni se borran automáticamente por esa pérdida.
 - La persistencia duradera de otros entornos se rige por ADR-0017. El esquema físico y la compensación de fallos de carga quedan definidos (2026-10-20). La eliminación lógica se resuelve con rollback de BD y el borrado físico es reintentable. No se incorpora una papelera de usuario.

@@ -205,7 +205,7 @@ El proceso diario consulta metadatos no asociados y verifica ausencia de referen
 antes de borrar físicamente; conserva metadatos ante fallos para reintentar según
 [ADR-0010](../adr/0010-backend-almacenamiento-documental-en-volumen.md).
 La carga sigue necesitando coordinar volumen y BD; una compensación fallida se registra para
-reconciliación. Catálogos, expediente y metadatos comparten BD. H2 mantiene las limitaciones de ADR-0005.
+reconciliación. Catálogos, expediente y metadatos comparten la BD PostgreSQL (ADR-0017, ADR-0018).
 
 ## 8. Diagrama de secuencia: guardar Datos Generales
 
@@ -291,7 +291,7 @@ sequenceDiagram
   INTERNAL_ERROR según ADR-0007, sin avanzar. La tabla de errores completa está en OpenAPI.
 
 El [diseño de persistencia del registro](registration-database-design.md), aprobado el
-2026-10-20, define tablas, tipos SQL de H2, concurrencia y compensación, complementando el
+2026-10-20, define tablas, tipos SQL de PostgreSQL, concurrencia y compensación, complementando el
 esquema de catálogos aprobado. No representa migraciones ejecutadas.
 
 ## 9. Estructura prevista
