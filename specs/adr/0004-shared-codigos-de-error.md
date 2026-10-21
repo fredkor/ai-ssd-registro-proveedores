@@ -24,15 +24,22 @@ El código y HTTP constituyen el contrato; `title`, `detail` y los errores por c
 | 403 | `REGISTRATION_ACCESS_DENIED` | La identificación aceptada no corresponde al RFC del expediente solicitado. | INV-12; US05 CA-004. |
 | 404 | `REGISTRATION_NOT_FOUND` | Una operación requiere un expediente que no existe. | Casos de uso sobre expediente. |
 | 404 | `FISCAL_DOCUMENT_NOT_FOUND` | Se solicita descargar o eliminar una cédula que no está asociada al expediente. | RF-REG-05; US10. |
+| 404 | `RESOURCE_NOT_FOUND` | La ruta solicitada no corresponde a ninguna operación de la API. | Protocolo HTTP; ADR-0019. |
+| 405 | `METHOD_NOT_ALLOWED` | El método HTTP no está definido para la ruta; la respuesta incluye la cabecera `Allow`. | Protocolo HTTP; ADR-0019. |
+| 406 | `NOT_ACCEPTABLE` | La cabecera `Accept` no admite ninguna representación que produzca la operación. | Protocolo HTTP; ADR-0019. |
 | 409 | `DUPLICATE_RFC` | Se intenta crear otro expediente para un RFC existente, incluso ante concurrencia. | INV-09, INV-10. |
 | 409 | `INVALID_STATE_TRANSITION` | Estado incompatible con la operación, incluida reanudación de REGISTERED o acceso a CUCoP sin Datos Generales guardados. | INV-13, INV-30. |
 | 409 | `FISCAL_DOCUMENT_ALREADY_EXISTS` | Se intenta asociar otra cédula cuando ya existe una. | INV-27. |
 | 413 | `DOCUMENT_TOO_LARGE` | El archivo supera el máximo permitido de 5 MiB (5,242,880 bytes). | INV-27. |
 | 415 | `DOCUMENT_FORMAT_NOT_SUPPORTED` | La extensión no es .pdf (sin distinguir mayúsculas/minúsculas) o el contenido no corresponde a PDF; el MIME declarado no basta. | INV-27. |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | El `Content-Type` de la petición no es el que acepta la operación (p. ej., no es JSON). No aplica al formato de archivos cargados. | Protocolo HTTP; ADR-0019. |
 | 422 | `SIGNATURE_VERIFICATION_FAILED` | El sello recibido no se verifica con el contenido y certificado del solicitante. | INV-04. |
 | 422 | `REGISTRATION_INCOMPLETE` | Finalización futura con secciones pendientes, inválidas o inconsistentes. | INV-38; fuera de la primera etapa. |
 | 500 | `INTERNAL_ERROR` | Fallo técnico inesperado de consulta, persistencia, verificación o archivo que impide completar la operación. | ADR-0007. |
 
+- RESOURCE_NOT_FOUND, METHOD_NOT_ALLOWED, NOT_ACCEPTABLE y UNSUPPORTED_MEDIA_TYPE son errores de
+  protocolo comunes a toda la API (2026-10-21): no se declaran en cada operación del contrato y
+  no sustituyen a los códigos de negocio (REGISTRATION_NOT_FOUND, DOCUMENT_FORMAT_NOT_SUPPORTED).
 - La ausencia o formato inválido de datos necesarios para verificar una firma corresponde
   a VALIDATION_ERROR. La ausencia del atributo de sujeto 2.5.4.45, un primer segmento vacío o de longitud distinta de 12 o 13 también corresponde a VALIDATION_ERROR. La ausencia de atributos de nombre con OID 2.5.4.3, 2.5.4.41 o 2.5.4.10, o el valor vacío del primero coincidente en el orden del certificado, también produce VALIDATION_ERROR. Una discrepancia entre el RFC recibido y ese primer segmento separado por `/`, o una verificación criptográfica negativa, corresponde a SIGNATURE_VERIFICATION_FAILED;
   una excepción técnica que impide verificar corresponde a INTERNAL_ERROR. Todos impiden continuar.

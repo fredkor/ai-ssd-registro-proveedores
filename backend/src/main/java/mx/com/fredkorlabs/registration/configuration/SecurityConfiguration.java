@@ -7,7 +7,6 @@ import mx.com.fredkorlabs.registration.adapter.in.web.RegistrationTokenAuthentic
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationContextPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
@@ -50,9 +49,9 @@ public class SecurityConfiguration {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(requests -> requests
-                .requestMatchers(HttpMethod.GET, "/api/v1/registration-notices/current").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/registration-notice-acceptances").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/applicant-identifications").permitAll()
+                // Any method, so an unsupported one answers 405 instead of 401.
+                .requestMatchers("/api/v1/registration-notices/current", "/api/v1/registration-notice-acceptances",
+                    "/api/v1/applicant-identifications").permitAll()
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
                     "/supplier-registration-openapi.yaml", "/error").permitAll()
                 .anyRequest().authenticated())

@@ -10,12 +10,23 @@ import mx.com.fredkorlabs.registration.domain.exception.InvalidCertificateIdenti
 import mx.com.fredkorlabs.registration.domain.exception.InvalidNoticeVersionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.exc.StreamReadException;
 import tools.jackson.databind.exc.InvalidFormatException;
@@ -37,7 +48,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleInvalidArgument(MethodArgumentNotValidException ex,
                                                                HttpServletRequest request) {
         List<FieldProblem> errors = ex.getBindingResult().getFieldErrors().stream()
-            .map(error -> new FieldProblem(JsonPointers.fromPropertyPath(error.getField()),
+            .map(error -> FieldProblem.atPointer(JsonPointers.fromPropertyPath(error.getField()),
                 Objects.requireNonNullElse(error.getDefaultMessage(), "is invalid")))
             .toList();
         return validationError("Request body does not match the contract", errors, request);
@@ -47,7 +58,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleMissingProperty(MissingRequestPropertyException ex,
                                                                HttpServletRequest request) {
         return validationError("Request body does not match the contract",
-            List.of(new FieldProblem(ex.getPointer(), "is required")), request);
+            List.of(FieldProblem.atPointer(ex.getPointer(), "is required")), request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -65,7 +76,7 @@ public class GlobalExceptionHandler {
                 ? reference.getPropertyName() : String.valueOf(reference.getIndex()))
             .toList());
         return validationError("Request body does not match the contract",
-            List.of(new FieldProblem(pointer, reasonOf(cause))), request);
+            List.of(FieldProblem.atPointer(pointer, reasonOf(cause))), request);
     }
 
     @ExceptionHandler({InvalidNoticeVersionException.class, InvalidIdentificationDataException.class,
@@ -79,6 +90,79 @@ public class GlobalExceptionHandler {
                                                                            HttpServletRequest request) {
         return ProblemResponses.response(ErrorCode.SIGNATURE_VERIFICATION_FAILED, ex.getMessage(), List.of(),
             request.getRequestURI());
+    }
+
+    @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
+    public ResponseEntity<ProblemDetail> handleUnknownRoute(Exception ex, HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.RESOURCE_NOT_FOUND, "No operation exists at this path",
+            List.of(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ProblemDetail> handleMethodNotAllowed(HttpRequestMethodNotSupportedException ex,
+                                                                HttpServletRequest request) {
+        ResponseEntity<ProblemDetail> response = ProblemResponses.response(ErrorCode.METHOD_NOT_ALLOWED,
+            "HTTP method is not supported for this path", List.of(), request.getRequestURI());
+        HttpHeaders headers = new HttpHeaders();
+        headers.putAll(response.getHeaders());
+        if (ex.getSupportedHttpMethods() != null) {
+            headers.setAllow(ex.getSupportedHttpMethods());
+        }
+        return new ResponseEntity<>(response.getBody(), headers, response.getStatusCode());
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<ProblemDetail> handleNotAcceptable(HttpMediaTypeNotAcceptableException ex,
+                                                             HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.NOT_ACCEPTABLE,
+            "Accept header does not allow any representation produced by this operation", List.of(),
+            request.getRequestURI());
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ProblemDetail> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException ex,
+                                                                    HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.UNSUPPORTED_MEDIA_TYPE,
+            "Content-Type is not supported by this operation", List.of(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ProblemDetail> handleParameterType(MethodArgumentTypeMismatchException ex,
+                                                             HttpServletRequest request) {
+        return validationError("Request parameter is invalid",
+            List.of(FieldProblem.atParameter(ex.getName(), "has an invalid format")), request);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ProblemDetail> handleMissingParameter(MissingServletRequestParameterException ex,
+                                                                HttpServletRequest request) {
+        return validationError("Request parameter is required",
+            List.of(FieldProblem.atParameter(ex.getParameterName(), "is required")), request);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ProblemDetail> handleMissingPart(MissingServletRequestPartException ex,
+                                                           HttpServletRequest request) {
+        return validationError("Request part is required",
+            List.of(FieldProblem.atParameter(ex.getRequestPartName(), "is required")), request);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ProblemDetail> handleParameterValidation(HandlerMethodValidationException ex,
+                                                                   HttpServletRequest request) {
+        List<FieldProblem> errors = ex.getParameterValidationResults().stream()
+            .flatMap(result -> result.getResolvableErrors().stream().map(error -> FieldProblem.atParameter(
+                Objects.requireNonNullElse(result.getMethodParameter().getParameterName(), "parameter"),
+                Objects.requireNonNullElse(error.getDefaultMessage(), "is invalid"))))
+            .toList();
+        return validationError("Request parameter is invalid", errors, request);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ProblemDetail> handleUploadTooLarge(MaxUploadSizeExceededException ex,
+                                                              HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.DOCUMENT_TOO_LARGE, "Document exceeds the maximum size",
+            List.of(), request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)

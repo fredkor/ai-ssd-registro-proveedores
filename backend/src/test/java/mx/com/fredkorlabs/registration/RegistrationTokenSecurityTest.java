@@ -82,9 +82,12 @@ class RegistrationTokenSecurityTest {
 
     @Test
     void US01_CA017_issuedToken_authenticatesProtectedRoute() throws Exception {
-        int status = callProtected(issuedToken()).andReturn().getResponse().getStatus();
-
-        assertNotEquals(401, status);
+        // The route has no controller yet: once authenticated it answers 404 instead of 401.
+        callProtected(issuedToken())
+            .andExpect(status().isNotFound())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
+            .andExpect(jsonPath("$.type").value("urn:fredkorlabs:registration:problem:resource-not-found"));
     }
 
     @Test

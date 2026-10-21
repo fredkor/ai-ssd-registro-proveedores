@@ -575,11 +575,15 @@ components:
       - REGISTRATION_ACCESS_DENIED
       - REGISTRATION_NOT_FOUND
       - FISCAL_DOCUMENT_NOT_FOUND
+      - RESOURCE_NOT_FOUND
+      - METHOD_NOT_ALLOWED
+      - NOT_ACCEPTABLE
       - DUPLICATE_RFC
       - INVALID_STATE_TRANSITION
       - FISCAL_DOCUMENT_ALREADY_EXISTS
       - DOCUMENT_TOO_LARGE
       - DOCUMENT_FORMAT_NOT_SUPPORTED
+      - UNSUPPORTED_MEDIA_TYPE
       - SIGNATURE_VERIFICATION_FAILED
       - REGISTRATION_INCOMPLETE
       - INTERNAL_ERROR
@@ -624,17 +628,22 @@ components:
       additionalProperties: false
     ProblemFieldErrorResponse:
       type: object
+      description: Lleva exactamente uno de pointer (campo del cuerpo) o parameter (parámetro de ruta, query o
+        parte multipart), además de detail (ADR-0019).
       properties:
         pointer:
           type: string
           description: JSON Pointer (RFC 6901) al lugar del cuerpo de la petición que falló.
           example: /signatureResult/cadenaOriginal
+        parameter:
+          type: string
+          description: Nombre del parámetro de ruta, query o parte multipart que falló.
+          example: registrationId
         detail:
           type: string
           description: Descripción breve en inglés; no repite el valor recibido.
           example: must be one of [Temporal]
       required:
-      - pointer
       - detail
       additionalProperties: false
     RegistrationNoticeResponse:

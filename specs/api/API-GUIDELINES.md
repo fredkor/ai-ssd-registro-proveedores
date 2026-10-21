@@ -33,7 +33,10 @@
 
 - Se utiliza Problem Details (RFC 9457, `application/problem+json`, esquema `ProblemResponse`)
   conforme a ADR-0019, con los códigos de ADR-0004 en `code` y el error genérico de ADR-0007.
-- Los errores de entrada indican en `errors[]` el JSON Pointer del campo que falló.
+- Los errores de entrada indican en `errors[]` el JSON Pointer del campo del cuerpo (`pointer`) o el
+  nombre del parámetro de ruta o query (`parameter`) que falló.
+- Ruta inexistente (404), método no permitido (405), `Accept` no soportado (406) y `Content-Type`
+  no soportado (415) son errores de protocolo comunes a toda la API (ADR-0004); no se declaran por operación.
 - Cada operación declara sus categorías aplicables. HTTP y code son contractuales; los
   mensajes informativos en inglés no requieren coincidencia literal salvo especificación expresa.
 - No se exponen trazas, rutas de volumen ni contenido completo de firma o certificado en errores.

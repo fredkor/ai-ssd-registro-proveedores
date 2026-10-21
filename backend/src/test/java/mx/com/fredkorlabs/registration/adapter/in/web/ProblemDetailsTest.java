@@ -1,5 +1,6 @@
 package mx.com.fredkorlabs.registration.adapter.in.web;
 
+import jakarta.servlet.RequestDispatcher;
 import mx.com.fredkorlabs.registration.SupplierRegistrationApplication;
 import mx.com.fredkorlabs.registration.application.port.in.IdentifyApplicantUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.SignatureVerificationFailedException;
@@ -146,5 +147,48 @@ class ProblemDetailsTest {
             "/api/v1/registration-notice-acceptances");
         result.andExpect(jsonPath("$.errors[0].pointer").value("/version"))
             .andExpect(jsonPath("$.errors[0].detail").value("must be one of [1.0]"));
+    }
+
+    @Test
+    void ADR0019_unknownRouteWithoutToken_isRejectedBeforeRevealingIt() throws Exception {
+        assertProblem(mockMvc.perform(get("/api/v1/registration-notices/unknown")), 401,
+            "REGISTRATION_TOKEN_INVALID", "registration-token-invalid", "Invalid registration token",
+            "/api/v1/registration-notices/unknown");
+    }
+
+    @Test
+    void ADR0019_unsupportedMethod_isMethodNotAllowedWithAllowHeader() throws Exception {
+        ResultActions result = mockMvc.perform(get("/api/v1/registration-notice-acceptances"));
+
+        assertProblem(result, 405, "METHOD_NOT_ALLOWED", "method-not-allowed", "Method not allowed",
+            "/api/v1/registration-notice-acceptances");
+        result.andExpect(header().string("Allow", "POST"));
+    }
+
+    @Test
+    void ADR0019_nonJsonContentType_isUnsupportedMediaType() throws Exception {
+        assertProblem(mockMvc.perform(post("/api/v1/registration-notice-acceptances")
+                .contentType(MediaType.TEXT_PLAIN).content("version=1.0")),
+            415, "UNSUPPORTED_MEDIA_TYPE", "unsupported-media-type", "Unsupported media type",
+            "/api/v1/registration-notice-acceptances");
+    }
+
+    @Test
+    void ADR0019_unsupportedAccept_isNotAcceptable() throws Exception {
+        mockMvc.perform(get("/api/v1/registration-notices/current").accept(MediaType.APPLICATION_XML))
+            .andExpect(status().isNotAcceptable())
+            .andExpect(jsonPath("$.code").value("NOT_ACCEPTABLE"));
+    }
+
+    @Test
+    void ADR0007_failureOutsideControllers_isGenericProblem() throws Exception {
+        ResultActions result = mockMvc.perform(get("/error")
+            .requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 500)
+            .requestAttr(RequestDispatcher.ERROR_REQUEST_URI, "/api/v1/supplier-registrations/existence")
+            .requestAttr(RequestDispatcher.ERROR_EXCEPTION, new IllegalStateException("db down")));
+
+        assertProblem(result, 500, "INTERNAL_ERROR", "internal-error", "Internal error",
+            "/api/v1/supplier-registrations/existence");
+        result.andExpect(jsonPath("$.detail").value("Unexpected error"));
     }
 }
