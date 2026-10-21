@@ -104,7 +104,7 @@
 							<goal>generate</goal>
 						</goals>
 						<configuration>
-							<inputSpec>${project.basedir}/specs/api/supplier-registration-openapi.yaml</inputSpec>
+							<inputSpec>${project.basedir}/../specs/api/supplier-registration-openapi.yaml</inputSpec>
 							<generatorName>spring</generatorName>
 							<apiPackage>mx.com.fredkorlabs.registration.adapter.in.web.generated</apiPackage>
 							<modelPackage>mx.com.fredkorlabs.registration.adapter.in.web.generated.model</modelPackage>
