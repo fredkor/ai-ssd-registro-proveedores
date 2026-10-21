@@ -3,7 +3,7 @@
 - **Estado:** Aceptado
 - **Ámbito:** Compartido
 - **Fecha:** 2026-09-26
-- **Actualización:** 2026-10-21
+- **Actualización:** 2026-10-21 (representación HTTP en ADR-0019)
 - **Specs relacionadas:** RF-REG-01 a RF-REG-08; US01 a US11; INV-01 a INV-39; ADR-0007.
 
 ## Contexto
@@ -13,8 +13,9 @@ acceso denegado, conflictos y fallos técnicos sin recibir detalles de infraestr
 
 ## Decisión
 
-Las respuestas de error del backend usarán `ErrorResponse { code, message, details }`.
-El código y HTTP constituyen el contrato; mensajes y detalles informativos estarán en inglés.
+Las respuestas de error del backend usan Problem Details (RFC 9457) según
+[ADR-0019](0019-shared-problem-details-rfc-9457.md), con el código de esta tabla en la extensión `code`.
+El código y HTTP constituyen el contrato; `title`, `detail` y los errores por campo están en inglés.
 
 | HTTP | Código | Situación | Reglas o fuente |
 | :--- | :--- | :--- | :--- |

@@ -84,7 +84,7 @@ del mismo expediente se resuelve con el bloqueo pesimista del
   Sin sesión HTTP ni CSRF: la API es stateless y no usa cookies.
 - La validación del contexto en BD se añade como validador del token o filtro posterior a la
   autenticación; un token sin contexto vigente se trata como no autenticado.
-- Los rechazos de autenticación responden 401 con `ErrorResponse` REGISTRATION_TOKEN_INVALID y
+- Los rechazos de autenticación responden 401 con Problem Details (ADR-0019) REGISTRATION_TOKEN_INVALID y
   cabecera `WWW-Authenticate: Bearer`, no con el formato por defecto de Spring Security.
   La pertenencia del expediente sigue siendo comprobación de aplicación (403).
 - Las claves son un par RSA propio del backend, separado de la e.firma del solicitante. Las
@@ -163,7 +163,7 @@ Las referencias de aceptación usadas antes de identificar correlacionan el fluj
 - Probar firma alterada, algoritmo no permitido, claims ausentes, emisor/audiencia incorrectos,
   expiración, `jti` sin contexto y RFC del contexto distinto de `sub`; la decodificación del
   frontend no autoriza acceso.
-- Probar que los endpoints públicos responden sin token y que los rechazos usan `ErrorResponse`.
+- Probar que los endpoints públicos responden sin token y que los rechazos usan Problem Details (ADR-0019).
 - Una sesión nueva no crea por sí misma un expediente ni cambia su estado o progreso.
 - Probar rollback si falla la emisión/persistencia y rechazo de un JWT no vencido sin
   contexto en la base de datos.

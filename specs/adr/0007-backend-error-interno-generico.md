@@ -3,7 +3,7 @@
 - **Estado:** Aceptado
 - **Ámbito:** Backend
 - **Fecha:** 2026-09-26
-- **Actualización:** 2026-10-18
+- **Actualización:** 2026-10-21
 - **Specs relacionadas:** ADR-0004; `architecture/architecture.md`; borrador del contrato API de registro.
 
 ## Contexto
@@ -13,8 +13,8 @@ formato común de errores del registro.
 
 ## Decisión
 
-- Las excepciones inesperadas del backend responden HTTP 500 con
-  `ErrorResponse { code: INTERNAL_ERROR, message: "Unexpected error", details: [] }`.
+- Las excepciones inesperadas del backend responden HTTP 500 con Problem Details (ADR-0019):
+  `code: INTERNAL_ERROR`, `title: "Internal error"`, `detail: "Unexpected error"` y `errors: []`.
 - La respuesta no incluye mensajes técnicos, trazas, rutas del volumen, credenciales ni
   contenido completo de firma o certificado.
 - Se registra el fallo con nivel ERROR para diagnóstico, sin volcar llave privada, contraseña

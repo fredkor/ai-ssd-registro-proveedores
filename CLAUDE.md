@@ -40,13 +40,14 @@ Leer los documentos aplicables antes de modificar o implementar una funcionalida
       Java puro: sin `@Service`, `@Component`, `@Autowired` ni `@Transactional`.
     - `configuration`: registra servicios y decoradores mediante `@Bean` que exponen el puerto de entrada.
     - `adapter.in.transaction`: decoradores `@Transactional` de los casos de uso que requieren transacción.
-    - `adapter.in.web`: solo traduce HTTP <-> Command/Result y excepciones -> ErrorResponse.
+    - `adapter.in.web`: solo traduce HTTP <-> Command/Result y excepciones -> Problem Details (ADR-0019).
     - `adapter.out.persistence`: implementa los puertos con JPA según
       `specs/architecture/registration-database-design.md`.
 4. **El dominio nunca sale de `application`:** el controlador recibe Results de `application.port.in`
    (p. ej. `GetRegistrationNoticeResult`), nunca `SupplierRegistration` ni otros tipos de dominio.
 5. **Enums** idénticos a `specs/domain/` (mismos valores, mismo orden).
-6. **Errores** exactamente como ADR-0004 (HTTP + `code`).
+6. **Errores** como Problem Details de ADR-0019 (`application/problem+json`), con HTTP y `code`
+   exactamente como ADR-0004 y el JSON Pointer de cada campo inválido en `errors[]`.
 7. **Pruebas:** al menos una por criterio de aceptación verificable en backend, con el nombre
    `USxx_CAyyy_descriptionInEnglish` (ej. `US03_CA003_acceptNotice_persistsVersionAndBackendTime`).
    Las reglas de dominio se prueban con JUnit puro, sin Spring.

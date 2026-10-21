@@ -232,16 +232,16 @@ sequenceDiagram
     Context-->>Service: Identidad aceptada o rechazo
     alt JWT invalido, vencido o sin contexto
         Service-->>Web: REGISTRATION_TOKEN_INVALID
-        Web-->>Frontend: 401 ErrorResponse
+        Web-->>Frontend: 401 ProblemResponse
     else Sesion vigente
         Service->>Persistence: Recuperar expediente por registrationId
         Persistence-->>Service: Expediente o ausencia
         alt Expediente inexistente
             Service-->>Web: REGISTRATION_NOT_FOUND
-            Web-->>Frontend: 404 ErrorResponse
+            Web-->>Frontend: 404 ProblemResponse
         else Expediente de otro RFC
             Service-->>Web: REGISTRATION_ACCESS_DENIED
-            Web-->>Frontend: 403 ErrorResponse
+            Web-->>Frontend: 403 ProblemResponse
         else Expediente propio
             Service->>Service: Iniciar unidad transaccional de guardado
             Service->>Catalogs: Resolver selecciones y relaciones
@@ -252,18 +252,18 @@ sequenceDiagram
             alt Estado incompatible
                 Registration-->>Service: Transicion rechazada
                 Service-->>Web: INVALID_STATE_TRANSITION
-                Web-->>Frontend: 409 ErrorResponse
+                Web-->>Frontend: 409 ProblemResponse
             else Campos, telefonos o cedula invalidos
                 Registration-->>Service: Reglas incumplidas
                 Service-->>Web: VALIDATION_ERROR
-                Web-->>Frontend: 400 ErrorResponse
+                Web-->>Frontend: 400 ProblemResponse
             else Seccion valida
                 Registration->>Registration: Sustituir GeneralData y marcar COMPLETED
                 Service->>Persistence: Guardar datos y progreso conjuntamente
                 alt Fallo de persistencia o commit
                     Persistence-->>Service: Fallo y rollback
                     Service-->>Web: INTERNAL_ERROR
-                    Web-->>Frontend: 500 ErrorResponse
+                    Web-->>Frontend: 500 ProblemResponse
                 else Commit exitoso
                     Persistence-->>Service: Guardado confirmado
                     Service-->>Web: Resultado de aplicacion

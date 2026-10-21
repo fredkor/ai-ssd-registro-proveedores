@@ -31,7 +31,9 @@
 
 ## Errores
 
-- Se utiliza `ErrorResponse { code, message, details }` conforme a ADR-0004 y ADR-0007.
+- Se utiliza Problem Details (RFC 9457, `application/problem+json`, esquema `ProblemResponse`)
+  conforme a ADR-0019, con los códigos de ADR-0004 en `code` y el error genérico de ADR-0007.
+- Los errores de entrada indican en `errors[]` el JSON Pointer del campo que falló.
 - Cada operación declara sus categorías aplicables. HTTP y code son contractuales; los
   mensajes informativos en inglés no requieren coincidencia literal salvo especificación expresa.
 - No se exponen trazas, rutas de volumen ni contenido completo de firma o certificado en errores.
