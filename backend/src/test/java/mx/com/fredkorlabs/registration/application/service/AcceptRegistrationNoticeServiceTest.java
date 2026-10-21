@@ -65,8 +65,11 @@ class AcceptRegistrationNoticeServiceTest {
 
     @Test
     void US03_CA004_persistenceFailure_propagatesWithoutAcceptance() {
-        NoticeAcceptancePersistencePort failing = acceptance -> {
-            throw new IllegalStateException("Database unavailable");
+        NoticeAcceptancePersistencePort failing = new RecordingPersistence() {
+            @Override
+            public NoticeAcceptanceReference save(NoticeAcceptance acceptance) {
+                throw new IllegalStateException("Database unavailable");
+            }
         };
         AcceptRegistrationNoticeService failingService =
             new AcceptRegistrationNoticeService(failing, Clock.fixed(NOW, ZoneOffset.UTC));
@@ -91,13 +94,18 @@ class AcceptRegistrationNoticeServiceTest {
         assertTrue(persistence.saved.isEmpty());
     }
 
-    private static final class RecordingPersistence implements NoticeAcceptancePersistencePort {
+    private static class RecordingPersistence implements NoticeAcceptancePersistencePort {
         private final List<NoticeAcceptance> saved = new ArrayList<>();
 
         @Override
         public NoticeAcceptanceReference save(NoticeAcceptance acceptance) {
             saved.add(acceptance);
             return new NoticeAcceptanceReference("ref-" + saved.size());
+        }
+
+        @Override
+        public boolean isAvailableForIdentification(NoticeAcceptanceReference reference) {
+            return false;
         }
     }
 }

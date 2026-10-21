@@ -1,5 +1,6 @@
 package mx.com.fredkorlabs.registration.configuration;
 
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.core.JacksonException;
@@ -11,9 +12,12 @@ import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.JacksonModule;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.cfg.CoercionAction;
+import tools.jackson.databind.cfg.CoercionInputShape;
 import tools.jackson.databind.deser.ValueDeserializerModifier;
 import tools.jackson.databind.deser.std.DelegatingDeserializer;
 import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.type.LogicalType;
 
 @Configuration
 public class JacksonConfiguration {
@@ -30,6 +34,26 @@ public class JacksonConfiguration {
                 return new StringOnlyEnumDeserializer(deserializer);
             }
         });
+    }
+
+    // Request scalars keep their contract type: no text <-> number/boolean or number -> boolean conversions.
+    @Bean
+    public JsonMapperBuilderCustomizer strictScalarCoercion() {
+        return builder -> builder
+            .withCoercionConfig(LogicalType.Boolean, config -> config
+                .setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
+                .setCoercion(CoercionInputShape.Float, CoercionAction.Fail))
+            .withCoercionConfig(LogicalType.Integer, config -> config
+                .setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail))
+            .withCoercionConfig(LogicalType.Float, config -> config
+                .setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail))
+            .withCoercionConfig(LogicalType.Textual, config -> config
+                .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
+                .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
+                .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail));
     }
 
     private static final class StringOnlyEnumDeserializer extends DelegatingDeserializer {
