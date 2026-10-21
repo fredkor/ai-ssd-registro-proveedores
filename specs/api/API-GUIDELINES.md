@@ -45,8 +45,8 @@
 - El acceso al expediente se vincula al RFC de una identificación aceptada. Un UUID o RFC
   enviados libremente no sustituyen esa comprobación.
 - Usar JWT de registro firmado en Authorization: Bearer, emitido tras identificar conforme
-  a [ADR-0015](../adr/0015-shared-token-de-registro.md), válido 60 minutos y con invalidación
-  de los tokens anteriores del mismo RFC al abrir nueva sesión. Se valida firma, claims y sesión vigente conforme a ADR-0015.
+  a [ADR-0015](../adr/0015-shared-token-de-registro.md), válido 60 minutos; un RFC puede tener
+  varias sesiones vigentes. Se valida firma, claims y contexto del jti conforme a ADR-0015.
 - Antes de la firma, la aceptación se correlaciona por acceptanceId del backend. Las peticiones
   protegidas usan el token; no autorizan mediante RFC o UUID libres. Los IDs de catálogo son enteros.
 

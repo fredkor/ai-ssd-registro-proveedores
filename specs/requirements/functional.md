@@ -31,8 +31,8 @@ historias, el modelo de dominio y el contrato.
 - Conservar íntegramente cada resultado exitoso aceptado, sin almacenar la llave privada
   ni su contraseña. La firma inicial no finaliza el registro.
 - Habilitar las operaciones posteriores solo con una identificación aceptada. Su acceso
-  dura 60 minutos; una nueva identificación exitosa invalida el acceso anterior del mismo
-  RFC, sin afectar a otros solicitantes. Un intento fallido no invalida el acceso vigente.
+  dura 60 minutos. Un mismo RFC puede mantener varios accesos vigentes: una nueva
+  identificación exitosa no invalida los anteriores. Un intento fallido no afecta los vigentes.
 
 La integración y sus criterios se detallan en [US01](../user-stories/US01-identificacion-mediante-efirma.md).
 La extracción de identidad y verificación se definen en
@@ -118,7 +118,7 @@ La identidad técnica se define en [ADR-0003](../adr/0003-shared-identificador-u
   conservando los interiores. Un obligatorio vacío se rechaza; un opcional vacío queda sin
   valor y no conserva el dato anterior. La identidad y la evidencia de firma no se modifican.
 - Validar obligatoriedad, formatos, límites y pertenencia a los catálogos, incluida su
-  vigencia cuando aplique. No comprobar disponibilidad en red de la página web.
+  vigencia cuando aplique: los registros inactivos no se muestran y se rechazan al guardar. No comprobar disponibilidad en red de la página web.
 - Cargar completos los catálogos de Datos Generales, salvo Subsector, que se consulta según
   el Sector seleccionado. Titularidad Jurídica se filtra según sus relaciones y reglas.
 

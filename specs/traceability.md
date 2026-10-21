@@ -2,9 +2,10 @@
 
 ## 1. Estado y alcance
 
-Esta matriz vincula la primera etapa de registro con el borrador OpenAPI, los casos de uso,
+Esta matriz vincula la primera etapa de registro con el contrato OpenAPI, los casos de uso,
 las invariantes y la verificación prevista. No declara implementación, pruebas existentes
-ni resultados de ejecución. El contrato continúa en borrador hasta revisar su coherencia y alinear y verificar las herramientas de generación.
+ni resultados de ejecución. El contrato está habilitado para implementación (READY) y su
+generación con Maven está verificada; ver [estado del contrato](api/README.md).
 
 Los prefijos US01 a US11 de los archivos corresponden a HU-REG-001 a HU-REG-011 en los
 encabezados. Cada CA se referencia con su número actual de tres dígitos.
@@ -56,15 +57,15 @@ pruebas frontend; no se sustituyen con pruebas de controladores.
 | CA-016 | `identifyApplicant` | US01 CA-016 | Aplicación y web. |
 | CA-017 | `identifyApplicant` | ADR-0015 | Aplicación y web. |
 | CA-018 | Sin petición propia | ADR-0015 | Contexto de token y web. |
-| CA-019 | `identifyApplicant` | ADR-0015 | Contexto de token, aplicación y concurrencia. |
+| CA-019 | `identifyApplicant` | ADR-0015 | Contexto de token y aplicación: dos tokens vigentes del mismo RFC coexisten. |
 | CA-020 | `identifyApplicant` | INV-04; ADR-0016 | Firma y aplicación: extracción del primer RFC, sin alternativa del apoderado. |
 | CA-021 | `identifyApplicant` | INV-01, INV-04; ADR-0004, ADR-0016 | Firma, aplicación y web: VALIDATION_ERROR. |
 | CA-022 | `identifyApplicant` | INV-04; ADR-0004, ADR-0016 | Firma, aplicación y web: SIGNATURE_VERIFICATION_FAILED. |
 | CA-023 | `identifyApplicant` | INV-02; ADR-0016 | Firma y aplicación: primer atributo de nombre según orden del certificado. |
 | CA-024 | `identifyApplicant` | INV-02, INV-06; ADR-0016 | Aplicación y persistencia: nombre de identidad y evidencia original separados. |
 | CA-025 | `identifyApplicant` | INV-02; ADR-0004, ADR-0016 | Firma, aplicación y web: nombre ausente o vacío produce VALIDATION_ERROR. |
-| CA-026 | Operaciones protegidas | ADR-0015; US01 CA-026 | Web y contexto: JWT firmado, claims, expiración, algoritmo y jti vigente; rechazo 401 ante token inválido. |
-| CA-027 | `identifyApplicant` y operaciones protegidas | ADR-0015; US01 CA-027 | Persistencia y aplicación: contexto JPA en la misma BD, jti único vigente por RFC, emisión tras commit, rollback, concurrencia y pérdida de contexto al reiniciar H2. |
+| CA-026 | Operaciones protegidas | ADR-0015; US01 CA-026 | Web y contexto: JWT firmado, claims, expiración, algoritmo y contexto del jti; rechazo 401 ante token inválido. |
+| CA-027 | `identifyApplicant` y operaciones protegidas | ADR-0015; US01 CA-027 | Persistencia y aplicación: contexto JPA por jti en la misma BD, emisión tras commit, rollback y pérdida de contexto al reiniciar H2. |
 
 ### US02 — [US02-verificar-existencia-del-registro](user-stories/US02-verificar-existencia-del-registro.md)
 
@@ -244,8 +245,8 @@ solo demuestra toda la cobertura:
 
 | Tema | Comprobación | Fuente |
 | :--- | :--- | :--- |
-| Token | JWT firmado; validar firma/claims/jti vigente. Solo emitir tras firma aceptada; vencer a los 60 minutos; invalidar tokens anteriores del mismo RFC ante nueva sesión; no afectar otros RFC. | ADR-0015; US01 CA-017 a CA-019. |
-| Acceso | Rechazar token ausente/inválido/vencido/invalidado con 401; expediente ajeno con 403. | ADR-0004, ADR-0015; US05 CA-004. |
+| Token | JWT firmado; validar firma/claims y contexto del jti. Solo emitir tras firma aceptada; vencer a los 60 minutos; varias sesiones vigentes por RFC; no afectar otros RFC. | ADR-0015; US01 CA-017 a CA-019. |
+| Acceso | Rechazar token ausente/inválido/vencido/sin contexto con 401; expediente ajeno con 403. | ADR-0004, ADR-0015; US05 CA-004. |
 | Errores | HTTP y code por operación; INTERNAL_ERROR genérico sin rutas, trazas ni evidencia completa. | ADR-0004, ADR-0007. |
 | Unicidad concurrente | No duplicar expediente por RFC; cada carga mantiene como máximo una cédula asociada al expediente. | INV-09, INV-27; ADR-0010. |
 | Guardado | Datos y progreso se guardan conjuntamente; fallos no completan ni avanzan. Atrás no guarda. | INV-34, INV-35; US06. |

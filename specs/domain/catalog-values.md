@@ -48,6 +48,10 @@ ni sustituye las precisiones físicas del [esquema de catálogos aprobado](../ar
 |8|MX00008|6.- SOCIEDAD EN COMANDITA SIMPLE (S.C.S.)|MX|PERSONA MORAL|
 |9|MX00009|7.- SOCIEDAD COOPERATIVA (COOP)|MX|PERSONA MORAL|
 |10|MX00010|8.- EMPRESA EXTRANJERA|MX|PERSONA MORAL|
+|99|NOT_DEF|RNS.LEGALSTRUCTURE/NOTDEFINED| | |
+
+La fila 99 (`NOT_DEF`, proporcionada por el usuario el 2026-10-21) no tiene ISO Country ni Régimen:
+es la opción general para Extranjero. Su descripción se conserva literal.
 
 <a id="catalog-5"></a>
 
@@ -297,6 +301,13 @@ ni sustituye las precisiones físicas del [esquema de catálogos aprobado](../ar
 
 | Id |Descripción | 
 |:---|:---|
-|1|POTENCIAL LICITANTE|
-|2|LICITANTE|
-|3|PROVEEDOR Y/O CONTRATISTA|
+|1|RECURSOS NATURALES|
+|2|CONSTRUCCIÓN|
+|3|FABRICACIÓN, PRODUCCIÓN O ELABORACIÓN|
+|4|COMERCIO AL POR MAYOR|
+|5|TRANSPORTE|
+|6|COMUNICACIÓN|
+|7|SERVICIOS|
+|8|COMERCIO AL POR MENOR|
+
+Valores sustituidos por el usuario el 2026-10-21: es un catálogo distinto de Estatus del proveedor.

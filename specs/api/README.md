@@ -2,9 +2,9 @@
 
 ## Estado y alcance
 
-[supplier-registration-openapi.yaml](supplier-registration-openapi.yaml) es el borrador
-OpenAPI 3.0.3, versión 0.1.0: 13 operaciones y 35 esquemas. Mantiene
-`x-implementation-ready: false`; todavía no está habilitado para generación o implementación.
+[supplier-registration-openapi.yaml](supplier-registration-openapi.yaml) es el contrato
+OpenAPI 3.0.3, versión 0.1.0: 13 operaciones y 35 esquemas. Declara
+`x-implementation-ready: true`: está habilitado para generación e implementación.
 Cubre la primera etapa, sin captura de Contactos ni finalización.
 
 ## Operaciones
@@ -32,29 +32,25 @@ PUT guarda una sección completa; identidad y progreso se resuelven y validan en
 
 - [Guía API](API-GUIDELINES.md): recursos, formatos, errores y generación.
 - [Integración de firma](signature-integration.md) y [ADR-0016](../adr/0016-backend-verificacion-firma-sha256-rsa.md): evidencia y extracción de identidad.
-- [ADR-0015](../adr/0015-shared-token-de-registro.md): JWT firmado, contexto vigente por RFC en la misma BD y correlación de aceptación.
+- [ADR-0015](../adr/0015-shared-token-de-registro.md): JWT firmado, contexto por token en la misma BD, sesiones concurrentes y correlación de aceptación.
 - [ADR-0009](../adr/0009-shared-null-explicito-en-requests.md): propiedades requeridas, null y normalización previa a validación.
 - [ADR-0010](../adr/0010-backend-almacenamiento-documental-en-volumen.md): carga y asociación inmediatas, eliminación lógica transaccional y borrado físico diario de no asociados.
 - [Catálogos](../domain/catalogs.md): filtros, relaciones y códigos. La selección no se valida solo por su tipo en el DTO.
 - [RF](../requirements/functional.md) y [HU](../user-stories/): reglas y criterios; no se duplican aquí.
 
-## Validación y preparación pendiente
+## Validación y preparación
 
 API-03, API-05 y API-07 están resueltas. Eliminar es una transacción de BD que desasocia y marca metadatos; el proceso diario elimina físicamente y reintenta usando esa tabla. La referencia heredada API-04 se retira: no define una decisión abierta independiente.
-Esto no declara que el contrato esté listo para generar.
 
-Antes de habilitarlo se requiere:
+Estado verificado el 2026-10-20:
 
-1. Completar la revisión cruzada de respuestas, ejemplos, restricciones condicionales y
-   normalización con los RF/HU/ADR vigentes.
-2. Ejecutar el [validador documental](../../tools/README.md), ya adaptado al registro. Maven
-   apunta al contrato y a mx.com.fredkorlabs.registration; falta comprobar la generación.
-3. Ejecutar validación OpenAPI y generación con la configuración alineada, comprobando
-   especialmente null, propiedades omitidas y desconocidas y restricciones condicionales.
-4. Verificar comportamiento mediante pruebas de las capas cuando exista implementación.
+1. El contrato declara `x-contract-status: READY`, `x-implementation-ready: true` y sin
+   decisiones pendientes; `python3 tools/spec_lint.py --require-ready` da OK.
+2. Maven (`backend/pom.xml`) genera interfaces y DTO con openapi-generator 7.22.0, que valida
+   el contrato al generar; el backend compila y sus pruebas pasan con ese código generado.
+3. Null, propiedades omitidas y desconocidas y restricciones condicionales no quedan garantizadas
+   por las anotaciones generadas: cada operación las verifica con pruebas web al implementarse
+   (ADR-0009).
 
-El parseo YAML y las comprobaciones documentales actuales no sustituyen esos controles.
-La validación con swagger-parser anotada el 2026-10-19 corresponde a una revisión anterior;
-no se presenta como validación de las modificaciones posteriores ni de la generación actual.
 Los detalles de preparación están en [stack](../architecture/tech-stack.md), y la cobertura
 prevista en [trazabilidad](../traceability.md).

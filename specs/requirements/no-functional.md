@@ -46,8 +46,8 @@ manejo de errores, incluida la separación entre evidencia original e identidad 
 
 - El guardado de una sección debe confirmar sus datos y progreso en una única transacción
   de base de datos; un fallo debe conservar los valores previamente persistidos.
-- La unicidad del expediente por RFC, el máximo de una cédula asociada y el único contexto
-  JWT vigente por RFC deben sostenerse también ante solicitudes concurrentes.
+- La unicidad del expediente por RFC y el máximo de una cédula asociada deben sostenerse
+  también ante solicitudes concurrentes, incluidas las de varias sesiones del mismo RFC.
 - La eliminación lógica de un archivo debe confirmar conjuntamente la retirada de su
   referencia de negocio, la marca de no asociado y el progreso aplicable. Un fallo debe
   revertir esos cambios sin tocar el contenido físico.
@@ -88,7 +88,8 @@ limpieza con reloj fijo en el límite de 24 horas, exclusión de asociados y rec
   [ADR-0005](../adr/0005-backend-base-de-datos-h2.md). Su reinicio pierde datos y referencias;
   los archivos del volumen no reconstruyen por sí mismos el expediente.
 - No presentar las capacidades de H2 de pruebas como garantía de durabilidad productiva.
-  La persistencia duradera y la infraestructura de respaldo deben definirse antes del despliegue.
+  La persistencia duradera es PostgreSQL con Flyway (ADR-0017); la infraestructura de respaldo
+  debe definirse antes del despliegue.
 
 ### Respaldo y recuperación de producción
 

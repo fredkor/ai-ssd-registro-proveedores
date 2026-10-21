@@ -9,6 +9,12 @@ Los catálogos comparten BD con el expediente y se consultan mediante adaptador 
 forma parte del registro. Los valores están separados en [catalog-values.md](catalog-values.md);
 los nombres, tipos y FK físicos están en [esquema de catálogos aprobado](../architecture/catalog-database-proposal.md).
 
+## Vigencia
+
+Un catálogo con campo `active` (hoy solo Estratificación) expone únicamente sus registros
+activos en la API de catálogos. Al guardar, un ID inactivo se rechaza con VALIDATION_ERROR,
+igual que un ID inexistente. Los catálogos sin ese campo se consideran vigentes completos.
+
 ## Códigos técnicos de los catálogos fijos del registro
 
 Los códigos del modelo se corresponden con las denominaciones funcionales existentes.
@@ -50,7 +56,8 @@ La selección es obligatoria y el backend valida las mismas condiciones que el f
 3. Orden final ascendente por `clave`.
 
 La API representa `clave` con `key` e `iso_country` con `countryCode`, además del régimen
-cuando exista. No se asignan nuevos IDs ni descripciones a `NOT_DEF`.
+cuando exista. `NOT_DEF` es la fila existente ID 99, sin país ni régimen; no se crean otras
+filas `NOT_DEF` ni se cambian su ID o descripción.
 
 [Valores del catálogo](catalog-values.md#catalog-4).
 
@@ -120,6 +127,7 @@ un rango ni un tamaño físico adicional.
 
 ### Definiciones pendientes de CUCoP
 
-- Tipos físicos de almacenamiento, formatos y longitudes de clave y descripción. Los IDs son enteros.
+- Tipos físicos fijados el 2026-10-21: IDs `INTEGER`, clave `VARCHAR(50)`, descripción `VARCHAR(500)`
+  ([esquema de catálogos](../architecture/catalog-database-proposal.md#tipos-sql)).
 - Nombre físico del campo que contiene el ID del padre en cada catálogo hijo.
 - Mapeo físico del esquema existente al adaptador JPA de la misma base de datos. La API devuelve el árbol completo en una consulta; búsqueda y expansión se realizan en frontend.

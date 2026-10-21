@@ -37,7 +37,7 @@ La firma inicial no finaliza el expediente ni permite almacenar la llave privada
 - **CA-017:** Dado que el backend verificó la firma y conservó el resultado íntegro, cuando acepta la identificación, entonces emite un JWT de registro firmado vinculado al RFC y a la aceptación; las peticiones posteriores lo utilizan sin enviar un RFC editable como autorización.
 
 - **CA-018:** Dado un token emitido, cuando transcurren 60 minutos desde su emisión, entonces se rechaza su uso y se requiere una nueva identificación.
-- **CA-019:** Dado un token vigente para un RFC, cuando se verifica correctamente una nueva identificación y se emite su token, entonces se invalidan los tokens anteriores del mismo RFC sin afectar a otros solicitantes.
+- **CA-019:** Dado un token vigente para un RFC, cuando se verifica correctamente una nueva identificación y se emite su token, entonces ambos tokens permanecen vigentes hasta su propio vencimiento, sin afectar a otros solicitantes.
 
 - **CA-020:** Dado un certificado cuyo atributo de sujeto 2.5.4.45 contiene un RFC o varios separados por `/`, cuando el backend valida la identidad, entonces toma exclusivamente el segmento de índice 0 como RFC del titular y exige que coincida exactamente con el RFC recibido; el RFC del apoderado no permite aceptar una coincidencia alternativa.
 - **CA-021:** Dado que falta el atributo 2.5.4.45, su primer segmento está vacío o no tiene 12 o 13 caracteres, cuando se procesa la identificación, entonces se responde VALIDATION_ERROR sin emitir token ni permitir continuar o crear expediente.
@@ -47,8 +47,8 @@ La firma inicial no finaliza el expediente ni permite almacenar la llave privada
 - **CA-024:** Dado que el nombre recibido de PKI difiere del extraído del certificado, cuando se acepta la identificación, entonces legalName utiliza el extraído y la evidencia conserva sin cambios razonSocial recibido; esa diferencia por sí sola no rechaza la identificación.
 - **CA-025:** Dado que no existe ningún atributo de nombre coincidente o el primero tiene valor vacío, cuando se procesa la identificación, entonces se responde VALIDATION_ERROR sin emitir token ni permitir continuar o crear expediente; no se busca otro valor posterior.
 
-- **CA-026:** Dado un JWT recibido en una operación protegida, cuando el backend lo valida, entonces comprueba firma, algoritmo permitido, claims obligatorios, emisor, audiencia, vencimiento y jti vigente para el RFC conforme a ADR-0015. Un JWT alterado, incompleto o de sesión sustituida produce REGISTRATION_TOKEN_INVALID sin autorizar la operación.
+- **CA-026:** Dado un JWT recibido en una operación protegida, cuando el backend lo valida, entonces comprueba firma, algoritmo permitido, claims obligatorios, emisor, audiencia, vencimiento y la existencia del contexto de su jti para ese RFC conforme a ADR-0015. Un JWT alterado, incompleto o sin contexto produce REGISTRATION_TOKEN_INVALID sin autorizar la operación.
 
-- **CA-027:** Dado una nueva identificación exitosa, cuando se emite su JWT, entonces el backend confirma en la misma BD del registro el contexto vigente por RFC con jti, emisión, vencimiento y referencias de evidencia/aceptación antes de devolverlo. Emisiones concurrentes dejan un solo jti vigente; un fallo conserva el contexto anterior. Un JWT no vencido se rechaza si no existe su contexto o su jti ya no es el vigente, incluido después de reiniciar H2.
+- **CA-027:** Dado una nueva identificación exitosa, cuando se emite su JWT, entonces el backend confirma en la misma BD del registro un contexto para ese jti con RFC, emisión, vencimiento y referencias de evidencia/aceptación antes de devolverlo. Un fallo no devuelve token ni modifica los contextos existentes. Un JWT no vencido se rechaza si no existe su contexto, incluido después de reiniciar H2.
 
 **Requerimiento relacionado:** RF-REG-01; COMP-EFIRMA-001.

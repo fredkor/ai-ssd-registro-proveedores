@@ -44,6 +44,6 @@ El origen de la evidencia no sustituye el origen seleccionado en Datos Generales
 
 ## Contexto y comprobación
 
-El [ADR-0015](../adr/0015-shared-token-de-registro.md) define emisión del token e invalidación.
+El [ADR-0015](../adr/0015-shared-token-de-registro.md) define emisión, vencimiento y contexto del token.
 Los [criterios US01](../user-stories/US01-identificacion-mediante-efirma.md) y la
 [trazabilidad](../traceability.md) definen la verificación prevista; no representan pruebas ejecutadas.
