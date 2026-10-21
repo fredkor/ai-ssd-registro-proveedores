@@ -72,24 +72,31 @@ flowchart TB
 Las flechas `implementada por` e `implementados por` indican realización, no dependencias
 hacia los adaptadores. El grupo de salida resume varios adaptadores independientes, detallados
 en la tabla. El controlador usa `port.in`; los servicios usan dominio y `port.out`.
-El dominio solo conoce el JDK y sus propios tipos.
+El dominio solo conoce el JDK y sus propios tipos. Dominio y aplicación no dependen de
+frameworks: no importan Spring, JPA, Jackson ni tipos HTTP. Las dependencias tecnológicas
+permanecen en los adaptadores y en la configuración de arranque.
 
 | Paquete | Responsabilidad | Dependencias permitidas | Dependencias excluidas |
 | :--- | :--- | :--- | :--- |
 | `domain.model` | Agregados, entidades, objetos de valor y enums del modelo. | JDK y otros tipos de dominio. | Spring, JPA, HTTP, aplicación, adaptadores, librerías del componente de firma. |
-| `domain.exception` | Incumplimientos de reglas de dominio. | JDK. | Códigos HTTP y clases de infraestructura. |
-| `application.port.in` | Interfaces de casos de uso; Commands, Queries y Results. | JDK y tipos de aplicación; dominio solo si es necesario sin exponerlo al adaptador web. | Servicios concretos y adaptadores. |
-| `application.port.out` | Capacidades externas y sus modelos de intercambio. | JDK y dominio. | Adaptadores y resultados propios de `port.in`. |
-| `application.service` | Implementar casos de uso, resolver contexto, autorizar acceso, coordinar transacciones y puertos. | Dominio, `port.in`, `port.out`; Spring para integración y transacciones. | Implementaciones concretas de adaptadores. |
-| `adapter.in.web` | Traducir HTTP y archivos a entradas de aplicación; mapear resultados y errores. | `application.port.in`; excepciones de dominio solo para traducir errores. | Agregados de dominio, servicios concretos, JPA y adaptadores de salida. |
+| `domain.exception` | Incumplimientos de reglas de dominio. | JDK. | Spring, JPA, HTTP, aplicación, adaptadores y clases de infraestructura. |
+| `application.port.in` | Interfaces de casos de uso; Commands, Queries y Results. | JDK y tipos de aplicación; dominio solo si es necesario sin exponerlo al adaptador web. | Spring, JPA, HTTP, servicios concretos y adaptadores. |
+| `application.port.out` | Capacidades externas y sus modelos de intercambio. | JDK y dominio. | Spring, JPA, HTTP, adaptadores y resultados propios de `port.in`. |
+| `application.service` | Implementar casos de uso, resolver contexto, autorizar acceso, coordinar transacciones y puertos. | JDK, dominio, `port.in` y `port.out`. | Spring, JPA, HTTP e implementaciones concretas de adaptadores. |
+| `adapter.in.web` | Traducir HTTP y archivos a entradas de aplicación; mapear resultados y errores. | JDK, Spring MVC, validación y serialización del contrato; `application.port.in`; excepciones de dominio solo para traducir errores. | Agregados de dominio, servicios concretos, JPA y adaptadores de salida. |
 | `adapter.out.persistence` | Guardar y reconstruir expedientes, aceptaciones, evidencias y asociaciones documentales. | `application.port.out`, dominio y JPA. | Controladores y modelos web. |
 | `adapter.out.catalog` | Resolver registros y relaciones de catálogos existentes. | `application.port.out`, dominio y tecnología de consulta elegida. | Interfaz y casos de uso de entrada. |
 | `adapter.out.signature` | Verificar criptográficamente sello, contenido y certificado; traducir el resultado externo. | `application.port.out`, dominio y mecanismo criptográfico elegido. | Interfaz, servicios concretos y acceso directo a sus transacciones. |
 | `adapter.out.document` | Gestionar contenido de archivos de cualquier tipo admitido mediante referencias opacas. | `application.port.out` y tecnología de almacenamiento elegida. | Agregados completos, interfaz y controladores. |
+| `adapter.in.transaction` | Aplicar la transacción de un caso de uso mediante un decorador del puerto de entrada. | JDK, Spring y `application.port.in`. | HTTP, reglas de negocio y adaptadores de salida concretos. |
+| `adapter.in.scheduling` | Activar periódicamente el caso de uso de limpieza. | JDK, Spring y `application.port.in`. | Reglas de negocio y adaptadores de salida concretos. |
+| `configuration` | Ensamblar casos de uso, adaptadores y decoradores transaccionales. | JDK, Spring, puertos, servicios y adaptadores necesarios para el ensamblaje. | Reglas de negocio. |
 
 Las dependencias se inyectan por constructor. El controlador conoce los puertos de entrada;
 el servicio conoce los puertos de salida. El ensamblaje de implementaciones ocurre en el
-arranque de la aplicación, sin trasladar reglas de negocio a la configuración.
+arranque de la aplicación, en `configuration`, sin trasladar reglas de negocio a la configuración.
+Los servicios son clases Java sin `@Service`, `@Component`, `@Autowired` ni `@Transactional`;
+se registran mediante métodos `@Bean` que exponen sus puertos de entrada.
 
 ## 4. Modelos por frontera
 
@@ -169,6 +176,14 @@ de reglas adicionales de negocio.
 Los catálogos de Datos Generales y los cuatro niveles CUCoP residen en la misma base de datos que los expedientes. Se consultan mediante Spring Data JPA desde adapter.out.catalog, que implementa GeneralDataCatalogPort y CucopCatalogPort. No se requiere un servicio HTTP externo ni otra conexión de base de datos. Las entidades y repositorios de catálogo permanecen en el adaptador; el dominio y los puertos no dependen de JPA. El registro consulta catálogos, sin habilitar su administración ni modificar sus claves o relaciones.
 
 ## 7. Coordinación y transacciones
+
+La aplicación define la unidad de consistencia de cada caso de uso. Cuando se requiera una
+transacción de BD, un decorador en `adapter.in.transaction` implementará el puerto de entrada,
+invocará al servicio y aplicará la transacción con Spring. `configuration` expondrá el decorador
+como implementación del puerto para los consumidores y construirá el servicio Java que envuelve.
+El servicio no importa APIs transaccionales ni conoce el decorador. La transacción debe abarcar
+los puertos participantes; transacciones independientes por repositorio no sustituyen esa unidad.
+Los casos de uso que no requieren transacción, como consultar el aviso fijo, se registran directamente.
 
 | Caso de uso | Coordinación y unidad de consistencia |
 | :--- | :--- |
@@ -288,7 +303,10 @@ domain/model/               Agregado, valores, entidades de referencia y enums
 domain/exception/           Incumplimientos de reglas puras
 application/port/in/        UseCase, Commands, Queries y Results
 application/port/out/       Capacidades externas y modelos de intercambio
-application/service/        Coordinación por caso de uso y limpieza programada
+application/service/        Coordinación por caso de uso y lógica de limpieza sin frameworks
+configuration/              Ensamblaje Spring mediante @Bean y selección de decoradores
+adapter/in/transaction/    Decoradores transaccionales de puertos de entrada
+adapter/in/scheduling/     Activación programada de la limpieza
 adapter/in/web/             Controladores, mapeadores y errores
 adapter/in/web/generated/   Interfaces y DTO de OpenAPI
 adapter/out/persistence/    Expediente, aviso, evidencia y metadatos de archivos
@@ -303,7 +321,8 @@ se mantienen separados; no se instala Nx por inferencia.
 ## 10. Verificación y preparación
 
 - Dominio: JUnit puro para reglas y transiciones.
-- Aplicación: dobles de puertos para coordinación, autorización y fallos.
+- Aplicación: pruebas sin contexto Spring, con dobles de puertos para coordinación, autorización y fallos.
+- Dependencias: dominio y aplicación sin imports de frameworks; ensamblaje Spring fuera del núcleo.
 - Adaptadores: persistencia, unicidad concurrente, firma interoperable, archivos y limpieza.
 - Web e interfaz: contrato, errores, captura y navegación conforme a los CA.
 - La cobertura prevista está en [trazabilidad](../traceability.md); no representa pruebas ejecutadas.

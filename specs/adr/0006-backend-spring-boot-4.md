@@ -3,7 +3,7 @@
 - **Estado:** Aceptado
 - **Ámbito:** Backend
 - **Fecha:** 2026-09-26
-- **Actualización:** 2026-10-18
+- **Actualización:** 2026-10-20
 - **Specs relacionadas:** `architecture/tech-stack.md`; `pom.xml`; ADR-0001.
 
 ## Contexto
@@ -15,8 +15,12 @@ openapi-generator 7.22.0 con opciones para Spring Boot 4 y Jackson 3.
 
 - Se mantiene Spring Boot 4.1.x y Java 25 conforme a la configuración del repositorio.
 - Las versiones exactas pertenecen a `pom.xml`; no se cambian durante la homologación documental.
-- Spring se utiliza para adaptadores, ensamblaje, validación y transacciones de aplicación.
-  El dominio continúa usando únicamente el JDK.
+- Spring se utiliza en adaptadores y configuración de arranque para ensamblaje, validación
+  del contrato y aplicación técnica de transacciones. Dominio, puertos y servicios de aplicación
+  no dependen de Spring ni de otros frameworks.
+- Los servicios se construyen desde `configuration` mediante `@Bean`. Las transacciones
+  que abarcan un caso de uso se aplican mediante decoradores en `adapter.in.transaction`,
+  sin `@Transactional` en aplicación ni transacciones independientes por repositorio como sustituto.
 - La generación de interfaces y DTO deberá comprobar su compatibilidad con la configuración
   de Maven al incorporar el contrato de registro.
 - La verificación de firma utilizará un adaptador; el algoritmo, codificación y posibles

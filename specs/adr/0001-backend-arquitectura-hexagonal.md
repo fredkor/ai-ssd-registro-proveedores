@@ -3,7 +3,7 @@
 - **Estado:** Aceptado
 - **Ámbito:** Backend
 - **Fecha:** 2026-09-26
-- **Actualización:** 2026-10-18
+- **Actualización:** 2026-10-20
 - **Specs relacionadas:** RF-REG-01 a RF-REG-08; INV-01 a INV-39; `architecture/architecture.md`; `architecture/domain-model.md`.
 
 ## Contexto
@@ -24,7 +24,11 @@ requieren adaptadores con responsabilidades distintas de las del dominio.
   implementan las fronteras descritas en arquitectura. Se inyectan por constructor.
 - El controlador utiliza interfaces de entrada y resultados de aplicación; no recibe agregados
   ni llama directamente a adaptadores de salida. Los servicios no dependen de implementaciones concretas.
-- La aplicación coordina validación, acceso al expediente del mismo RFC y transacciones.
+- Los puertos y servicios de aplicación no dependen de Spring, JPA, HTTP ni otros frameworks.
+  `configuration` construye los servicios Java y ensambla los adaptadores mediante `@Bean`.
+- La aplicación coordina validación, acceso al expediente del mismo RFC y unidades de consistencia.
+  Los decoradores de `adapter.in.transaction` aplican las transacciones con Spring alrededor
+  de los casos de uso que las requieren, abarcando todos los puertos participantes.
   Las reglas puras permanecen en el dominio. Las verificaciones externas se realizan mediante puertos.
 - Cada frontera conserva sus propios modelos. Las entidades JPA, DTO HTTP y objetos del
   componente de firma no se convierten en tipos de dominio.
