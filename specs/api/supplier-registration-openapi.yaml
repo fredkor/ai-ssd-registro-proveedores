@@ -78,7 +78,8 @@ paths:
       operationId: identifyApplicant
       description: Requiere aceptación del aviso anterior a firmar. Verifica sello contra contenido y certificado
         y conserva íntegro el resultado aceptado. El componente externo, no este endpoint, comprueba vigencia
-        y OCSP. Sin credenciales privadas. Usa noticeAcceptanceId para comprobar aceptación previa. Un resultado=false
+        y OCSP. Sin credenciales privadas. Usa noticeAcceptanceId para comprobar aceptación previa. Si es inexistente,
+        con formato inválido o ya usada en una identificación exitosa produce VALIDATION_ERROR. Un resultado=false
         no habilita identificación. Solo después de verificar y conservar el resultado emite registrationToken.
         El token vence a los 60 minutos y no invalida otros tokens vigentes del mismo RFC. El sello es
         RSA PKCS#1 v1.5 con SHA-256 sobre los bytes UTF-8 de cadenaOriginal; el backend verifica con SHA256withRSA
@@ -664,9 +665,9 @@ components:
     SignatureResultRequest:
       type: object
       additionalProperties: false
-      description: Objeto completo ResultadoFirma del componente, sin renombrar propiedades. El tipo TypeScript
-        tiene propiedades opcionales en TypeScript; en el request todas deben estar presentes y las opcionales
-        sin valor se envían como null. El backend exige los datos necesarios para verificar el sello. Rechaza propiedades no definidas. No incluye llave privada ni contraseña.
+      description: Objeto completo ResultadoFirma del componente, sin renombrar propiedades. Aunque el tipo
+        TypeScript declara propiedades opcionales, en el request todas deben estar presentes y no nulas, salvo
+        curp, que es opcional y se envía como null cuando no tiene valor. El backend exige los datos necesarios para verificar el sello. Rechaza propiedades no definidas. No incluye llave privada ni contraseña.
       properties:
         resultado:
           type: boolean
@@ -678,10 +679,8 @@ components:
           type: string
           format: date-time
           description: Date de TypeScript representado en JSON como cadena ISO 8601 con zona horaria.
-          nullable: true
         mensaje:
           type: string
-          nullable: true
         cadenaOriginal:
           type: string
           enum:
@@ -690,9 +689,10 @@ components:
             inicial es exactamente Temporal.
         certificado:
           type: string
-          description: Certificado entregado por el componente, codificado en Base64.
+          description: Certificado entregado por el componente, codificado en Base64. Es el que se usa para
+            verificar el sello y extraer la identidad.
           format: byte
-          nullable: true
+          minLength: 1
         cadenaFirma:
           type: string
           minLength: 1
@@ -711,24 +711,20 @@ components:
           type: number
           description: Tipo number según ResultadoFirma; no se cambia a string ni se trunca. La conservación
             del resultado no reconstruye precisión perdida antes de recibirse.
-          nullable: true
         tipoCertificado:
           type: number
           description: Código recibido del componente; no se inventan sus valores.
-          nullable: true
         certificadoPem:
           type: string
-          description: Certificado en representación PEM entregado por el componente.
-          nullable: true
+          description: Certificado en representación PEM entregado por el componente. Se conserva como evidencia.
+          minLength: 1
         isVigente:
           type: boolean
           description: Dato del componente, responsable de vigencia y OCSP.
-          nullable: true
         origen:
           type: string
           description: Valor original del componente. No sustituye el Origen Nacional/Extranjero que el proveedor
             selecciona en Datos Generales.
-          nullable: true
       required:
       - resultado
       - fechaVigencia
@@ -744,26 +740,10 @@ components:
       - certificadoPem
       - isVigente
       - origen
-      anyOf:
-      - required:
-        - certificado
-        properties:
-          certificado:
-            type: string
-            format: byte
-            minLength: 1
-            nullable: false
-      - required:
-        - certificadoPem
-        properties:
-          certificadoPem:
-            type: string
-            minLength: 1
-            nullable: false
       x-domain-rules:
-      - 'Se exige un certificado utilizable: certificado Base64 o certificadoPem. Si certificado está presente
-        se utiliza para la verificación; si no, se utiliza certificadoPem. Se conserva el resultado completo
-        sin descartar ninguno de sus campos.'
+      - 'certificado y certificadoPem son obligatorios. La verificación del sello y la extracción de identidad
+        usan certificado (Base64); certificadoPem se conserva como evidencia. Solo curp admite null. Se conserva
+        el resultado completo sin descartar ninguno de sus campos.'
       - 'El RFC del titular se obtiene del atributo de sujeto 2.5.4.45 del mismo certificado utilizado para verificar el sello: dividir por / y tomar el segmento de índice 0. Debe tener 12 o 13 caracteres y coincidir exactamente con rfc, sin recorte ni conversión de mayúsculas/minúsculas. Los segmentos posteriores, incluido el RFC del apoderado, no son alternativas válidas.'
       - 'Atributo ausente, primer segmento vacío o longitud inválida: VALIDATION_ERROR. RFC recibido distinto del extraído: SIGNATURE_VERIFICATION_FAILED. Ninguno emite token ni permite continuar o crear expediente.'
       - 'legalName se extrae del primer atributo del sujeto del mismo certificado verificado cuyo OID sea 2.5.4.3, 2.5.4.41 o 2.5.4.10, respetando el orden original de los atributos, sin prioridad por OID, concatenación ni normalización. Aplica a persona física y moral. razonSocial recibido se conserva intacto como evidencia; si difiere, se utiliza el nombre del certificado para la identidad. Sin atributo coincidente o con su primer valor vacío se responde VALIDATION_ERROR, sin token ni continuación.'
@@ -1476,5 +1456,4 @@ x-jwt-session-persistence: >-
   RegistrationContextPort usa JPA en la misma BD del registro, con un contexto por token emitido:
   jti, rfc, issued_at, expires_at y referencias de evidencia y aceptacion. Un RFC puede tener varios
   contextos vigentes. Token devuelto solo tras commit y consulta en cada peticion protegida. Un contexto
-  ausente o vencido produce REGISTRATION_TOKEN_INVALID. Reiniciar H2 pierde contextos y requiere
-  nueva identificacion aunque el JWT no haya vencido. Ver ADR-0015.
+  ausente o vencido produce REGISTRATION_TOKEN_INVALID, aunque el JWT no haya vencido. Ver ADR-0015.
