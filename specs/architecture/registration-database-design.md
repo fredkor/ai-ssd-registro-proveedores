@@ -1,15 +1,17 @@
 # Diseño de persistencia — Registro de proveedores
 
-**Estado: propuesta para revisión.** Complementa el
+**Estado: aprobado por el usuario el 2026-10-20**, con las decisiones físicas de la
+[sección 7](#7-decisiones-de-diseño-físico). Complementa el
 [esquema de catálogos aprobado](catalog-database-proposal.md); no modifica sus IDs ni claves.
-Todos los grupos residen en la misma base de datos. No se crean tablas ni migraciones con
-este documento; las relaciones representan el diseño físico propuesto para la primera etapa.
+Todos los grupos residen en la misma base de datos. No se crean migraciones con este
+documento; las relaciones representan el diseño físico de la primera etapa.
 
 Los diagramas se separan para facilitar su lectura. Una tabla repetida conserva la misma
 identidad en todos los grupos; los bloques abreviados solo muestran las claves necesarias.
-`uuid`, `string`, `int`, `bigint`, `boolean` y `datetime` son tipos conceptuales: su traducción SQL,
-longitudes no definidas y motor productivo se concretarán antes de implementar. Los instantes
-se representan en UTC; las horas locales de operación se mantienen en sus requisitos.
+`uuid`, `string`, `text`, `int`, `bigint`, `boolean` y `datetime` son tipos conceptuales; su
+traducción SQL para H2 está en la [sección 7](#7-decisiones-de-diseño-físico) y su equivalente
+en PostgreSQL en [ADR-0017](../adr/0017-backend-postgresql-persistencia-duradera.md). Los instantes se representan en UTC; las
+horas locales de operación se mantienen en sus requisitos.
 
 ## 1. Expediente y progreso
 
@@ -22,7 +24,6 @@ erDiagram
         string status "IN_PROGRESS o REGISTERED"
         uuid notice_acceptance_id FK,UK "Ultima aceptacion confirmada"
         uuid initial_evidence_id FK,UK "Evidencia de creacion; inmutable"
-        bigint version "Control tecnico de concurrencia"
     }
     generalData["general_data"] {
         uuid registration_id PK,FK
@@ -43,9 +44,10 @@ erDiagram
 - `section_progress` contiene exactamente una fila por cada una de las seis secciones del
   asistente, identificada por `(registration_id, section)`. El alta crea las seis PENDING.
   Su estado es independiente del estado global del expediente y del formulario local.
-- `version` es una propuesta técnica para detectar actualizaciones concurrentes; no es un
-  dato de negocio. Coordinar todas las operaciones que alteran datos, progreso o asociaciones
-  del agregado, incluyendo carga y eliminación lógica. No basta proteger cada tabla por separado.
+- La concurrencia sobre el agregado se controla con bloqueo pesimista de la fila de
+  `supplier_registration` (ver [sección 7](#7-decisiones-de-diseño-físico)). Todas las operaciones
+  que alteran datos, progreso o asociaciones del agregado, incluyendo carga y eliminación lógica,
+  lo adquieren dentro de su transacción. No basta proteger cada tabla por separado.
 - `REGISTERED` permite detectar registros existentes; no habilita finalización en esta etapa.
   SupplierCode y los campos de las secciones futuras quedan fuera de este esquema inicial.
 
@@ -211,8 +213,8 @@ erDiagram
         uuid signature_evidence_id PK,FK,UK
     }
     registrationContext["registration_context"] {
-        string rfc PK
-        uuid jti UK
+        uuid jti PK
+        string rfc "No unico; varias sesiones por RFC"
         datetime issued_at
         datetime expires_at
         uuid signature_evidence_id FK,UK
@@ -229,9 +231,10 @@ erDiagram
 - Aviso y evidencia pueden existir antes de crear o reanudar el expediente. No se impone una FK
   obligatoria de `registration_context.rfc` a `supplier_registration.rfc`: eso impediría identificar
   a un solicitante nuevo. Se exige correspondencia entre RFC verificado, evidencia y contexto.
-- `complete_result` conserva todas las propiedades y valores recibidos, incluidos null y datos
-  numéricos, sin llave privada ni contraseña. `text` representa almacenamiento sin pérdida;
-  no prescribe reconstruirlo desde unas pocas columnas ni usar un tipo numérico de precisión insuficiente.
+- `complete_result` conserva el texto JSON del objeto `signatureResult` exactamente como se
+  recibió, sin re-serializarlo: mantiene todas las propiedades, null, orden y la representación
+  numérica original. No incluye llave privada ni contraseña. No se reconstruye desde columnas
+  ni se convierte a un tipo numérico de precisión insuficiente.
   Las proyecciones adicionales deben concordar con [integración de firma](../api/signature-integration.md).
 - El nombre verificado y el `razonSocial` original de la evidencia son datos distintos;
   reanudar actualiza `supplier_registration.legal_name` desde el certificado, sin cambiar la evidencia.
@@ -241,44 +244,86 @@ erDiagram
 - El expediente conserva una sola referencia de aceptación: se reemplaza al reanudar con la última
   confirmada, sin tabla histórica de aceptaciones. Durante identificación puede existir una nueva
   aceptación del contexto mientras el expediente aún conserva la anterior hasta reanudar.
-  Gestionar las aceptaciones de correlación que quedan sin referencia sin convertirlas en historial;
-  no se fija aquí un plazo de conservación de intentos inconclusos.
-- `registration_context` guarda una sola sesión por RFC, no un historial ni el JWT completo.
-  `expires_at = issued_at + 60 minutos`; `jti` identifica el JWT vigente. La sustitución es
-  transaccional y las peticiones protegidas consultan ese contexto conforme a ADR-0015.
+  Las aceptaciones de correlación que quedan sin referencia de contexto ni de expediente se
+  conservan sin purga en la primera etapa; no constituyen historial del expediente ni se
+  consultan como tal. H2 en memoria las pierde al reiniciar. Una purga futura requiere su
+  propia decisión.
+- `registration_context` guarda un registro por token emitido, no el JWT completo. Un RFC
+  puede tener varias sesiones vigentes. `expires_at = issued_at + 60 minutos`; `jti` identifica
+  el JWT. La inserción es transaccional y las peticiones protegidas consultan el contexto de su
+  `jti` conforme a ADR-0015. Los contextos vencidos se conservan sin purga en la primera etapa.
 - Crear/reanudar vincula identidad, aceptación y evidencia exclusivamente desde contexto verificado,
   no desde referencias editables del formulario. La ausencia de contexto después de reiniciar H2
   invalida el uso del JWT aunque su firma y fecha de vencimiento aún sean correctas.
-- Se propone UUID como almacenamiento de IDs técnicos de aceptación y evidencia y `jti`;
-  no se impone formato UUID a referencias API que están declaradas simplemente opacas.
+- Los IDs técnicos de aceptación, evidencia y `jti` se almacenan como UUID generados por el
+  backend. La API los expone como texto opaco (forma canónica del UUID); el cliente no debe
+  interpretar su formato y el contrato no le impone UUID.
 
-## 6. Constraints y transacciones por confirmar en el diseño físico
+## 6. Constraints y transacciones
 
-| Operación | Unidad de consistencia |
-| :--- | :--- |
-| Crear expediente | RFC único, identidad, última aceptación, evidencia inicial y vínculo histórico, seis filas de progreso. |
-| Reanudar | Nombre verificado, última aceptación y nuevo vínculo histórico; conservar datos y progreso. |
-| Guardar Datos Generales | Sustituir datos y teléfonos; validar documento asociado y confirmar GENERAL_DATA COMPLETED. Coordinar con carga/eliminación lógica concurrentes. |
-| Guardar CUCoP | Sustituir tipos y específicas y confirmar CUCOP COMPLETED; requerir Datos Generales guardados. |
-| Cargar archivo | Contenido y asociación inmediata coherentes; máximo una cédula, compensación ante fallo según ADR-0010. |
-| Eliminar lógicamente | Retirar referencia activa, marcar metadatos no asociados y GENERAL_DATA PENDING, sin tocar bytes ni CUCoP. |
-| Emitir contexto JWT | Sustitución serializada por RFC; un jti vigente tras commit, evidencia aceptada conservada. |
-| Limpieza | Exclusión frente a asociación; borrar solo no asociados elegibles, con metadatos retenidos hasta completar borrado físico. |
+| Operación | Unidad de consistencia | Coordinación |
+| :--- | :--- | :--- |
+| Aceptar aviso | Insertar `notice_acceptance` con versión 1.0 y `accepted_at` del backend. | Sin bloqueo: no modifica filas existentes. |
+| Crear expediente | RFC único, identidad, última aceptación, evidencia inicial y vínculo histórico, seis filas de progreso. | UK de `rfc`; la violación concurrente se traduce a DUPLICATE_RFC. |
+| Reanudar | Nombre verificado, última aceptación y nuevo vínculo histórico; conservar datos y progreso. | Bloqueo pesimista del expediente. |
+| Guardar Datos Generales | Sustituir datos y teléfonos; validar documento asociado y confirmar GENERAL_DATA COMPLETED. | Bloqueo pesimista del expediente; serializa con carga/eliminación lógica. |
+| Guardar CUCoP | Sustituir tipos y específicas y confirmar CUCOP COMPLETED; requerir Datos Generales guardados. | Bloqueo pesimista del expediente. |
+| Cargar archivo | Metadatos y asociación inmediata coherentes; máximo una cédula. Compensación del contenido ante fallo según ADR-0010. | Bloqueo pesimista del expediente durante la transacción de BD. |
+| Eliminar lógicamente | Retirar referencia activa, marcar metadatos no asociados y GENERAL_DATA PENDING, sin tocar bytes ni CUCoP. | Bloqueo pesimista del expediente. |
+| Emitir contexto JWT | Insertar el contexto del nuevo jti tras commit, evidencia aceptada conservada; no modifica otros contextos. | PK `jti`; sin bloqueo por RFC; detalle en ADR-0015. |
+| Limpieza | Exclusión frente a asociación; borrar solo no asociados elegibles, con metadatos retenidos hasta completar borrado físico. | Bloqueo pesimista de la fila de `file_metadata` al recomprobar. |
 
 No usar borrados en cascada desde catálogo, evidencia o archivo que permitan eliminar expedientes
 o información histórica fuera de las operaciones especificadas. Las restricciones entre tablas
 requieren servicio transaccional y control de concurrencia, además de PK, FK y checks.
 No se fija retención para expedientes o evidencias a partir de los 30 días de logs y respaldos.
 
-## 7. Revisión pendiente
+## 7. Decisiones de diseño físico
 
-- Confirmar nombres y organización de estas tablas, incluyendo el vínculo documental específico
-  y la identificación por posición de teléfonos.
-- Fijar tipos SQL, nullabilidad condicional, longitudes no especificadas y estrategia de bloqueo/versionado.
-- Alinear la representación de evidencia íntegra y los IDs opacos con el generador y adaptadores,
-  sin pérdida de datos ni cambio del contrato por conveniencia de persistencia.
-- Concretar el tratamiento de aceptaciones de correlación sin referencias y de compensaciones
-  de carga fallidas. Estas precisiones no habilitan borrado de evidencias históricas.
+Aprobadas el 2026-10-20. Nombres, organización y relaciones de los diagramas quedan
+confirmados, incluidos `registration_fiscal_document` y la posición técnica de teléfonos.
+
+### 7.1. Tipos SQL en H2
+
+El esquema de H2 se genera desde las entidades JPA del adaptador de persistencia, cuyas
+anotaciones reflejan esta tabla. No se incorpora una herramienta de migraciones (requeriría ADR).
+
+| Tipo conceptual | SQL H2 | Aplicación |
+| :--- | :--- | :--- |
+| `uuid` | `UUID` | IDs técnicos, `jti` y referencias entre tablas del registro. |
+| `string` con máximo definido | `VARCHAR(n)` con el máximo de RF/contrato | `rfc` 13; `nationality` 250; `foreign_fiscal_code` 20; `website` 2048; `number` 10; `extension` 5. |
+| `string` de código | `VARCHAR(32)` | `status`, `section`, `participation_type`; check con los valores de `specs/domain/`. |
+| `string` de versión del aviso | `VARCHAR(3)` | `notice_acceptance.version`; check `= '1.0'`. |
+| `string` sin máximo de negocio | `VARCHAR` sin longitud (máximo del motor) | `legal_name`, `verified_legal_name`, `original_name`, `media_type`. No crea un límite de negocio. |
+| `string` técnico | `VARCHAR(255)` | `relative_path`; `extension` usa `VARCHAR(10)`. |
+| `text` | `CLOB` | `complete_result`: JSON original sin pérdida. |
+| `int` | `INTEGER` | FK a catálogos (IDs enteros; alinear con los tipos de catálogo al implementarlos). |
+| `bigint` | `BIGINT` | `size_bytes`. |
+| `boolean` | `BOOLEAN` | `associated`. |
+| `datetime` | `TIMESTAMP(6) WITH TIME ZONE`, en UTC | `accepted_at`, `issued_at`, `expires_at`, `uploaded_at`. |
+
+Nulabilidad: PK, FK obligatorias y columnas sin anotación de opcionalidad son `NOT NULL`.
+Admiten null únicamente las columnas opcionales o condicionales de Datos Generales
+(`foreign_fiscal_code`, `sector_id`, `subsector_id`, `website`, y las que RF-REG-05 declare no
+aplicables) y `extension` de teléfono. La obligatoriedad condicional la valida la aplicación;
+la BD no la sustituye.
+
+### 7.2. Concurrencia
+
+Bloqueo pesimista (`SELECT ... FOR UPDATE`) de la fila de `supplier_registration` al inicio de
+cada transacción que modifica el agregado. Serializa operaciones sobre el mismo expediente sin
+introducir códigos de error nuevos; no existe columna `version`. La creación concurrente se
+resuelve por la UK de `rfc`. Expedientes distintos no se bloquean entre sí.
+
+### 7.3. Evidencia, aceptaciones y compensación
+
+- Evidencia: JSON original tal cual en `complete_result` (sección 5).
+- Aceptaciones sin referencia: se conservan sin purga en la primera etapa (sección 5).
+- Compensación de carga: se escribe el contenido en volumen y después se confirma la
+  transacción de metadatos y asociación. Si la transacción falla, se elimina el contenido
+  escrito y no se informa éxito. Si esa eliminación también falla, se registra con nivel ERROR
+  el UUID y la ruta relativa para reconciliación manual; el residuo queda sin metadatos y fuera
+  de la limpieza automática, igual que los archivos sin metadatos tras reiniciar H2 (ADR-0010).
 
 Fuentes: [RF](../requirements/functional.md), [modelo](domain-model.md),
 [arquitectura](architecture.md), [ADR-0010](../adr/0010-backend-almacenamiento-documental-en-volumen.md),

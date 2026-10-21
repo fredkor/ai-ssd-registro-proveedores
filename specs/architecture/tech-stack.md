@@ -31,9 +31,11 @@ Los contratos autoritativos permanecen en `specs/api/` y se referencian desde ca
 | Lenguaje | Java 25, propiedad `java.version` | Backend; dominio limitado al JDK. | ADR-0001, ADR-0006. |
 | Framework | Spring Boot 4.1.x; Maven declara 4.1.1 | Aplicación, ensamblaje, Web MVC, Validation y Data JPA. | ADR-0001, ADR-0006. |
 | Persistencia para pruebas | H2 en memoria con Spring Data JPA | Expedientes, aceptaciones, evidencias y metadatos documentales. | ADR-0005. |
+| Persistencia duradera | PostgreSQL 17 (perfil `postgres`) con Flyway; driver y Flyway gestionados por el parent de Spring Boot | Entornos distintos de pruebas; se incorporan al preparar el primer entorno duradero. | ADR-0017. |
+| Token de registro | Spring Security OAuth2 Resource Server (Nimbus JOSE+JWT), RS256 | Emisión y validación del JWT; se incorpora con la primera operación que lo usa. | ADR-0015. |
 | Archivos | Volumen de sistema de archivos bajo `/repository` | Archivos de cualquier tipo admitido por sus especificaciones en `{year}/{month}/{day}/{rfc}/{uuid}.{extension}`; nombre original y referencia en base de datos. | ADR-0010. |
-| Build | Maven | Generación, compilación, pruebas y ejecución del backend. El wrapper aún no está incorporado al módulo. | ADR-0006. |
-| Contrato | OpenAPI 3.0.3 | Borrador `specs/api/supplier-registration-openapi.yaml`, pendiente de revisión final y alineación de herramientas para generación. | ADR-0002, ADR-0008, ADR-0009. |
+| Build | Maven | Generación, compilación, pruebas y ejecución del backend mediante el wrapper `backend/mvnw`. | ADR-0006. |
+| Contrato | OpenAPI 3.0.3 | `specs/api/supplier-registration-openapi.yaml`, READY y habilitado para generación ([estado](../api/README.md)). | ADR-0002, ADR-0008, ADR-0009. |
 | Generación web | openapi-generator-maven-plugin 7.22.0, generador `spring` | Interfaces y DTO web dentro de `adapter.in.web.generated`. | ADR-0006, ADR-0008. |
 | Opciones de generación | `interfaceOnly`, `useSpringBoot4`, `useJackson3`, `useTags`, `useBeanValidation` | Configuración declarada en Maven; deberá verificarse contra el contrato de registro. | ADR-0006, ADR-0008. |
 | Documentación API | springdoc-openapi-starter-webmvc-ui 3.1.1 | Swagger UI cargando el mismo YAML que genera interfaces y DTO. | ADR-0008. |
@@ -49,15 +51,15 @@ un rechazo global de null sobre el resultado de Firma Electrónica del solicitan
 
 | Elemento | Decisión | ADR |
 | :--- | :--- | :--- |
-| Framework | Angular 21 y TypeScript compatible; versiones exactas por fijar en package.json y lockfile. | [ADR-0011](../adr/0011-frontend-angular-21.md). |
-| Componentes y plantilla | PrimeNG 21 y Sakai, compatibles con Angular 21; revisión exacta pendiente de fijar. | [ADR-0012](../adr/0012-frontend-primeng-sakai.md). |
+| Framework | Angular 21.0.6 y TypeScript 5.9.3; versiones en `frontend/package.json` y `package-lock.json` (npm). | [ADR-0011](../adr/0011-frontend-angular-21.md). |
+| Componentes y plantilla | PrimeNG 21.0.2 y Sakai (`sakai-ng`) 21.0.0, compatibles con Angular 21. | [ADR-0012](../adr/0012-frontend-primeng-sakai.md). |
 | Árbol CUCoP | PrimeNG Tree con selección editable desde partida genérica. | ADR-0012; RF-REG-08. |
 | Arquitectura | Organización por dominios, DDD / Nx Style, sin obligación de instalar Nx. | [ADR-0013](../adr/0013-frontend-arquitectura-por-dominios.md). |
 | Formularios | Preferencia por Reactive Forms tipados de @angular/forms. | [ADR-0014](../adr/0014-frontend-formularios-reactivos.md). |
 
-El frontend aún no está creado en este módulo; no se declaran instalación ni pruebas de
-compilación frontend realizadas. Su gestor de paquetes y versiones auxiliares se concretarán
-al preparar el proyecto, respetando la compatibilidad de Angular 21 y la distribución de Sakai.
+El proyecto frontend existe en `frontend/` a partir de Sakai; no se declaran instalación ni
+pruebas de compilación frontend realizadas. Usa npm; las versiones están en `frontend/package.json`
+y quedan fijadas en `frontend/package-lock.json`, que es la fuente para consultarlas.
 
 ## 3. Integraciones
 
@@ -65,7 +67,7 @@ al preparar el proyecto, respetando la compatibilidad de Angular 21 y la distrib
 | :--- | :--- |
 | Firma y extracción de identidad | Adaptador de firma con JDK; [ADR-0016](../adr/0016-backend-verificacion-firma-sha256-rsa.md) e [integración](../api/signature-integration.md). |
 | Catálogos compartidos | Adaptador JPA en la misma BD; ADR-0001 y [esquema de catálogos aprobado](catalog-database-proposal.md). |
-| Contexto de identificación | JWT firmado y contexto JPA en la misma BD, un jti vigente por RFC; ADR-0015. |
+| Contexto de identificación | JWT firmado con Spring Security OAuth2 Resource Server y contexto JPA por jti en la misma BD; varias sesiones por RFC; ADR-0015. |
 | Archivos | Servicio interno general, volumen y metadatos en la misma BD; ADR-0010. |
 
 ## 4. Conservación en pruebas
@@ -80,27 +82,26 @@ guardados y el archivo asociado inmediatamente al cargar, incluso sin Siguiente.
 
 ## 5. Preparación y comandos
 
-Los siguientes comandos se ejecutan desde `SSD_REAL/` cuando se cumplan sus precondiciones:
+Los comandos de Python se ejecutan desde la raíz del repositorio y los de Maven desde `backend/`:
 
 | Acción | Comando | Precondición |
 | :--- | :--- | :--- |
-| Validar especificaciones y contrato | `python3 tools/spec_lint.py` | Python 3 y PyYAML disponibles; valida coherencia aunque el contrato sea borrador. |
-| Generar interfaces y DTO | `mvn generate-sources` | YAML autoritativo existente y Maven alineado con su ruta y paquetes. |
-| Compilar y ejecutar pruebas | `mvn test` | Código y pruebas implementados, contrato y generación configurados. |
-| Ejecutar el backend | `mvn spring-boot:run` | Aplicación implementada, configuración de H2 y volumen preparada. |
+| Validar especificaciones y contrato | `python3 tools/spec_lint.py` | Python 3 y PyYAML disponibles; `--require-ready` exige además el contrato habilitado. |
+| Generar interfaces y DTO | `./mvnw clean generate-sources` | YAML autoritativo existente y Maven alineado con su ruta y paquetes. |
+| Compilar y ejecutar pruebas | `./mvnw test` | Código y pruebas implementados, contrato y generación configurados. |
+| Ejecutar el backend | `./mvnw spring-boot:run` | Aplicación implementada, configuración de H2 y volumen preparada. |
 
-Actualmente existe un borrador YAML, pero no está listo para generación. No hay wrapper Maven
-ni código Java en `SSD_REAL/`. El archivo
 Maven usa mx.com.fredkorlabs:supplier-registration, paquete mx.com.fredkorlabs.registration
-y el contrato del registro. El validador está adaptado; la generación integral sigue pendiente.
-La matriz de trazabilidad ya documenta operaciones y criterios del registro, con verificación
-prevista. No declara pruebas implementadas ni comandos de generación ejecutados.
+y el contrato del registro; la generación y la compilación se comprobaron el 2026-10-20.
+La matriz de trazabilidad documenta operaciones y criterios del registro con su verificación
+prevista; las pruebas existentes se consultan en `backend/src/test`.
 
 ## 6. Restricciones
 
 Respetar fronteras de [arquitectura](architecture.md), versiones de Maven y ADR aceptados.
-No añadir dependencias ni editar fuentes generadas por inferencia. Las versiones exactas de
-frontend, persistencia duradera y compensación de cargas fallidas continúan por concretar.
+No añadir dependencias ni editar fuentes generadas por inferencia. Las versiones del frontend
+están en su `package-lock.json`; la persistencia duradera está definida en ADR-0017 y la
+compensación de cargas fallidas en ADR-0010.
 
 ## 7. Referencias
 

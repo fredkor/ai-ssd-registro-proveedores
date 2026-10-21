@@ -400,8 +400,8 @@ la identidad de solo lectura en el expediente.
 | `phones` | Colección de `PhoneNumber` | Aplicable a persona moral; requiere al menos uno y todos deben ser válidos. |
 
 Las referencias a catálogos dinámicos contienen la identidad del registro. No convierten sus
-valores en enums ni duplican el catálogo entero dentro de `GeneralData`. Todos los IDs de catálogo son enteros; los tipos físicos concretos del motor se fijarán
-con el esquema, sin añadir rangos o tamaños no definidos.
+valores en enums ni duplican el catálogo entero dentro de `GeneralData`. Todos los IDs de catálogo son enteros; los tipos físicos están en el
+[esquema de catálogos](catalog-database-proposal.md#tipos-sql).
 
 La aplicación resuelve las referencias y aporta al dominio los valores y relaciones
 necesarios para comprobar vigencia cuando aplique y compatibilidad de titularidad o

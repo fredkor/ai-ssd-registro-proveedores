@@ -3,7 +3,7 @@
 - **Estado:** Aceptado
 - **Ámbito:** Backend
 - **Fecha:** 2026-10-18
-- **Actualización:** 2026-10-19
+- **Actualización:** 2026-10-21
 - **Specs relacionadas:** `architecture/architecture.md`; `architecture/domain-model.md`; ADR-0005. Aplicación actual: RF-REG-05, US10, INV-27 a INV-29.
 
 ## Contexto
@@ -55,7 +55,7 @@ El contenido se almacena en un volumen persistente bajo:
 | Fecha y hora de carga | Calcular antigüedad desde la carga en UTC. |
 | Marca de asociado y referencia al registro propietario | Acreditar la asociación persistida y distinguir residuos registrados no asociados. |
 
-La estructura física de tablas y columnas se concretará al implementar persistencia.
+La estructura física de tablas y columnas está en el [diseño de persistencia del registro](../architecture/registration-database-design.md).
 La marca y la referencia deben permanecer coherentes: un archivo referenciado por un registro
 no puede considerarse temporal eliminable. El dominio utiliza referencias opacas, sin rutas.
 
@@ -68,9 +68,11 @@ no puede considerarse temporal eliminable. El dominio utiliza referencias opacas
    carga ni vuelve a asociar el archivo. Cargar no completa por sí solo la sección.
 5. Atrás descarta cambios de los campos del formulario, pero no revierte cargas o eliminaciones exitosas.
 
-La transacción de BD no hace atómica la escritura en volumen. Si falla la asociación tras
-crear contenido, compensar la carga y no informar éxito. Una compensación fallida se registra
-para reconciliación; no se presenta un residuo como archivo asociado.
+La transacción de BD no hace atómica la escritura en volumen. Se escribe primero el contenido
+y después se confirman metadatos y asociación. Si falla la transacción, se elimina el contenido
+escrito y no se informa éxito. Si esa eliminación falla, se registra con nivel ERROR el UUID y la
+ruta relativa para reconciliación manual; el residuo queda sin metadatos, fuera de la limpieza
+automática, y nunca se presenta como archivo asociado.
 La autorización y la garantía de cantidad se sostienen también ante operaciones concurrentes.
 
 ### Descarga y eliminación lógica transaccional
@@ -147,4 +149,4 @@ Estas restricciones no se trasladan automáticamente a documentos futuros.
 - H2 en memoria pierde metadatos al reiniciar (ADR-0005). Los archivos sin metadatos recuperables
   quedan fuera de la limpieza diaria: no puede probarse que no estaban asociados. No se deduce
   su condición desde rutas, no se reconstruyen referencias ni se borran automáticamente por esa pérdida.
-- Persistencia duradera para otros entornos, esquema físico y compensación de fallos de carga permanecen pendientes. La eliminación lógica se resuelve con rollback de BD y el borrado físico es reintentable. No se incorpora una papelera de usuario.
+- La persistencia duradera de otros entornos se rige por ADR-0017. El esquema físico y la compensación de fallos de carga quedan definidos (2026-10-20). La eliminación lógica se resuelve con rollback de BD y el borrado físico es reintentable. No se incorpora una papelera de usuario.

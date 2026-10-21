@@ -102,7 +102,7 @@ se registran mediante métodos `@Bean` que exponen sus puertos de entrada.
 
 | Frontera | Modelos | Regla |
 | :--- | :--- | :--- |
-| HTTP | Interfaces y DTO generados desde OpenAPI. | El borrador define rutas y operationId; generación pendiente de validar y alinear herramientas. No duplicar DTO manualmente. |
+| HTTP | Interfaces y DTO generados desde OpenAPI. | El contrato define rutas y operationId; Maven genera interfaces y DTO. No duplicar DTO manualmente. |
 | Entrada de aplicación | Commands, Queries y Results, preferentemente `record`. | No contienen `MultipartFile`, entidades JPA, `ResponseEntity` ni objetos del componente visual. |
 | Dominio | `SupplierRegistration`, `ApplicantIdentity`, `GeneralData`, `PhoneNumber`, `CucopParticipation`, `SectionProgress` y tipos documentales y de evidencia. | No se devuelven directamente al controlador. |
 | Persistencia | Entidades y mapeadores propios del adaptador. | Reconstituyen el dominio sin ejecutar el alta ni nuevas transiciones. |
@@ -157,7 +157,7 @@ no dependen de `application.port.in` ni de clases de infraestructura.
 | `ApplicantSignatureEvidencePersistencePort` | Conservar y recuperar evidencia aceptada y sus referencias. | Preservar íntegramente el resultado, aun cuando todavía no exista expediente. No reemplazarlo por una selección de campos. |
 | `GeneralDataCatalogPort` | Obtener catálogos completos y sus relaciones; consultar Subsector por Sector y Estratificación completa sin filtro por régimen; resolver referencias para validar. | Titularidad jurídica se filtra en frontend por país y régimen para Nacional, y por país o clave NOT_DEF para Extranjero sin filtro por régimen, ordenando por clave; el backend valida las mismas condiciones al guardar conforme a domain/catalogs.md. Aportar vigencia cuando aplique. |
 | `CucopCatalogPort` | Obtener los cuatro niveles y sus relaciones; resolver específicas para el guardado. | Devuelve el catálogo completo en una consulta de API. Búsqueda y expansión son locales al frontend. No modifica catálogos al seleccionar partidas. |
-| `RegistrationContextPort` | Emitir, resolver y validar token; invalidar tokens anteriores al emitir una nueva sesión del mismo RFC. | Vincular identidad, evidencia y aceptación; comprobar vencimiento de 60 minutos. Mantener en la misma BD un contexto por RFC con jti vigente, emisión, vencimiento y referencias a evidencia/aceptación; sustitución transaccional y consulta en cada petición conforme a ADR-0015. |
+| `RegistrationContextPort` | Emitir, resolver y validar token; un RFC puede tener varias sesiones vigentes. | Vincular identidad, evidencia y aceptación; comprobar vencimiento de 60 minutos. Mantener en la misma BD un contexto por jti con RFC, emisión, vencimiento y referencias a evidencia/aceptación; inserción transaccional y consulta en cada petición conforme a ADR-0015. |
 | `FileStoragePort` | Preparar, leer y borrar contenido por referencia opaca; exclusión con confirmación y limpieza. | Gestionar bytes y metadatos en el almacenamiento elegido. No decide si Datos Generales está completo. |
 | `FileMetadataPort` | Consultar metadatos; confirmar o retirar asociaciones; seleccionar temporales elegibles para limpieza. | Asociar durante la carga; marcar como no asociado al eliminar lógicamente y conservar metadatos hasta limpieza; coordinar referencias según las restricciones del tipo documental. El caso de uso de cédula impone máximo una. |
 
@@ -188,7 +188,7 @@ Los casos de uso que no requieren transacción, como consultar el aviso fijo, se
 | Caso de uso | Coordinación y unidad de consistencia |
 | :--- | :--- |
 | Aceptar aviso | Conservar aceptación y referencia antes de habilitar firma; no crear expediente. |
-| Identificar | Verificar sello y extraer identidad mediante ADR-0016; conservar evidencia íntegra antes de emitir contexto JWT de ADR-0015, verificando firma, claims y jti vigente por RFC. Un fallo no invalida una sesión vigente. |
+| Identificar | Verificar sello y extraer identidad mediante ADR-0016; conservar evidencia íntegra antes de emitir contexto JWT de ADR-0015, verificando firma, claims y contexto del jti. Un fallo no invalida una sesión vigente. |
 | Crear expediente | Identidad, aviso, evidencia inicial, UUID y estado en una transacción; unicidad de RFC respaldada por persistencia. |
 | Reanudar | Actualizar nombre del certificado, vínculo histórico de evidencia y última aceptación del aviso conjuntamente; un fallo conserva los valores previos. La evidencia aceptada al identificar no se elimina. |
 | Guardar Datos Generales | Validar catálogos, teléfonos y cédula ya asociada; confirmar datos y progreso. No modifica asociaciones documentales; CUCoP no cambia. |
@@ -230,7 +230,7 @@ sequenceDiagram
     Web->>Service: Ejecutar SaveGeneralDataUseCase con comando y contexto
     Service->>Context: Verificar JWT y resolver sesion vigente
     Context-->>Service: Identidad aceptada o rechazo
-    alt JWT invalido, vencido o jti sustituido
+    alt JWT invalido, vencido o sin contexto
         Service-->>Web: REGISTRATION_TOKEN_INVALID
         Web-->>Frontend: 401 ErrorResponse
     else Sesion vigente
@@ -282,7 +282,7 @@ sequenceDiagram
 - El dominio recibe datos y relaciones resueltos; no llama a puertos ni conoce HTTP o JPA.
 - Datos, progreso y comprobación de la asociación documental deben coordinarse con la
   eliminación lógica concurrente para impedir completar la sección con una cédula ya desasociada.
-  El alcance del bloqueo o control de concurrencia se concretará al implementar los adaptadores.
+  Se usa bloqueo pesimista de la fila del expediente conforme al [diseño de persistencia](registration-database-design.md).
 - El éxito HTTP se devuelve después del commit. Todo fallo de la unidad de guardado revierte
   sus cambios; CUCoP y la cédula cargada en una operación previa permanecen intactos.
 - Cargar o eliminar lógicamente un archivo son operaciones propias. Este guardado solo consulta
@@ -290,13 +290,13 @@ sequenceDiagram
 - Los fallos técnicos de contexto, consulta de catálogos o archivos también se traducen a
   INTERNAL_ERROR según ADR-0007, sin avanzar. La tabla de errores completa está en OpenAPI.
 
-El [diseño de persistencia del registro](registration-database-design.md) propone tablas y
-relaciones para revisar, complementando el esquema de catálogos aprobado. No representa
-migraciones ejecutadas ni implementación.
+El [diseño de persistencia del registro](registration-database-design.md), aprobado el
+2026-10-20, define tablas, tipos SQL de H2, concurrencia y compensación, complementando el
+esquema de catálogos aprobado. No representa migraciones ejecutadas.
 
 ## 9. Estructura prevista
 
-Relativa al paquete base del registro, pendiente de alinear en Maven:
+Relativa al paquete base `mx.com.fredkorlabs.registration`, alineado en Maven:
 
 ```text
 domain/model/               Agregado, valores, entidades de referencia y enums
@@ -326,7 +326,6 @@ se mantienen separados; no se instala Nx por inferencia.
 - Adaptadores: persistencia, unicidad concurrente, firma interoperable, archivos y limpieza.
 - Web e interfaz: contrato, errores, captura y navegación conforme a los CA.
 - La cobertura prevista está en [trazabilidad](../traceability.md); no representa pruebas ejecutadas.
-- Antes de implementar: concretar tipos SQL del [esquema de catálogos aprobado](catalog-database-proposal.md), concretar
-  detalles de concurrencia de peticiones ya autorizadas y compensación de cargas fallidas, y alinear
-  contrato, Maven y validador. Consultar el [estado de API](../api/README.md).
+- Antes de implementar catálogos: concretar tipos SQL del [esquema de catálogos aprobado](catalog-database-proposal.md).
+  Antes de implementar el contexto JWT: concretar los pendientes de ADR-0015. Consultar el [estado de API](../api/README.md).
 - Versiones y comandos: [stack](tech-stack.md). Reglas funcionales: [requerimientos](../requirements/functional.md).

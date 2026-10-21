@@ -9,7 +9,7 @@ Los catálogos comparten base de datos con el expediente conforme a
 [ADR-0001](../adr/0001-backend-arquitectura-hexagonal.md).
 
 Los identificadores Mermaid usan camelCase; los alias indican los nombres de tabla del diseño aprobado.
-`int`, `string` y `boolean` son tipos preliminares: el ancho SQL y las longitudes quedan por ajustar.
+Los tipos SQL están fijados en [Tipos SQL](#tipos-sql) (decisión del usuario del 2026-10-21).
 Los IDs existentes y las claves se conservan; no se generan de nuevo al cargar los datos.
 
 ## País, régimen y titularidad jurídica
@@ -28,7 +28,7 @@ erDiagram
     }
     legalOwnership["legal_ownership"] {
         int id PK
-        string key "Equivale a clave; incluye NOT_DEF"
+        string key UK "Equivale a clave; incluye NOT_DEF"
         string description
         string iso_country FK "Opcional para registro general NOT_DEF"
         string regime FK "Texto del catalogo; opcional si no aplica"
@@ -41,9 +41,10 @@ erDiagram
   `tax_regime.description`. Se conserva la comparación por código y texto del algoritmo confirmado.
   Si se prefiere normalizar a IDs, deberá ajustarse este diseño y su mapeo, conservando el comportamiento.
 - Nacional: filtrar país y régimen. Extranjero: filtrar país **o** `key = NOT_DEF`, sin régimen.
-  Orden ascendente por `key`; no se presupone una clave única global de titularidad.
+  Orden ascendente por `key`; `key` es única en la tabla de titularidad.
 - La nulabilidad propuesta permite representar opciones generales sin inventar un país o régimen.
-  Revisar los datos reales de `NOT_DEF` antes de cerrar constraints; no se asigna un ID nuevo.
+  `NOT_DEF` es la fila ID 99 con `iso_country` y `regime` nulos (confirmado el 2026-10-21);
+  no se asigna un ID nuevo.
 - `tax_regime` representa los IDs del catálogo existente; los códigos técnicos del dominio
   siguen siendo `LEGAL_ENTITY` e `INDIVIDUAL`.
 
@@ -106,10 +107,11 @@ erDiagram
 ```
 
 Estratificación exige una única selección y no tiene FK ni asociación a régimen.
-Se muestra `active` porque existe en la documentación actual; revisar su uso efectivo,
-sin añadir filtros de vigencia a los demás catálogos por suposición.
-`status` y `type` del proveedor aparecen separados en la fuente aunque sus valores coinciden:
-queda por revisar si realmente son dos catálogos o uno duplicado. Ninguno representa
+`active` es la vigencia del registro: la consulta de catálogos solo devuelve registros activos
+y el guardado rechaza un ID inactivo con VALIDATION_ERROR. Hoy solo Estratificación tiene este
+campo; no se añade a los demás catálogos por suposición.
+`supplier_status` y `supplier_type` son catálogos distintos (confirmado el 2026-10-21): Tipo de
+proveedor tiene sus propios valores de actividad, sin relación con Estatus. Ninguno representa
 `RegistrationStatus` (`IN_PROGRESS` / `REGISTERED`). No se agrega su captura al formulario.
 Los tipos de participación CUCoP siguen siendo códigos fijos, no este catálogo de proveedor.
 
@@ -119,28 +121,28 @@ Los tipos de participación CUCoP siguen siendo códigos fijos, no este catálog
 erDiagram
     cucopChapter["cucop_chapter"] {
         int id PK
-        string key
+        string key UK
         string description
         int level "Siempre 1"
     }
     cucopConcept["cucop_concept"] {
         int id PK
         int chapter_id FK
-        string key
+        string key UK
         string description
         int level "Siempre 2"
     }
     cucopGenericItem["cucop_generic_item"] {
         int id PK
         int concept_id FK
-        string key
+        string key UK
         string description
         int level "Siempre 3"
     }
     cucopSpecificItem["cucop_specific_item"] {
         int id PK
         int generic_item_id FK
-        string key
+        string key UK
         string description
         int level "Siempre 4"
     }
@@ -152,16 +154,34 @@ erDiagram
 Cada hijo tiene un padre obligatorio del nivel inmediato anterior. Toda genérica debe tener
 al menos una específica: una FK por sí sola no garantiza esa regla; se verificará al preparar
 los datos y consultar el catálogo. Se proponen índices sobre las tres FK y checks para `level`.
-No se declara unicidad de `key` sin revisar si la clave es única globalmente o dentro de su padre.
+`key` es única dentro de cada tabla de nivel (constraint UK); entre niveles distintos puede repetirse.
 Los IDs pueden coincidir entre niveles; la selección del expediente referencia exclusivamente
 `cucop_specific_item.id`, nunca un ID sin identificar el nivel.
 
+## Tipos SQL
+
+Aplican igual en H2 y PostgreSQL ([ADR-0017](../adr/0017-backend-postgresql-persistencia-duradera.md)).
+
+| Columna | Tipo SQL |
+| :--- | :--- |
+| `id` y FK a IDs de catálogo (incluidos IDs de padre CUCoP) | `INTEGER` |
+| `level` CUCoP | `INTEGER` |
+| Claves: `key`, `country.code` y `legal_ownership.iso_country` | `VARCHAR(50)` |
+| Textos descriptivos: `description`, `country.name`, `country.international_name` | `VARCHAR(500)` |
+| `legal_ownership.regime` (texto de `tax_regime.description`) | `VARCHAR(500)` |
+| `active`, donde exista | `BOOLEAN` |
+
+`VARCHAR(500)` corresponde al VARCHAR2(500) de la fuente. Las columnas que hoy admiten null
+(`iso_country` y `regime` en Titularidad Jurídica) se mantienen opcionales; las demás son `NOT NULL`.
+
 ## Precisiones físicas antes de implementar
 
-1. Conservar nombres y relaciones aprobados; fijar tipos SQL concretos y longitudes.
-2. Confirmar el mapeo de país/régimen en Titularidad Jurídica y los valores de `NOT_DEF`.
-3. Revisar si Estatus y Tipo de proveedor son dos catálogos distintos.
-4. Confirmar campos de vigencia existentes y restricciones de unicidad de claves.
+1. Conservar nombres y relaciones aprobados. Tipos SQL fijados el 2026-10-21.
+2. Confirmar el mapeo de país/régimen en Titularidad Jurídica. Los valores de `NOT_DEF` están
+   confirmados (ID 99, sin país ni régimen).
+3. Estatus y Tipo de proveedor son dos catálogos distintos (resuelto el 2026-10-21).
+4. Vigencia resuelta el 2026-10-21 (`active` donde exista; hoy solo Estratificación). Las claves
+   son únicas dentro de su tabla (UK en `key` y `country.code`), confirmado el 2026-10-21.
 5. Las FK desde el expediente y sus secciones se proponen en el
-   [diseño de persistencia del registro](registration-database-design.md), pendiente de revisión
-   independiente; la aprobación de este documento corresponde a los catálogos.
+   [diseño de persistencia del registro](registration-database-design.md), aprobado el
+   2026-10-20; la aprobación de este documento corresponde a los catálogos.

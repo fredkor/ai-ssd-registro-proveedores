@@ -14,8 +14,9 @@ CUCoP. Fredkor Labs elige Sakai como plantilla gratuita para evitar adquirir una
 
 - Se utilizará PrimeNG con la plantilla Sakai de PrimeTek, en una distribución compatible
   con Angular 21. Se utilizará la línea PrimeNG 21 compatible con la plantilla y Angular 21.
-- Las versiones exactas de paquetes y revisión de Sakai se fijarán y verificarán al preparar
-  el frontend; no se usará automáticamente la última versión de otra línea mayor.
+- Las versiones exactas están en `frontend/package.json` y `frontend/package-lock.json`: Sakai
+  (`sakai-ng`) 21.0.0, PrimeNG 21.0.2 y `@primeuix/themes` 2.0.2 a 2026-10-21. No se usa
+  automáticamente la última versión de otra línea mayor.
 - Se conservarán los avisos de la licencia MIT de Sakai al incorporar la plantilla.
 - Se reutilizarán sus componentes y estilos para las vistas del registro, sin incorporar
   páginas de demostración como funcionalidades del negocio.

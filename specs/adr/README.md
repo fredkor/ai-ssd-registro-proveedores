@@ -30,17 +30,18 @@ Todos los ADR se almacenan directamente en `specs/adr/`, con el formato
 | [0012](0012-frontend-primeng-sakai.md) | Frontend | PrimeNG y plantilla Sakai para Angular 21 | Aceptado |
 | [0013](0013-frontend-arquitectura-por-dominios.md) | Frontend | Arquitectura frontend por dominios: DDD / Nx Style | Aceptado |
 | [0014](0014-frontend-formularios-reactivos.md) | Frontend | Preferencia por formularios reactivos de Angular | Aceptado |
-| [0015](0015-shared-token-de-registro.md) | Compartido | JWT de registro de 60 minutos y sesión única por solicitante | Aceptado |
+| [0015](0015-shared-token-de-registro.md) | Compartido | JWT de registro de 60 minutos y sesiones concurrentes por solicitante | Aceptado |
 | [0016](0016-backend-verificacion-firma-sha256-rsa.md) | Backend | Verificación RSA PKCS#1 v1.5 con SHA-256 y Java SHA256withRSA | Aceptado |
+| [0017](0017-backend-postgresql-persistencia-duradera.md) | Backend | PostgreSQL 17 con Flyway para persistencia duradera | Aceptado |
 
 ## Preparación pendiente
 
-- Implementar el contexto JWT en la misma BD según ADR-0015; concretar gestión de claves, biblioteca y tratamiento de peticiones ya autorizadas al sustituir sesión.
+- Implementar el contexto JWT en la misma BD según ADR-0015 (Spring Security Resource Server, llaves PEM por entorno, varias sesiones por RFC).
 - Implementar y verificar interoperabilidad de firma (ADR-0016); el mecanismo ya está definido.
-- Concretar anchos SQL y verificaciones de datos del esquema de catálogos aprobado; completar esquema de archivos y compensación de fallos de carga (ADR-0010).
-- Alinear contrato, Maven y validador y comprobar la generación antes de implementar.
-- Definir persistencia duradera para entornos distintos de pruebas con H2 en memoria.
-- Fijar versiones exactas de frontend y revisión compatible de Sakai al preparar el proyecto.
+- Tipos SQL y vigencia de catálogos fijados el 2026-10-21; claves únicas por tabla. Queda el mapeo país/régimen de Titularidad Jurídica. El esquema de archivos y la compensación de fallos de carga (ADR-0010) quedaron definidos el 2026-10-20.
+- Contrato, Maven y validador alineados; la generación se comprobó el 2026-10-20.
+- Persistencia duradera definida en ADR-0017; incorporar dependencias y migración inicial al preparar el primer entorno duradero.
+- Versiones del frontend fijadas en `frontend/package.json` y `frontend/package-lock.json` (Sakai 21.0.0, Angular 21.0.6, PrimeNG 21.0.2).
 
 Las políticas de null, propiedades desconocidas, carga/asociación inmediata y limpieza están
 definidas. API-07 está resuelta mediante eliminación lógica transaccional en BD y borrado

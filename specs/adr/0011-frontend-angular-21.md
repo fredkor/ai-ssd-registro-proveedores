@@ -15,7 +15,8 @@ quedar separado de las decisiones del backend.
 
 - El frontend de Fredkor Labs se implementará con Angular 21 y TypeScript compatible con esa línea.
 - Angular coordinará vistas, rutas, componentes, servicios de aplicación frontend e integración HTTP.
-- Las versiones concretas se fijarán en package.json y su lockfile al preparar el frontend;
+- Las versiones se declaran en `frontend/package.json` y se fijan en `frontend/package-lock.json`
+  (npm): Angular 21.0.6, Angular CLI 21.0.4, TypeScript 5.9.3 y RxJS 7.8 a 2026-10-21.
   Node.js, TypeScript y RxJS deben respetar la matriz de compatibilidad de Angular 21.
 - Las reglas funcionales provienen de RF y HU. La validación visual no sustituye la del backend.
 - El resultado de Firma Electrónica se procesa conforme al contrato; no se implementan
