@@ -2,9 +2,7 @@ package mx.com.fredkorlabs.registration.application.service;
 
 import mx.com.fredkorlabs.registration.application.port.in.GetRegistrationNoticeResult;
 import mx.com.fredkorlabs.registration.application.port.in.GetRegistrationNoticeUseCase;
-import org.springframework.stereotype.Service;
 
-@Service
 public class GetRegistrationNoticeService implements GetRegistrationNoticeUseCase {
 
     private static final String VERSION = "1.0";
