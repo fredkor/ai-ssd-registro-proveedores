@@ -3,7 +3,7 @@
 ## Estado y alcance
 
 [supplier-registration-openapi.yaml](supplier-registration-openapi.yaml) es el contrato
-OpenAPI 3.0.3, versión 0.1.0: 13 operaciones y 35 esquemas. Declara
+OpenAPI 3.0.3, versión 0.1.0: 21 operaciones y 38 esquemas. Declara
 `x-implementation-ready: true`: está habilitado para generación e implementación.
 Cubre la primera etapa, sin captura de Contactos ni finalización.
 
@@ -22,13 +22,23 @@ Cubre la primera etapa, sin captura de Contactos ni finalización.
 | Cargar cédula | POST `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `uploadFiscalDocument` |
 | Eliminar cédula | DELETE `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `deleteFiscalDocument` |
 | Descargar cédula | GET `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `downloadFiscalDocument` |
-| Consultar catálogos generales | GET `/api/v1/registration-catalogs/general-data` | `getGeneralDataCatalogs` |
+| Consultar catálogo: País | GET `/api/v1/registration-catalogs/countries` | `getCountries` |
+| Consultar catálogo: Titularidad jurídica | GET `/api/v1/registration-catalogs/legal-ownerships` | `getLegalOwnerships` |
+| Consultar catálogo: Sector | GET `/api/v1/registration-catalogs/sectors` | `getSectors` |
+| Consultar catálogo: Subsector | GET `/api/v1/registration-catalogs/sectors/{sectorId}/subsectors` | `getSubsectors` |
+| Consultar catálogo: Giro | GET `/api/v1/registration-catalogs/business-activities` | `getBusinessActivities` |
+| Consultar catálogo: Estratificación | GET `/api/v1/registration-catalogs/stratifications` | `getStratifications` |
+| Consultar catálogo: Actividad preponderante | GET `/api/v1/registration-catalogs/primary-activities` | `getPrimaryActivities` |
+| Consultar catálogo: Número de trabajadores | GET `/api/v1/registration-catalogs/worker-count-ranges` | `getWorkerCountRanges` |
+| Consultar catálogo: Ventas anuales | GET `/api/v1/registration-catalogs/annual-sales-ranges` | `getAnnualSalesRanges` |
 | Consultar catálogo CUCoP | GET `/api/v1/registration-catalogs/cucop` | `getCucopCatalog` |
 
 No hay endpoints de navegación ni eliminación de teléfonos. DELETE de cédula desasocia, marca metadatos y actualiza progreso en una transacción de BD, sin tocar disco. El proceso diario hace el borrado físico.
 PUT guarda una sección completa; identidad y progreso se resuelven y validan en backend.
 
 ## Fuentes y reglas de frontera
+
+- [ADR-0020](../adr/0020-shared-catalogos-por-recurso.md): un recurso por catálogo de Datos Generales; Titularidad filtrada en backend.
 
 - [Guía API](API-GUIDELINES.md): recursos, formatos, errores y generación.
 - [Integración de firma](signature-integration.md) y [ADR-0016](../adr/0016-backend-verificacion-firma-sha256-rsa.md): evidencia y extracción de identidad.

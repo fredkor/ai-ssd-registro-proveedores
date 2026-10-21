@@ -438,45 +438,273 @@ paths:
           $ref: '#/components/responses/InternalError'
       security:
       - RegistrationToken: []
-  /api/v1/registration-catalogs/general-data:
+  /api/v1/registration-catalogs/countries:
     get:
       tags:
       - RegistrationCatalogs
-      summary: Cargar catálogos completos y dependientes de Datos Generales
-      operationId: getGeneralDataCatalogs
-      description: Catálogos completos de Datos Generales, excepto subsectors filtrado por sectorId cuando
-        se informa. Estratificación se devuelve completa, sin asociación ni filtro por régimen. Sin paginación. Si
-        sectorId no se informa, subsectors se omite; si se informa y no hay opciones, retorna lista vacía.
-        Las demás colecciones se devuelven completas. Los catálogos con campo activo (hoy Estratificación) solo devuelven registros activos; un ID inactivo se rechaza al guardar. Titularidad jurídica se filtra en frontend por país y régimen para Nacional, y por país o key NOT_DEF para Extranjero sin filtro por régimen; orden ascendente por key.
+      summary: Consultar catálogo de países
+      operationId: getCountries
+      description: Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
       x-spec-refs:
       - RF-REG-05
       - US08
-      x-use-case: GetGeneralDataCatalogsUseCase
+      x-use-case: GetCountriesUseCase
       x-implementation-ready: true
+      x-requires-accepted-identification: true
       responses:
         '200':
           description: Operación completada correctamente.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GeneralDataCatalogsResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '403':
-          $ref: '#/components/responses/AccessDenied'
-        '500':
-          $ref: '#/components/responses/InternalError'
+                $ref: '#/components/schemas/CountryOptionListResponse'
         '401':
           $ref: '#/components/responses/InvalidRegistrationToken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - RegistrationToken: []
+  /api/v1/registration-catalogs/legal-ownerships:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Consultar titularidad jurídica aplicable
+      operationId: getLegalOwnerships
+      description: Titularidad jurídica filtrada en backend según domain/catalogs.md (ADR-0020). NATIONAL devuelve los
+        registros del país y del régimen; FOREIGN, los del país más NOT_DEF, sin filtro de régimen. taxRegime es
+        obligatorio con NATIONAL y no se permite con FOREIGN. Orden ascendente por key.
+      x-spec-refs:
+      - RF-REG-05
+      - US08
+      x-use-case: GetLegalOwnershipsUseCase
+      x-implementation-ready: true
       x-requires-accepted-identification: true
       parameters:
-      - name: sectorId
+      - name: origin
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/Origin'
+        description: Origen seleccionado en Datos Generales.
+      - name: countryCode
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+        description: Clave del país seleccionado (countryCode del catálogo de países).
+      - name: taxRegime
         in: query
         required: false
         schema:
+          $ref: '#/components/schemas/TaxRegime'
+        description: Obligatorio con origin=NATIONAL; no se permite con origin=FOREIGN.
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalOwnershipOptionListResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - RegistrationToken: []
+  /api/v1/registration-catalogs/sectors:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Consultar catálogo de sectores
+      operationId: getSectors
+      description: Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
+      x-spec-refs:
+      - RF-REG-05
+      - US08
+      x-use-case: GetSectorsUseCase
+      x-implementation-ready: true
+      x-requires-accepted-identification: true
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogOptionListResponse'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - RegistrationToken: []
+  /api/v1/registration-catalogs/sectors/{sectorId}/subsectors:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Consultar subsectores de un sector
+      operationId: getSubsectors
+      description: Subsectores del sector indicado, ordenados por id (ADR-0020). Un sector inexistente devuelve items vacío.
+      x-spec-refs:
+      - RF-REG-05
+      - US08
+      x-use-case: GetSubsectorsUseCase
+      x-implementation-ready: true
+      x-requires-accepted-identification: true
+      parameters:
+      - name: sectorId
+        in: path
+        required: true
+        schema:
           $ref: '#/components/schemas/CatalogId'
-        description: Cuando se informa, devolver los subsectores del sector seleccionado. Sin este parámetro
-          no se consulta ni incluye subsectors.
+        description: Sector seleccionado.
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogOptionListResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - RegistrationToken: []
+  /api/v1/registration-catalogs/business-activities:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Consultar catálogo de giros
+      operationId: getBusinessActivities
+      description: Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
+      x-spec-refs:
+      - RF-REG-05
+      - US08
+      x-use-case: GetBusinessActivitiesUseCase
+      x-implementation-ready: true
+      x-requires-accepted-identification: true
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogOptionListResponse'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - RegistrationToken: []
+  /api/v1/registration-catalogs/stratifications:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Consultar catálogo de estratificación
+      operationId: getStratifications
+      description: Registros activos de estratificación, ordenados por id, sin asociación ni filtro por régimen (ADR-0020).
+        Un ID inactivo se rechaza al guardar Datos Generales.
+      x-spec-refs:
+      - RF-REG-05
+      - US08
+      x-use-case: GetStratificationsUseCase
+      x-implementation-ready: true
+      x-requires-accepted-identification: true
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogOptionListResponse'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - RegistrationToken: []
+  /api/v1/registration-catalogs/primary-activities:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Consultar catálogo de actividades preponderantes
+      operationId: getPrimaryActivities
+      description: Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
+      x-spec-refs:
+      - RF-REG-05
+      - US08
+      x-use-case: GetPrimaryActivitiesUseCase
+      x-implementation-ready: true
+      x-requires-accepted-identification: true
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogOptionListResponse'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - RegistrationToken: []
+  /api/v1/registration-catalogs/worker-count-ranges:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Consultar rangos de número de trabajadores
+      operationId: getWorkerCountRanges
+      description: Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
+      x-spec-refs:
+      - RF-REG-05
+      - US08
+      x-use-case: GetWorkerCountRangesUseCase
+      x-implementation-ready: true
+      x-requires-accepted-identification: true
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogOptionListResponse'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - RegistrationToken: []
+  /api/v1/registration-catalogs/annual-sales-ranges:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Consultar rangos de ventas anuales
+      operationId: getAnnualSalesRanges
+      description: Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
+      x-spec-refs:
+      - RF-REG-05
+      - US08
+      x-use-case: GetAnnualSalesRangesUseCase
+      x-implementation-ready: true
+      x-requires-accepted-identification: true
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogOptionListResponse'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+        '500':
+          $ref: '#/components/responses/InternalError'
       security:
       - RegistrationToken: []
   /api/v1/registration-catalogs/cucop:
@@ -1203,59 +1431,39 @@ components:
       - id
       - description
       additionalProperties: false
-    GeneralDataCatalogsResponse:
+    CatalogOptionListResponse:
       type: object
       properties:
-        countries:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogOptionResponse'
+      required:
+      - items
+      additionalProperties: false
+      description: Opciones de un catálogo de Datos Generales (ADR-0020).
+    CountryOptionListResponse:
+      type: object
+      properties:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/CountryOptionResponse'
-        legalOwnerships:
+      required:
+      - items
+      additionalProperties: false
+      description: Catálogo de países (ADR-0020).
+    LegalOwnershipOptionListResponse:
+      type: object
+      properties:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/LegalOwnershipOptionResponse'
-        sectors:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatalogOptionResponse'
-        subsectors:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatalogOptionResponse'
-        businessActivities:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatalogOptionResponse'
-        stratifications:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatalogOptionResponse'
-        primaryActivities:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatalogOptionResponse'
-        workerCountRanges:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatalogOptionResponse'
-        annualSalesRanges:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatalogOptionResponse'
-      additionalProperties: false
-      description: Catálogos completos de Datos Generales, excepto subsectors filtrado por sectorId cuando
-        se informa. Estratificación se devuelve completa, sin asociación ni filtro por régimen. Sin paginación. Si
-        sectorId no se informa, subsectors se omite; si se informa y no hay opciones, retorna lista vacía.
-        Las demás colecciones se devuelven completas. Los catálogos con campo activo (hoy Estratificación) solo devuelven registros activos; un ID inactivo se rechaza al guardar. Titularidad jurídica se filtra en frontend por país y régimen para Nacional, y por país o key NOT_DEF para Extranjero sin filtro por régimen; orden ascendente por key.
       required:
-      - countries
-      - legalOwnerships
-      - sectors
-      - businessActivities
-      - stratifications
-      - primaryActivities
-      - workerCountRanges
-      - annualSalesRanges
+      - items
+      additionalProperties: false
+      description: Titularidad jurídica ya filtrada por origen, país y régimen (ADR-0020).
     CucopNodeResponse:
       type: object
       properties:
@@ -1350,7 +1558,7 @@ components:
       - description
       - countryCode
       additionalProperties: false
-      description: 'Catálogo completo para filtrado local: Nacional exige país y régimen; Extranjero incluye país o key NOT_DEF sin filtro por régimen, también cuando hay opciones del país. Orden ascendente por key; respaldo NOT_DEF según domain/catalogs.md. La presencia de régimen depende del registro; no se inventa un valor cuando no existe.'
+      description: 'Opción de titularidad jurídica ya filtrada en backend (ADR-0020): Nacional por país y régimen; Extranjero por país o key NOT_DEF sin filtro por régimen. Orden ascendente por key según domain/catalogs.md. La presencia de régimen depende del registro; no se inventa un valor cuando no existe.'
   responses:
     ValidationError:
       description: Datos de entrada inválidos.
