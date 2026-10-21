@@ -8,7 +8,8 @@ python3 -m unittest discover -s tools -p 'test_*.py' -v
 ```
 
 El script localiza el proyecto a partir de su propia ruta, por lo que también puede ejecutarse
-desde otra carpeta. Para validar una copia explícita:
+desde otra carpeta. Consulta Maven y los enums Java en `backend/`, y el contrato
+autoritativo en `specs/api/`. Para validar una copia explícita:
 
 ```bash
 python3 tools/spec_lint.py --root /ruta/a/SSD_REAL

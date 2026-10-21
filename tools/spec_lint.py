@@ -180,6 +180,7 @@ def lint(doc, root=ROOT, require_ready=False):
     """Compara contrato con las fuentes locales; devuelve errores y advertencias sin escribir."""
     root = Path(root)
     specs = root / 'specs'
+    backend = root / 'backend'
     errors, warnings = [], []
     def fail(rule, message):
         errors.append(f'[{rule}] {message}')
@@ -282,7 +283,7 @@ def lint(doc, root=ROOT, require_ready=False):
     for name,values in expected.items():
         if not values or schemas.get(name,{}).get('enum')!=values:
             fail('ENUM', f'{name}: contrato y dominio/ADR difieren')
-        for java in (root/'src/main/java').rglob(f'{name}.java'):
+        for java in (backend/'src/main/java').rglob(f'{name}.java'):
             if '/generated/' in java.as_posix():
                 continue
             text = re.sub(r'/\*.*?\*/|//[^\n]*','',java.read_text(encoding='utf-8'),flags=re.S)
@@ -317,10 +318,10 @@ def lint(doc, root=ROOT, require_ready=False):
         for link in re.findall(r'\]\(([^)]+)\)',path.read_text(encoding='utf-8')):
             if '://' not in link and not link.startswith('#') and not (path.parent/link.split('#')[0]).exists():
                 fail('LINK',f'{path.relative_to(root)}: {link}')
-    pom=ET.parse(root/'pom.xml').getroot();ns={'m':'http://maven.apache.org/POM/4.0.0'}
+    pom=ET.parse(backend/'pom.xml').getroot();ns={'m':'http://maven.apache.org/POM/4.0.0'}
     if pom.findtext('m:groupId',namespaces=ns)!='mx.com.fredkorlabs':
         fail('MAVEN','groupId debe ser mx.com.fredkorlabs')
-    if pom.findtext('.//m:inputSpec',namespaces=ns)!='${project.basedir}/specs/api/supplier-registration-openapi.yaml':
+    if pom.findtext('.//m:inputSpec',namespaces=ns)!='${project.basedir}/../specs/api/supplier-registration-openapi.yaml':
         fail('MAVEN','inputSpec no apunta al contrato del registro')
     for field,suffix in [('apiPackage',''),('modelPackage','.model')]:
         if pom.findtext(f'.//m:{field}',namespaces=ns)!=f'mx.com.fredkorlabs.registration.adapter.in.web.generated{suffix}':
@@ -330,7 +331,7 @@ def lint(doc, root=ROOT, require_ready=False):
         fail('READY','Habilitación global contradice operaciones o pendientes')
     if not ready:
         (errors if require_ready else warnings).append('[READY] Borrador: coherencia no habilita implementación')
-    if not (root/'src/main/java').exists():
+    if not (backend/'src/main/java').exists():
         warnings.append('[CODE] No hay implementación Java; no se verificó comportamiento ni compilación')
     errors.extend(check_registration_rules(doc, root))
     return errors,warnings

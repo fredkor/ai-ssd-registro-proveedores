@@ -18,11 +18,13 @@ class SpecLintTest(unittest.TestCase):
         mutate(doc)
         return spec_lint.lint(doc)[0]
 
-    def test_current_draft_passes_coherence_but_not_readiness(self):
-        errors, warnings = spec_lint.lint(self.contract)
+    def test_draft_passes_coherence_but_not_readiness(self):
+        doc = copy.deepcopy(self.contract)
+        doc['x-implementation-ready'] = False
+        errors, warnings = spec_lint.lint(doc)
         self.assertEqual(errors, [])
         self.assertTrue(any('[READY]' in item for item in warnings))
-        errors, _ = spec_lint.lint(self.contract, require_ready=True)
+        errors, _ = spec_lint.lint(doc, require_ready=True)
         self.assertTrue(any('[READY]' in item for item in errors))
 
     def test_dangling_reference_returns_diagnostic(self):
@@ -60,8 +62,24 @@ class SpecLintTest(unittest.TestCase):
             yaml.load('openapi: 3.0.3\nopenapi: 3.1.0\n', Loader=spec_lint.UniqueLoader)
 
     def test_global_ready_cannot_override_draft_operations(self):
-        errors = self.changed(lambda d: d.update({'x-implementation-ready': True}))
+        def mutate(doc):
+            doc['x-implementation-ready'] = True
+            doc['paths']['/api/v1/registration-notices/current']['get']['x-implementation-ready'] = False
+        errors = self.changed(mutate)
         self.assertTrue(any('[READY]' in item for item in errors))
+
+    def test_backend_java_enum_drift_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            shutil.copytree(spec_lint.ROOT / 'specs', root / 'specs')
+            java = root / 'backend/src/main/java/example/RegistrationStatus.java'
+            java.parent.mkdir(parents=True)
+            java.write_text('enum RegistrationStatus { INVALID }', encoding='utf-8')
+            for name in ['backend/pom.xml', 'CLAUDE.md']:
+                shutil.copyfile(spec_lint.ROOT / name, root / name)
+            errors, warnings = spec_lint.lint(self.contract, root=root)
+            self.assertTrue(any('[JAVA] backend/src/main/java/' in item for item in errors))
+            self.assertFalse(any('[CODE]' in item for item in warnings))
 
     def test_required_jwt_cannot_be_removed_with_its_marker(self):
         def mutate(doc):
@@ -108,7 +126,8 @@ class SpecLintTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             shutil.copytree(spec_lint.ROOT / 'specs', root / 'specs')
-            for name in ['pom.xml', 'CLAUDE.md']:
+            (root / 'backend').mkdir()
+            for name in ['backend/pom.xml', 'CLAUDE.md']:
                 shutil.copyfile(spec_lint.ROOT / name, root / name)
             rnf = root / 'specs/requirements/no-functional.md'
             rnf.write_text(rnf.read_text(encoding='utf-8') + '\n## RNF-01: Duplicado\n\nReferencia RNF-99.\n', encoding='utf-8')
