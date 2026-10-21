@@ -11,6 +11,7 @@ import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
 import mx.com.fredkorlabs.registration.domain.model.NoticeAcceptance;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
+import mx.com.fredkorlabs.registration.testsupport.PostgresTestcontainersConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({NoticeAcceptancePersistenceAdapter.class, ApplicantSignatureEvidencePersistenceAdapter.class})
+@Import({NoticeAcceptancePersistenceAdapter.class, ApplicantSignatureEvidencePersistenceAdapter.class, PostgresTestcontainersConfiguration.class})
 class IdentificationPersistenceAdapterTest {
 
     private static final Instant ISSUED_AT = Instant.parse("2026-10-21T15:30:00Z");
@@ -166,20 +167,21 @@ class IdentificationPersistenceAdapterTest {
 
     @Test
     void US01_CA027_schema_usesApprovedSqlTypesAndUniqueAcceptance() {
-        assertEquals("CHARACTER LARGE OBJECT", columnType("APPLICANT_SIGNATURE_EVIDENCE", "COMPLETE_RESULT"));
-        assertEquals("CHARACTER VARYING", columnType("APPLICANT_SIGNATURE_EVIDENCE", "VERIFIED_LEGAL_NAME"));
-        assertEquals("UUID", columnType("REGISTRATION_CONTEXT", "JTI"));
-        assertEquals("TIMESTAMP WITH TIME ZONE", columnType("REGISTRATION_CONTEXT", "EXPIRES_AT"));
+        assertEquals("text", columnType("applicant_signature_evidence", "complete_result"));
+        assertEquals("text", columnType("applicant_signature_evidence", "verified_legal_name"));
+        assertEquals("uuid", columnType("registration_context", "jti"));
+        assertEquals("timestamp(6) with time zone", columnType("registration_context", "expires_at"));
         assertEquals(1L, ((Number) entityManager.createNativeQuery("""
-                SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-                JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE k ON tc.CONSTRAINT_NAME = k.CONSTRAINT_NAME
-                WHERE tc.TABLE_NAME = 'REGISTRATION_CONTEXT' AND tc.CONSTRAINT_TYPE = 'UNIQUE'
-                AND k.COLUMN_NAME = 'NOTICE_ACCEPTANCE_ID'""").getSingleResult()).longValue());
+                SELECT COUNT(*) FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage k ON tc.constraint_name = k.constraint_name
+                WHERE tc.table_name = 'registration_context' AND tc.constraint_type = 'UNIQUE'
+                AND k.column_name = 'notice_acceptance_id'""").getSingleResult()).longValue());
     }
 
     private String columnType(String table, String column) {
         return (String) entityManager.createNativeQuery(
-                "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?1 AND COLUMN_NAME = ?2")
+                "SELECT format_type(atttypid, atttypmod) FROM pg_attribute "
+                    + "WHERE attrelid = to_regclass(?1) AND attname = ?2")
             .setParameter(1, table).setParameter(2, column).getSingleResult();
     }
 }

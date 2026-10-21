@@ -1,10 +1,12 @@
 package mx.com.fredkorlabs.registration;
 
 import mx.com.fredkorlabs.registration.configuration.RegistrationJwtProperties;
+import mx.com.fredkorlabs.registration.testsupport.PostgresTestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
@@ -29,6 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /** ADR-0015 token validation on a protected route (its controller is not implemented yet). */
+@Import(PostgresTestcontainersConfiguration.class)
 @SpringBootTest(classes = SupplierRegistrationApplication.class, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 class RegistrationTokenSecurityTest {

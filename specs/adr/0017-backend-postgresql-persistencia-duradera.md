@@ -25,7 +25,8 @@ además un control versionado de su esquema.
   `backend/src/main/resources/db/migration`, también en las pruebas. Hibernate solo valida el
   esquema (`ddl-auto=validate`).
 - Dependencias, con versiones gestionadas por el parent de Spring Boot: `org.postgresql:postgresql`
-  (runtime), `org.flywaydb:flyway-core` y `org.flywaydb:flyway-database-postgresql`.
+  (runtime), `spring-boot-starter-flyway` (incluye `flyway-core` y la autoconfiguración, que en
+  Spring Boot 4 vive en su propio módulo) y `org.flywaydb:flyway-database-postgresql`.
 - Los tipos SQL son los del [diseño de persistencia](../architecture/registration-database-design.md#71-tipos-sql)
   y del [esquema de catálogos](../architecture/catalog-database-proposal.md#tipos-sql).
 - El bloqueo pesimista del expediente usa `SELECT ... FOR UPDATE`.

@@ -2,10 +2,12 @@ package mx.com.fredkorlabs.registration;
 
 import mx.com.fredkorlabs.registration.adapter.out.persistence.ApplicantSignatureEvidenceJpaRepository;
 import mx.com.fredkorlabs.registration.adapter.out.persistence.RegistrationContextJpaRepository;
+import mx.com.fredkorlabs.registration.testsupport.PostgresTestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -22,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** End to end with node-forge seals (ADR-0016) and the real H2 persistence and JWT (ADR-0015). */
+/** End to end with node-forge seals (ADR-0016) and the real PostgreSQL persistence and JWT (ADR-0015). */
+@Import(PostgresTestcontainersConfiguration.class)
 @SpringBootTest(classes = SupplierRegistrationApplication.class, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 class IdentifyApplicantIntegrationTest {

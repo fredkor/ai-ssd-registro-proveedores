@@ -1,14 +1,16 @@
 spring:
   application:
     name: supplier-registration
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+  # ADR-0017/ADR-0018: PostgreSQL 17; en las pruebas la conexión la aporta Testcontainers
   datasource:
-    url: jdbc:h2:mem:supplier
-    username: sa
-    password: ""
+    url: ${REGISTRATION_DB_URL:}
+    username: ${REGISTRATION_DB_USERNAME:}
+    password: ${REGISTRATION_DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway crea y evoluciona el esquema; Hibernate solo lo valida
+      ddl-auto: validate
   web:
     # ADR-0011: mensajes de validación siempre en inglés, sin importar la JVM ni Accept-Language
     locale: en

@@ -49,13 +49,12 @@ public class SecurityConfiguration {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
             .authorizeHttpRequests(requests -> requests
                 .requestMatchers(HttpMethod.GET, "/api/v1/registration-notices/current").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/registration-notice-acceptances").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/applicant-identifications").permitAll()
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
-                    "/supplier-registration-openapi.yaml", "/h2-console/**", "/error").permitAll()
+                    "/supplier-registration-openapi.yaml", "/error").permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(resourceServer -> resourceServer
                 .jwt(jwt -> jwt.decoder(jwtDecoder))

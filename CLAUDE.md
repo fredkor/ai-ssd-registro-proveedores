@@ -64,7 +64,7 @@ Python se ejecuta desde la raíz del repositorio; Maven, desde `backend/`.
 | :--- | :--- |
 | Validar specs y contrato | `python3 tools/spec_lint.py --require-ready` |
 | Regenerar la API desde el contrato | `./mvnw clean generate-sources` |
-| Compilar y probar | `./mvnw test` |
-| Ejecutar la aplicación | `./mvnw spring-boot:run` |
+| Compilar y probar (requiere Docker: PostgreSQL desechable, ADR-0018) | `./mvnw test` |
+| Ejecutar la aplicación (PostgreSQL vía `REGISTRATION_DB_URL`, `_USERNAME`, `_PASSWORD`) | `./mvnw spring-boot:run` |
 
 Nunca edites archivos dentro de `backend/target/generated-sources`: se regeneran desde el contrato.

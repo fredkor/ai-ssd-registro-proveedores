@@ -24,7 +24,7 @@ import java.util.Base64;
 
 /**
  * RSA key pair of the registration JWT (ADR-0015). PEM files come from configured locations;
- * without them an ephemeral pair is generated, except under the {@code postgres} profile.
+ * without them an ephemeral pair is generated, except under the {@code prod} profile (ADR-0018).
  */
 @Configuration
 @EnableConfigurationProperties(RegistrationJwtProperties.class)
@@ -43,9 +43,9 @@ public class JwtKeyConfiguration {
                 new PKCS8EncodedKeySpec(readPem(resourceLoader, properties.privateKeyLocation(), "PRIVATE KEY")));
             return new KeyPair(publicKey, privateKey);
         }
-        if (environment.acceptsProfiles(Profiles.of("postgres"))) {
+        if (environment.acceptsProfiles(Profiles.of("prod"))) {
             throw new IllegalStateException(
-                "registration.jwt.public-key-location and private-key-location are required with the postgres profile");
+                "registration.jwt.public-key-location and private-key-location are required with the prod profile");
         }
         log.warn("No registration JWT keys configured; using an ephemeral RSA key pair. Tokens become invalid on restart.");
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");

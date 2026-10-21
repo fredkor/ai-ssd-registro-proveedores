@@ -2,10 +2,12 @@ package mx.com.fredkorlabs.registration;
 
 import mx.com.fredkorlabs.registration.adapter.out.persistence.NoticeAcceptanceJpaEntity;
 import mx.com.fredkorlabs.registration.adapter.out.persistence.NoticeAcceptanceJpaRepository;
+import mx.com.fredkorlabs.registration.testsupport.PostgresTestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -19,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Import(PostgresTestcontainersConfiguration.class)
 @SpringBootTest(classes = SupplierRegistrationApplication.class,
     webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
