@@ -81,7 +81,7 @@
 				<directory>src/main/resources</directory>
 			</resource>
 			<resource>
-				<directory>specs/api</directory>
+				<directory>${project.basedir}/../specs/api</directory>
 				<targetPath>static</targetPath>
 				<includes>
 					<include>supplier-registration-openapi.yaml</include>
