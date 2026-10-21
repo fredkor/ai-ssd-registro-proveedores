@@ -72,7 +72,7 @@ class RegistrationTokenSecurityTest {
         result.andExpect(status().isUnauthorized())
             .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, "Bearer"))
             .andExpect(jsonPath("$.code").value("REGISTRATION_TOKEN_INVALID"))
-            .andExpect(jsonPath("$.details").isEmpty());
+            .andExpect(jsonPath("$.errors").isEmpty());
     }
 
     @Test

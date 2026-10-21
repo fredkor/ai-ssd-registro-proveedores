@@ -73,8 +73,8 @@ class RegistrationNoticesControllerTest {
         mockMvc.perform(get("/api/v1/registration-notices/current"))
             .andExpect(status().isInternalServerError())
             .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
-            .andExpect(jsonPath("$.message").value("Unexpected error"))
-            .andExpect(jsonPath("$.details").isEmpty());
+            .andExpect(jsonPath("$.detail").value("Unexpected error"))
+            .andExpect(jsonPath("$.errors").isEmpty());
     }
 
     @Test
@@ -124,8 +124,8 @@ class RegistrationNoticesControllerTest {
                 .content(body))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
-            .andExpect(jsonPath("$.message").isString())
-            .andExpect(jsonPath("$.details").isArray());
+            .andExpect(jsonPath("$.detail").isString())
+            .andExpect(jsonPath("$.errors").isArray());
 
         verifyNoInteractions(acceptRegistrationNoticeUseCase);
     }
@@ -149,8 +149,8 @@ class RegistrationNoticesControllerTest {
                 .content("{\"version\":\"1.0\"}"))
             .andExpect(status().isInternalServerError())
             .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
-            .andExpect(jsonPath("$.message").value("Unexpected error"))
-            .andExpect(jsonPath("$.details").isEmpty())
+            .andExpect(jsonPath("$.detail").value("Unexpected error"))
+            .andExpect(jsonPath("$.errors").isEmpty())
             .andExpect(jsonPath("$.acceptanceId").doesNotExist());
     }
 }

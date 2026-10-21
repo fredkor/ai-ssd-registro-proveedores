@@ -583,23 +583,60 @@ components:
       - SIGNATURE_VERIFICATION_FAILED
       - REGISTRATION_INCOMPLETE
       - INTERNAL_ERROR
-    ErrorResponse:
+    ProblemResponse:
       type: object
+      description: Error en formato Problem Details (RFC 9457) conforme a ADR-0019. Media type application/problem+json.
+        No contiene trazas, rutas físicas ni evidencia completa.
       properties:
+        type:
+          type: string
+          description: URN del tipo de problema, urn:fredkorlabs:registration:problem:<código en kebab-case>.
+          example: urn:fredkorlabs:registration:problem:validation-error
+        title:
+          type: string
+          description: Resumen fijo del tipo de problema, en inglés.
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+          description: Código HTTP de la respuesta.
+        detail:
+          type: string
+          description: Explicación de esta ocurrencia, en inglés, sin datos internos.
+        instance:
+          type: string
+          description: Ruta de la petición que originó el problema.
         code:
           $ref: '#/components/schemas/ErrorCode'
-        message:
-          type: string
-        details:
+        errors:
           type: array
+          description: Errores por campo de la petición; vacío cuando el problema no se atribuye a un campo.
           items:
-            type: string
+            $ref: '#/components/schemas/ProblemFieldErrorResponse'
       required:
+      - type
+      - title
+      - status
+      - detail
+      - instance
       - code
-      - message
-      - details
+      - errors
       additionalProperties: false
-      description: Formato común. No contiene trazas, rutas físicas ni evidencia completa.
+    ProblemFieldErrorResponse:
+      type: object
+      properties:
+        pointer:
+          type: string
+          description: JSON Pointer (RFC 6901) al lugar del cuerpo de la petición que falló.
+          example: /signatureResult/cadenaOriginal
+        detail:
+          type: string
+          description: Descripción breve en inglés; no repite el valor recibido.
+          example: must be one of [Temporal]
+      required:
+      - pointer
+      - detail
+      additionalProperties: false
     RegistrationNoticeResponse:
       type: object
       properties:
@@ -1309,95 +1346,99 @@ components:
     ValidationError:
       description: Datos de entrada inválidos.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - VALIDATION_ERROR
     AccessDenied:
       description: El contexto aceptado no corresponde al expediente.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - REGISTRATION_ACCESS_DENIED
     RegistrationNotFound:
       description: Expediente inexistente.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - REGISTRATION_NOT_FOUND
     DocumentNotFound:
       description: Expediente o cédula fiscal inexistentes.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - REGISTRATION_NOT_FOUND
       - FISCAL_DOCUMENT_NOT_FOUND
     DuplicateRfc:
       description: Ya existe un expediente para el RFC.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - DUPLICATE_RFC
     StateConflict:
       description: Estado incompatible con la operación.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - INVALID_STATE_TRANSITION
     DocumentConflict:
       description: Estado incompatible o ya existe una cédula.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - INVALID_STATE_TRANSITION
       - FISCAL_DOCUMENT_ALREADY_EXISTS
     DocumentTooLarge:
       description: El archivo supera el máximo de 5 MiB (5,242,880 bytes); el máximo exacto está permitido.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - DOCUMENT_TOO_LARGE
     UnsupportedDocument:
       description: Se requiere extensión .pdf sin distinguir mayúsculas/minúsculas y contenido PDF comprobado en servidor; extensión o contenido incorrectos producen DOCUMENT_FORMAT_NOT_SUPPORTED.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - DOCUMENT_FORMAT_NOT_SUPPORTED
     SignatureVerificationFailed:
       description: El sello no corresponde a contenido y certificado.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - SIGNATURE_VERIFICATION_FAILED
     InternalError:
       description: Fallo técnico; respuesta genérica sin detalles internos.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
           example:
+            type: urn:fredkorlabs:registration:problem:internal-error
+            title: Internal error
+            status: 500
+            detail: Unexpected error
+            instance: /api/v1/applicant-identifications
             code: INTERNAL_ERROR
-            message: Unexpected error
-            details: []
+            errors: []
       x-error-codes:
       - INTERNAL_ERROR
     InvalidRegistrationToken:
@@ -1408,9 +1449,9 @@ components:
             type: string
           description: Esquema Bearer.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemResponse'
       x-error-codes:
       - REGISTRATION_TOKEN_INVALID
   securitySchemes:

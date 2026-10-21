@@ -253,9 +253,10 @@ def lint(doc, root=ROOT, require_ready=False):
                 if not str(status).startswith(('4','5')):
                     continue
                 response = resolve(doc,response['$ref']) if '$ref' in response else response
-                schema = response.get('content',{}).get('application/json',{}).get('schema',{})
-                if schema.get('$ref') != '#/components/schemas/ErrorResponse':
-                    fail('ERROR', f'{where}: {status} no usa ErrorResponse')
+                content = response.get('content',{})
+                schema = content.get('application/problem+json',{}).get('schema',{})
+                if list(content) != ['application/problem+json'] or schema.get('$ref') != '#/components/schemas/ProblemResponse':
+                    fail('ERROR', f'{where}: {status} no usa Problem Details (ADR-0019)')
     missing = (rf|stories.keys())-covered-{'RF-REG-07','US07'}
     if missing:
         fail('TRACE', f'Primera etapa sin cobertura: {sorted(missing)}')

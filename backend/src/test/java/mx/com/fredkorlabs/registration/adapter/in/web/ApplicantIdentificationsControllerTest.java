@@ -140,7 +140,8 @@ class ApplicantIdentificationsControllerTest {
         perform(withoutSignatureProperty(property))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
-            .andExpect(jsonPath("$.details[0]").value("signatureResult." + property));
+            .andExpect(jsonPath("$.errors[0].pointer").value("/signatureResult/" + property))
+            .andExpect(jsonPath("$.errors[0].detail").value("is required"));
         verifyNoInteractions(identifyApplicantUseCase);
     }
 
@@ -245,7 +246,7 @@ class ApplicantIdentificationsControllerTest {
         perform(body(SIGNATURE_RESULT))
             .andExpect(status().isInternalServerError())
             .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
-            .andExpect(jsonPath("$.message").value("Unexpected error"))
-            .andExpect(jsonPath("$.details").isEmpty());
+            .andExpect(jsonPath("$.detail").value("Unexpected error"))
+            .andExpect(jsonPath("$.errors").isEmpty());
     }
 }

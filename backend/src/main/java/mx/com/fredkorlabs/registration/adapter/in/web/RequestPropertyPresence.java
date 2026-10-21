@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,7 +26,7 @@ final class RequestPropertyPresence {
             && GENERATED_MODEL_PACKAGE.equals(clazz.getPackageName());
     }
 
-    static void check(JsonNode node, Class<?> model, String path) {
+    static void check(JsonNode node, Class<?> model, List<String> path) {
         if (node == null || !node.isObject()) {
             return; // type mismatches are reported by deserialization
         }
@@ -35,7 +36,7 @@ final class RequestPropertyPresence {
                 continue;
             }
             String name = property.value();
-            String propertyPath = path.isEmpty() ? name : path + "." + name;
+            List<String> propertyPath = append(path, name);
             if (!node.has(name)) {
                 throw new MissingRequestPropertyException(propertyPath);
             }
@@ -43,15 +44,21 @@ final class RequestPropertyPresence {
         }
     }
 
-    private static void checkNested(JsonNode value, Type type, String path) {
+    private static void checkNested(JsonNode value, Type type, List<String> path) {
         if (isGeneratedModel(type)) {
             check(value, (Class<?>) type, path);
         } else if (type instanceof ParameterizedType parameterized
             && parameterized.getRawType() instanceof Class<?> raw && List.class.isAssignableFrom(raw)
             && isGeneratedModel(parameterized.getActualTypeArguments()[0]) && value != null && value.isArray()) {
             for (int i = 0; i < value.size(); i++) {
-                check(value.get(i), (Class<?>) parameterized.getActualTypeArguments()[0], path + "[" + i + "]");
+                check(value.get(i), (Class<?>) parameterized.getActualTypeArguments()[0], append(path, String.valueOf(i)));
             }
         }
+    }
+
+    private static List<String> append(List<String> path, String segment) {
+        List<String> extended = new ArrayList<>(path);
+        extended.add(segment);
+        return extended;
     }
 }

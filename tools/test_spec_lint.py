@@ -96,6 +96,12 @@ class SpecLintTest(unittest.TestCase):
         errors = self.changed(mutate)
         self.assertTrue(any('[ERROR]' in item and 'ADR-0004' in item for item in errors))
 
+    def test_error_response_must_stay_problem_details(self):
+        def mutate(doc):
+            response = doc['components']['responses']['ValidationError']
+            response['content'] = {'application/json': response['content']['application/problem+json']}
+        self.assertTrue(any('Problem Details' in item for item in self.changed(mutate)))
+
     def test_upload_limit_cannot_drift_to_example_ten_mb(self):
         def mutate(doc):
             op = doc['paths']['/api/v1/supplier-registrations/{registrationId}/fiscal-document']['post']

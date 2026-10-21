@@ -16,6 +16,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
+import java.util.List;
 
 /**
  * Keeps the raw JSON body of generated request DTOs (needed to preserve ResultadoFirma exactly)
@@ -46,7 +47,7 @@ public class RawRequestBodyAdvice extends RequestBodyAdviceAdapter {
             .setAttribute(RAW_BODY_ATTRIBUTE, body, RequestAttributes.SCOPE_REQUEST);
         JsonNode tree = parseOrNull(body);
         if (tree != null) {
-            RequestPropertyPresence.check(tree, (Class<?>) targetType, "");
+            RequestPropertyPresence.check(tree, (Class<?>) targetType, List.of());
         }
         return new HttpInputMessage() {
             @Override
