@@ -38,7 +38,7 @@ Todos los ADR se almacenan directamente en `specs/adr/`, con el formato
 
 - Implementar el contexto JWT en la misma BD según ADR-0015 (Spring Security Resource Server, llaves PEM por entorno, varias sesiones por RFC).
 - Implementar y verificar interoperabilidad de firma (ADR-0016); el mecanismo ya está definido.
-- Tipos SQL y vigencia de catálogos fijados el 2026-10-21; claves únicas por tabla. Queda el mapeo país/régimen de Titularidad Jurídica. El esquema de archivos y la compensación de fallos de carga (ADR-0010) quedaron definidos el 2026-10-20.
+- Tipos SQL y vigencia de catálogos fijados el 2026-10-21; claves únicas por tabla y mapeo país/régimen de Titularidad Jurídica por código y texto. El esquema de archivos y la compensación de fallos de carga (ADR-0010) quedaron definidos el 2026-10-20.
 - Contrato, Maven y validador alineados; la generación se comprobó el 2026-10-20.
 - Persistencia duradera definida en ADR-0017; incorporar dependencias y migración inicial al preparar el primer entorno duradero.
 - Versiones del frontend fijadas en `frontend/package.json` y `frontend/package-lock.json` (Sakai 21.0.0, Angular 21.0.6, PrimeNG 21.0.2).

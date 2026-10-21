@@ -38,8 +38,9 @@ erDiagram
 ```
 
 - `legal_ownership.iso_country` referencia `country.code`; `regime` referencia
-  `tax_regime.description`. Se conserva la comparación por código y texto del algoritmo confirmado.
-  Si se prefiere normalizar a IDs, deberá ajustarse este diseño y su mapeo, conservando el comportamiento.
+  `tax_regime.description`. Se conserva la comparación por código y texto del algoritmo confirmado
+  (decisión del 2026-10-21): los datos de Titularidad usan exactamente los códigos de País y los
+  textos de Régimen, incluidos acentos. Las filas MX tienen régimen; las extranjeras y `NOT_DEF`, no.
 - Nacional: filtrar país y régimen. Extranjero: filtrar país **o** `key = NOT_DEF`, sin régimen.
   Orden ascendente por `key`; `key` es única en la tabla de titularidad.
 - La nulabilidad propuesta permite representar opciones generales sin inventar un país o régimen.
@@ -177,8 +178,8 @@ Aplican igual en H2 y PostgreSQL ([ADR-0017](../adr/0017-backend-postgresql-pers
 ## Precisiones físicas antes de implementar
 
 1. Conservar nombres y relaciones aprobados. Tipos SQL fijados el 2026-10-21.
-2. Confirmar el mapeo de país/régimen en Titularidad Jurídica. Los valores de `NOT_DEF` están
-   confirmados (ID 99, sin país ni régimen).
+2. Mapeo país/régimen de Titularidad Jurídica resuelto el 2026-10-21: por código de país y texto
+   de régimen. `NOT_DEF` es el ID 99, sin país ni régimen.
 3. Estatus y Tipo de proveedor son dos catálogos distintos (resuelto el 2026-10-21).
 4. Vigencia resuelta el 2026-10-21 (`active` donde exista; hoy solo Estratificación). Las claves
    son únicas dentro de su tabla (UK en `key` y `country.code`), confirmado el 2026-10-21.
