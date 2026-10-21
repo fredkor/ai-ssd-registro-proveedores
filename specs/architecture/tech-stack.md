@@ -3,11 +3,26 @@
 ## 1. Fuente y alcance
 
 Este documento describe las tecnologías del módulo de registro. Las versiones exactas
-configuradas se consultan en [pom.xml](../../pom.xml). Incorporar o cambiar una tecnología
+configuradas se consultan en [pom.xml](../../backend/pom.xml). Incorporar o cambiar una tecnología
 requiere un ADR; esta especificación no actualiza dependencias ni versiones.
 
 La implementación cubre la primera etapa de [vision.md](../vision.md): inicio y reanudación,
 Datos Generales y CUCoP, con continuación hacia Contactos.
+
+### Estructura del repositorio
+
+| Directorio | Contenido |
+| :--- | :--- |
+| `backend/` | Código Java/Spring Boot, pruebas, recursos y configuración de Maven, incluido su wrapper. |
+| `frontend/` | Código Angular, pruebas, recursos estáticos y configuración de Node y herramientas del frontend. |
+| `specs/` | Especificaciones, contratos y documentación de arquitectura. |
+| `tools/` | Herramientas compartidas de soporte y validación del repositorio. |
+
+Todo el código, las pruebas y la configuración específica del backend deben ubicarse en
+`backend/`; los del frontend, en `frontend/`. Esto incluye código generado y artefactos de
+compilación de cada aplicación. La raíz contiene únicamente documentación, herramientas y
+configuración compartida del repositorio; no se crean aplicaciones ni árboles `src/` en ella.
+Los contratos autoritativos permanecen en `specs/api/` y se referencian desde cada aplicación.
 
 ## 2. Tecnologías definidas del backend y soporte
 
