@@ -35,6 +35,7 @@ Todos los ADR se almacenan directamente en `specs/adr/`, con el formato
 | [0017](0017-backend-postgresql-persistencia-duradera.md) | Backend | PostgreSQL 17 con Flyway para persistencia duradera | Aceptado |
 | [0018](0018-backend-postgresql-en-pruebas-y-desarrollo.md) | Backend | PostgreSQL en pruebas y desarrollo con base de pruebas desechable | Aceptado |
 | [0019](0019-shared-problem-details-rfc-9457.md) | Compartido | Errores como Problem Details (RFC 9457) | Aceptado |
+| [0020](0020-shared-catalogos-por-recurso.md) | Compartido | Un recurso por catálogo de Datos Generales | Aceptado |
 
 ## Preparación pendiente
 

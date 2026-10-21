@@ -25,7 +25,15 @@ encabezados. Cada CA se referencia con su número actual de tres dígitos.
 | `uploadFiscalDocument` | POST `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `UploadFiscalDocumentUseCase` / `UploadFiscalDocumentService` | RF-REG-05, US10 | INV-27, INV-28; ADR-0010 | Documento, aplicación, web y persistencia. |
 | `downloadFiscalDocument` | GET `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `DownloadFiscalDocumentUseCase` / `DownloadFiscalDocumentService` | RF-REG-05, US10 | INV-12, INV-27, INV-28; ADR-0010 | Aplicación, web y documento. |
 | `deleteFiscalDocument` | DELETE `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `DeleteFiscalDocumentUseCase` / `DeleteFiscalDocumentService` | RF-REG-05, US10 | INV-27 a INV-29 | Web, aplicación y persistencia: desasociación y marca transaccionales; disco solo en limpieza diaria. |
-| `getGeneralDataCatalogs` | GET `/api/v1/registration-catalogs/general-data` | `GetGeneralDataCatalogsUseCase` / `GetGeneralDataCatalogsService` | RF-REG-05, US08 | INV-17, INV-20 a INV-23 | Catálogos y aplicación. |
+| `getCountries` | GET `/api/v1/registration-catalogs/countries` | `GetCountriesUseCase` / `GetCountriesService` | RF-REG-05, US08 | INV-17; ADR-0020 | Catálogos, web y aplicación. |
+| `getLegalOwnerships` | GET `/api/v1/registration-catalogs/legal-ownerships` | `GetLegalOwnershipsUseCase` / `GetLegalOwnershipsService` | RF-REG-05, US08 | INV-20; ADR-0020 | Catálogos, web y aplicación. |
+| `getSectors` | GET `/api/v1/registration-catalogs/sectors` | `GetSectorsUseCase` / `GetSectorsService` | RF-REG-05, US08 | INV-21; ADR-0020 | Catálogos, web y aplicación. |
+| `getSubsectors` | GET `/api/v1/registration-catalogs/sectors/{sectorId}/subsectors` | `GetSubsectorsUseCase` / `GetSubsectorsService` | RF-REG-05, US08 | INV-21; ADR-0020 | Catálogos, web y aplicación. |
+| `getBusinessActivities` | GET `/api/v1/registration-catalogs/business-activities` | `GetBusinessActivitiesUseCase` / `GetBusinessActivitiesService` | RF-REG-05, US08 | INV-17; ADR-0020 | Catálogos, web y aplicación. |
+| `getStratifications` | GET `/api/v1/registration-catalogs/stratifications` | `GetStratificationsUseCase` / `GetStratificationsService` | RF-REG-05, US08 | INV-22, INV-23; ADR-0020 | Catálogos, web y aplicación. |
+| `getPrimaryActivities` | GET `/api/v1/registration-catalogs/primary-activities` | `GetPrimaryActivitiesUseCase` / `GetPrimaryActivitiesService` | RF-REG-05, US08 | INV-17; ADR-0020 | Catálogos, web y aplicación. |
+| `getWorkerCountRanges` | GET `/api/v1/registration-catalogs/worker-count-ranges` | `GetWorkerCountRangesUseCase` / `GetWorkerCountRangesService` | RF-REG-05, US08 | INV-17; ADR-0020 | Catálogos, web y aplicación. |
+| `getAnnualSalesRanges` | GET `/api/v1/registration-catalogs/annual-sales-ranges` | `GetAnnualSalesRangesUseCase` / `GetAnnualSalesRangesService` | RF-REG-05, US08 | INV-17; ADR-0020 | Catálogos, web y aplicación. |
 | `getCucopCatalog` | GET `/api/v1/registration-catalogs/cucop` | `GetCucopCatalogUseCase` / `GetCucopCatalogService` | RF-REG-08, US11 | INV-32; RF-REG-08 | Catálogos, web e interfaz. |
 
 ## 3. Cobertura de criterios de aceptación
@@ -150,18 +158,18 @@ pruebas frontend; no se sustituyen con pruebas de controladores.
 | :--- | :--- | :--- | :--- |
 | CA-001 | Sin petición propia | INV-36 | Interfaz y reglas de Datos Generales. |
 | CA-002 | Sin petición propia | INV-11 | Interfaz y reglas de Datos Generales. |
-| CA-003 | `getGeneralDataCatalogs`, `saveGeneralData` | INV-20 | Catálogos, aplicación e interfaz: país y régimen nacionales; orden por clave. |
+| CA-003 | `getLegalOwnerships`, `saveGeneralData` | INV-20; ADR-0020 | Catálogos, aplicación y web: filtro en backend por país y régimen nacionales; orden por clave. |
 | CA-004 | `saveGeneralData` | US08 CA-004 | Dominio, aplicación y web. |
 | CA-005 | Sin petición propia | US08 CA-005 | Interfaz y reglas de Datos Generales. |
 | CA-006 | `saveGeneralData` | INV-34 | Dominio, aplicación y web. |
 | CA-007 | `saveGeneralData` | INV-34 | Dominio, aplicación y web. |
-| CA-008 | `getGeneralDataCatalogs` | INV-23 | Catálogos, dominio e interfaz. |
+| CA-008 | `getStratifications`, `saveGeneralData` | INV-23; ADR-0020 | Catálogos, dominio y web: solo registros activos; inactivo rechazado al guardar. |
 | CA-009 | Sin petición propia | INV-17 | Interfaz y reglas de Datos Generales. |
 | CA-010 | Sin petición propia | INV-17 | Interfaz y reglas de Datos Generales. |
 | CA-011 | Sin petición propia | INV-14 | Interfaz y reglas de Datos Generales. |
 | CA-012 | Sin petición propia | INV-14 | Interfaz y reglas de Datos Generales. |
 | CA-013 | `saveGeneralData` | INV-24; ADR-0009 | Dominio, aplicación y web: URL absoluta http/https con host; rechazar falta de protocolo/host, otros esquemas y longitud mayor a 2048 tras recorte; vacío a null, sin acceso a red. |
-| CA-014 | `getGeneralDataCatalogs`, `saveGeneralData` | INV-20 | Catálogos, aplicación e interfaz: país o NOT_DEF extranjero sin filtro por régimen; NOT_DEF con y sin opciones del país; respaldo vacío y orden por clave. |
+| CA-014 | `getLegalOwnerships`, `saveGeneralData` | INV-20; ADR-0020 | Catálogos, aplicación e interfaz: país o NOT_DEF extranjero sin filtro por régimen; NOT_DEF con y sin opciones del país; respaldo vacío y orden por clave. |
 | CA-015 | Sin petición propia | INV-19 | Interfaz y reglas de Datos Generales. |
 | CA-016 | Sin petición propia | INV-01 | Interfaz y reglas de Datos Generales. |
 | CA-017 | Sin petición propia | INV-16 | Interfaz y reglas de Datos Generales. |
@@ -169,8 +177,8 @@ pruebas frontend; no se sustituyen con pruebas de controladores.
 | CA-019 | Sin petición propia | INV-15 | Interfaz y reglas de Datos Generales. |
 | CA-020 | Sin petición propia | INV-25 | Interfaz y reglas de Datos Generales. |
 | CA-021 | `saveGeneralData` | ADR-0009; RF-REG-05 | Dominio, aplicación y web. |
-| CA-022 | `getGeneralDataCatalogs` | US08 CA-022 | Catálogos, dominio e interfaz. |
-| CA-023 | `getGeneralDataCatalogs` | US08 CA-023 | Catálogos, dominio e interfaz. |
+| CA-022 | `getCountries`, `getSectors`, `getBusinessActivities`, `getStratifications`, `getPrimaryActivities`, `getWorkerCountRanges`, `getAnnualSalesRanges` | US08 CA-022; ADR-0020 | Catálogos, web e interfaz: un recurso por catálogo. |
+| CA-023 | `getSubsectors` | US08 CA-023; ADR-0020 | Catálogos, web e interfaz: subsectores del sector en la ruta. |
 | CA-024 | `saveGeneralData` | US08 CA-024 | Dominio, aplicación y web. |
 | CA-025 | `saveGeneralData` | ADR-0009; RF-REG-05 | Web, aplicación y dominio: recorte previo a validación y espacios interiores conservados. |
 | CA-026 | `saveGeneralData` | ADR-0009; RF-REG-05 | Web, aplicación y persistencia: obligatorio vacío rechazado, opcional vacío guardado como null. |
@@ -235,7 +243,7 @@ solo demuestra toda la cobertura:
 | Detalle | Fuente | Operación / verificación |
 | :--- | :--- | :--- |
 | Nacionalidad obligatoria y condicional, hasta 250 caracteres para extranjero. | RF-REG-05; INV-18; tabla de campos US08. | saveGeneralData: dominio y web. |
-| Sector/Subsector requeridos para persona moral y relación entre ambos. | RF-REG-05; INV-21; tabla de campos US08. | getGeneralDataCatalogs y saveGeneralData. |
+| Sector/Subsector requeridos para persona moral y relación entre ambos. | RF-REG-05; INV-21; tabla de campos US08. | getSectors, getSubsectors y saveGeneralData. |
 | Giro, estratificación, actividad preponderante, trabajadores y ventas obligatorios; estratificación es una sola opción sin asociación ni filtro por régimen. | RF-REG-05; INV-22; tabla de campos US08. | saveGeneralData con contexto de catálogos. |
 | PDF descargable conservando el nombre original. | RF-REG-05; US10 CA-001; ADR-0010. | downloadFiscalDocument: contenido y nombre original sin ruta física. |
 | Cuatro niveles CUCoP, IDs enteros y referencias al padre. | RF-REG-08; INV-32; catalogs.md; US11 campos y CA-015. | getCucopCatalog y resolución de específicas al guardar. |

@@ -119,8 +119,9 @@ La identidad técnica se define en [ADR-0003](../adr/0003-shared-identificador-u
   valor y no conserva el dato anterior. La identidad y la evidencia de firma no se modifican.
 - Validar obligatoriedad, formatos, límites y pertenencia a los catálogos, incluida su
   vigencia cuando aplique: los registros inactivos no se muestran y se rechazan al guardar. No comprobar disponibilidad en red de la página web.
-- Cargar completos los catálogos de Datos Generales, salvo Subsector, que se consulta según
-  el Sector seleccionado. Titularidad Jurídica se filtra según sus relaciones y reglas.
+- Consultar cada catálogo de Datos Generales en su propio recurso (ADR-0020): completos, salvo
+  Subsector, que se consulta según el Sector seleccionado, y Titularidad Jurídica, que el backend
+  filtra por origen, país y régimen según sus reglas.
 
 El algoritmo de Titularidad Jurídica, su orden por clave y el tratamiento de `NOT_DEF`
 se definen en [Catálogos](../domain/catalogs.md). Los criterios de Datos Generales se

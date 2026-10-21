@@ -46,7 +46,8 @@ estado del expediente ni al catálogo de tipo de proveedor.
 
 ## 4. Catálogo de titularidad jurídica.
 
-La selección es obligatoria y el backend valida las mismas condiciones que el filtrado del frontend:
+La selección es obligatoria. El backend aplica este filtro al consultar el catálogo (`getLegalOwnerships`,
+ADR-0020) y valida las mismas condiciones al guardar:
 
 1. Nacional (origen ID 1): `iso_country = pais.clave` y régimen `PERSONA MORAL` para
    régimen ID 1 o `PERSONA FÍSICA` para persona física.

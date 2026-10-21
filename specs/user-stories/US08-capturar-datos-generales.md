@@ -63,7 +63,7 @@ se mantienen en CA-025 a CA-027. Los filtros de selección se definen en
 
 - **CA-021:** Dado un campo opcional enviado como null, cuando se guarda correctamente la sección completa, entonces se conserva sin valor, sin mantener automáticamente el valor anterior; si el campo es obligatorio por las condiciones aplicables, null se rechaza.
 
-- **CA-022:** Dado que se carga Datos Generales, cuando se consultan sus catálogos, entonces se reciben completos salvo Subsector, que depende del Sector seleccionado. Estratificación se recibe completa y exige seleccionar exactamente una opción, sin asociación ni filtro por régimen.
+- **CA-022:** Dado que se carga Datos Generales, cuando se consultan sus catálogos, entonces cada uno se consulta en su propio recurso y se recibe completo, salvo Subsector, que depende del Sector seleccionado, y Titularidad Jurídica, que se recibe filtrada por origen, país y régimen. Estratificación se recibe completa y exige seleccionar exactamente una opción, sin asociación ni filtro por régimen.
 - **CA-023:** Dado que cambia el Sector seleccionado, cuando se actualizan sus dependencias, entonces se descarta el Subsector anterior y se consultan las opciones del nuevo Sector antes de seleccionar nuevamente.
 
 - **CA-024:** Dado un request de Datos Generales, cuando se envía, entonces incluye todas las propiedades definidas, también las de los teléfonos; los opcionales sin valor y los campos no aplicables se envían como null. Para persona física, sectorId, subsectorId y phones se envían como null. Omitir una propiedad o incluir una no definida produce VALIDATION_ERROR.

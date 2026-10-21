@@ -127,8 +127,8 @@ verificando RPO de hasta 24 horas, RTO de hasta 4 horas y retención de respaldo
 
 - Cargar CUCoP completo en una sola petición de API; expandir y buscar en el árbol no deben
   generar peticiones adicionales. Esto no exige resolver toda la lectura con una sola consulta SQL.
-- Cargar completos los catálogos de Datos Generales, salvo Subsector, que depende del Sector;
-  evitar consultas repetidas por cada nodo o fila al reconstruir sus relaciones.
+- Consultar cada catálogo de Datos Generales en su propio recurso (ADR-0020); las peticiones son
+  independientes y pueden ir en paralelo. Evitar consultas repetidas por cada fila al resolver relaciones.
 - Aplicar los límites de carga en servidor. El límite de la petición multipart debe contemplar
   su envoltura sin alterar el tamaño máximo permitido para el archivo.
 - No exigir llamadas de red para comprobar la disponibilidad de la Página web capturada.

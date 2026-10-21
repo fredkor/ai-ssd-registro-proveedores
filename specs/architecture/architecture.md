@@ -136,7 +136,15 @@ corresponden a los archivos de historias, cuyos encabezados conservan HU-REG.
 | `UploadFiscalDocumentUseCase` | Archivo y expediente identificado → UUID y documento asociado inmediatamente. | `UploadFiscalDocumentService` | RF-REG-05; US10. |
 | `DownloadFiscalDocumentUseCase` | Expediente identificado → contenido y metadatos del documento asociado. | `DownloadFiscalDocumentService` | RF-REG-05; US10. |
 | `DeleteFiscalDocumentUseCase` | Expediente autorizado → desasociación y marca de metadatos en transacción de BD, sin borrar contenido. | `DeleteFiscalDocumentService` | RF-REG-05; US10. |
-| `GetGeneralDataCatalogsUseCase` | Consulta → catálogos completos; Subsector por Sector y Estratificación completa sin filtro por régimen. | `GetGeneralDataCatalogsService` | RF-REG-05; US08. |
+| `GetCountriesUseCase` | Consulta → países. | `GetCountriesService` | RF-REG-05; US08; ADR-0020. |
+| `GetLegalOwnershipsUseCase` | Origen, país y régimen → titularidades aplicables con NOT_DEF según catalogs.md. | `GetLegalOwnershipsService` | RF-REG-05; US08; ADR-0020. |
+| `GetSectorsUseCase` | Consulta → sectores. | `GetSectorsService` | RF-REG-05; US08; ADR-0020. |
+| `GetSubsectorsUseCase` | Sector → sus subsectores. | `GetSubsectorsService` | RF-REG-05; US08; ADR-0020. |
+| `GetBusinessActivitiesUseCase` | Consulta → giros. | `GetBusinessActivitiesService` | RF-REG-05; US08; ADR-0020. |
+| `GetStratificationsUseCase` | Consulta → estratificaciones activas, sin filtro por régimen. | `GetStratificationsService` | RF-REG-05; US08; ADR-0020. |
+| `GetPrimaryActivitiesUseCase` | Consulta → actividades preponderantes. | `GetPrimaryActivitiesService` | RF-REG-05; US08; ADR-0020. |
+| `GetWorkerCountRangesUseCase` | Consulta → rangos de trabajadores. | `GetWorkerCountRangesService` | RF-REG-05; US08; ADR-0020. |
+| `GetAnnualSalesRangesUseCase` | Consulta → rangos de ventas anuales. | `GetAnnualSalesRangesService` | RF-REG-05; US08; ADR-0020. |
 | `GetCucopCatalogUseCase` | Consulta única → todos los registros CUCoP y sus relaciones. | `GetCucopCatalogService` | RF-REG-08; US11. |
 | `SaveCucopParticipationUseCase` | Tipos de participación y específicas seleccionadas → selección y progreso guardados. | `SaveCucopParticipationService` | RF-REG-08; US11, US06. |
 
@@ -155,7 +163,7 @@ no dependen de `application.port.in` ni de clases de infraestructura.
 | `NoticeAcceptancePersistencePort` | Conservar aceptación y recuperar su referencia. | Registrar versión y fecha/hora antes de firmar y permitir su asociación posterior al expediente. No crea expediente por sí mismo. |
 | `ApplicantSignatureVerificationPort` | Verificar sello sobre contenido usando certificado. | Devolver éxito o fallo de verificación sin repetir OCSP ni solicitar la llave privada. Errores técnicos y verificación negativa impiden aceptar el resultado. |
 | `ApplicantSignatureEvidencePersistencePort` | Conservar y recuperar evidencia aceptada y sus referencias. | Preservar íntegramente el resultado, aun cuando todavía no exista expediente. No reemplazarlo por una selección de campos. |
-| `GeneralDataCatalogPort` | Obtener catálogos completos y sus relaciones; consultar Subsector por Sector y Estratificación completa sin filtro por régimen; resolver referencias para validar. | Titularidad jurídica se filtra en frontend por país y régimen para Nacional, y por país o clave NOT_DEF para Extranjero sin filtro por régimen, ordenando por clave; el backend valida las mismas condiciones al guardar conforme a domain/catalogs.md. Aportar vigencia cuando aplique. |
+| `GeneralDataCatalogPort` | Una consulta por catálogo (país, titularidad filtrada, sector, subsector por sector, giro, estratificación activa, actividad preponderante, trabajadores, ventas); resolver referencias para validar. | Titularidad jurídica se filtra en backend con el algoritmo de domain/catalogs.md (ADR-0020) y el guardado valida las mismas condiciones. Cada consulta es independiente para permitir un caché por catálogo en el futuro. Aportar vigencia cuando aplique. |
 | `CucopCatalogPort` | Obtener los cuatro niveles y sus relaciones; resolver específicas para el guardado. | Devuelve el catálogo completo en una consulta de API. Búsqueda y expansión son locales al frontend. No modifica catálogos al seleccionar partidas. |
 | `RegistrationContextPort` | Emitir, resolver y validar token; un RFC puede tener varias sesiones vigentes. | Vincular identidad, evidencia y aceptación; comprobar vencimiento de 60 minutos. Mantener en la misma BD un contexto por jti con RFC, emisión, vencimiento y referencias a evidencia/aceptación; inserción transaccional y consulta en cada petición conforme a ADR-0015. |
 | `FileStoragePort` | Preparar, leer y borrar contenido por referencia opaca; exclusión con confirmación y limpieza. | Gestionar bytes y metadatos en el almacenamiento elegido. No decide si Datos Generales está completo. |
