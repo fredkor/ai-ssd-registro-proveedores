@@ -65,7 +65,7 @@ pruebas frontend; no se sustituyen con pruebas de controladores.
 | CA-024 | `identifyApplicant` | INV-02, INV-06; ADR-0016 | Aplicación y persistencia: nombre de identidad y evidencia original separados. |
 | CA-025 | `identifyApplicant` | INV-02; ADR-0004, ADR-0016 | Firma, aplicación y web: nombre ausente o vacío produce VALIDATION_ERROR. |
 | CA-026 | Operaciones protegidas | ADR-0015; US01 CA-026 | Web y contexto: JWT firmado, claims, expiración, algoritmo y contexto del jti; rechazo 401 ante token inválido. |
-| CA-027 | `identifyApplicant` y operaciones protegidas | ADR-0015; US01 CA-027 | Persistencia y aplicación: contexto JPA por jti en la misma BD, emisión tras commit, rollback y pérdida de contexto al reiniciar H2. |
+| CA-027 | `identifyApplicant` y operaciones protegidas | ADR-0015; US01 CA-027 | Persistencia y aplicación: contexto JPA por jti en la misma BD, emisión tras commit, rollback y rechazo de un JWT sin contexto. |
 
 ### US02 — [US02-verificar-existencia-del-registro](user-stories/US02-verificar-existencia-del-registro.md)
 
@@ -239,7 +239,7 @@ solo demuestra toda la cobertura:
 | Giro, estratificación, actividad preponderante, trabajadores y ventas obligatorios; estratificación es una sola opción sin asociación ni filtro por régimen. | RF-REG-05; INV-22; tabla de campos US08. | saveGeneralData con contexto de catálogos. |
 | PDF descargable conservando el nombre original. | RF-REG-05; US10 CA-001; ADR-0010. | downloadFiscalDocument: contenido y nombre original sin ruta física. |
 | Cuatro niveles CUCoP, IDs enteros y referencias al padre. | RF-REG-08; INV-32; catalogs.md; US11 campos y CA-015. | getCucopCatalog y resolución de específicas al guardar. |
-| ResultadoFirma íntegro, propiedades opcionales y certificado/sello Base64. | RF-REG-01; US01; ADR-0016; OpenAPI. | identifyApplicant e integración del adaptador de firma. |
+| ResultadoFirma íntegro, todas las propiedades presentes y no nulas salvo `curp`, certificado/sello Base64. | RF-REG-01; US01; ADR-0016; OpenAPI. | identifyApplicant e integración del adaptador de firma. |
 
 ## 5. Comprobaciones transversales previstas
 
@@ -251,7 +251,7 @@ solo demuestra toda la cobertura:
 | Unicidad concurrente | No duplicar expediente por RFC; cada carga mantiene como máximo una cédula asociada al expediente. | INV-09, INV-27; ADR-0010. |
 | Guardado | Datos y progreso se guardan conjuntamente; fallos no completan ni avanzan. Atrás no guarda. | INV-34, INV-35; US06. |
 | Volumen | Ruta por fecha/RFC, UUID del archivo, nombre original en metadatos y coherencia de carga/eliminación. | ADR-0010. |
-| Reinicio de pruebas | H2 pierde datos y referencias; archivos del volumen permanecen sin recuperación automática. | ADR-0005, ADR-0010. |
+| Base de pruebas | Cada ejecución de pruebas usa un PostgreSQL 17 nuevo (Testcontainers, puerto aleatorio) con migraciones Flyway. | ADR-0018. |
 | Firma interoperable | node-forge RSA/SHA-256/PKCS#1 v1.5 y Java SHA256withRSA; UTF-8 y Base64; rechazar alteraciones. | ADR-0016. |
 | Null | Admitir ausencia explícita en opcionales y rechazar null donde aplique obligatoriedad. | ADR-0009; US08 CA-021; US09 CA-006. |
 

@@ -8,7 +8,8 @@ El backend conserva el resultado aceptado completo antes de permitir crear o rea
 
 Los nombres externos y tipos se definen en `SignatureResultRequest` del
 [contrato](supplier-registration-openapi.yaml). Todas sus propiedades deben enviarse;
-las opcionales sin valor se representan con null conforme a ADR-0009.
+solo `curp` es opcional y se envía como null cuando no tiene valor; las demás son obligatorias y no nulas
+(decisión del 2026-10-21, ADR-0009).
 La proyección de evidencia conserva los nombres internos siguientes:
 
 | Dato de negocio | Nombre técnico en el modelo | Propiedad del componente |
@@ -39,7 +40,8 @@ contraseña. El adaptador serializa la evidencia sin introducir Jackson en domin
 El [ADR-0016](../adr/0016-backend-verificacion-firma-sha256-rsa.md) define certificado
 Base64/PEM, UTF-8, RSA/SHA-256, extracción de RFC y nombre y errores.
 Las fechas se transmiten como date-time ISO 8601; los números conservan el tipo del componente.
-No se agregan validaciones obligatorias de CURP, número de serie o vigencia en backend.
+Número de serie, tipo, vigencia, fecha de vigencia, mensaje y origen deben llegar no nulos, pero el
+backend no valida sus valores. CURP es opcional y tampoco se valida.
 El origen de la evidencia no sustituye el origen seleccionado en Datos Generales.
 
 ## Contexto y comprobación

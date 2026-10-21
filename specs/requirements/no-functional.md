@@ -72,7 +72,7 @@ sobre el mismo RFC, expediente o archivo; comprobar que CUCoP permanece intacto 
 - La limpieza debe excluir archivos asociados, comprobar nuevamente la ausencia de referencias
   y permitir reintentar fallos sin perder los metadatos necesarios para localizar el archivo.
 - No deducir ausencia de asociación desde nombres o rutas ni borrar automáticamente archivos
-  cuyos metadatos se perdieron al reiniciar H2.
+  sin metadatos.
 - Los límites y formatos pertenecen a cada tipo documental. Para la cédula rigen RF-REG-05
   y US10: un PDF de hasta 5 MiB (5,242,880 bytes), con validación de extensión y contenido.
   No trasladar esa restricción a los archivos de etapas futuras sin especificación.
@@ -84,12 +84,10 @@ limpieza con reloj fijo en el límite de 24 horas, exclusión de asociados y rec
 
 - Los datos guardados y archivos asociados deben poder recuperarse al salir y reanudar
   mientras la instancia y su almacenamiento sigan disponibles.
-- H2 en memoria se acepta únicamente como persistencia de pruebas conforme a
-  [ADR-0005](../adr/0005-backend-base-de-datos-h2.md). Su reinicio pierde datos y referencias;
-  los archivos del volumen no reconstruyen por sí mismos el expediente.
-- No presentar las capacidades de H2 de pruebas como garantía de durabilidad productiva.
-  La persistencia duradera es PostgreSQL con Flyway (ADR-0017); la infraestructura de respaldo
-  debe definirse antes del despliegue.
+- La persistencia es PostgreSQL 17 con Flyway en todos los entornos (ADR-0017). Las pruebas
+  automatizadas usan una base desechable que empieza vacía en cada ejecución (ADR-0018).
+  Los archivos del volumen no reconstruyen por sí mismos el expediente.
+- La infraestructura de respaldo debe definirse antes del despliegue.
 
 ### Respaldo y recuperación de producción
 

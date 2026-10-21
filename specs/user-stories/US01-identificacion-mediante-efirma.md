@@ -49,6 +49,6 @@ La firma inicial no finaliza el expediente ni permite almacenar la llave privada
 
 - **CA-026:** Dado un JWT recibido en una operación protegida, cuando el backend lo valida, entonces comprueba firma, algoritmo permitido, claims obligatorios, emisor, audiencia, vencimiento y la existencia del contexto de su jti para ese RFC conforme a ADR-0015. Un JWT alterado, incompleto o sin contexto produce REGISTRATION_TOKEN_INVALID sin autorizar la operación.
 
-- **CA-027:** Dado una nueva identificación exitosa, cuando se emite su JWT, entonces el backend confirma en la misma BD del registro un contexto para ese jti con RFC, emisión, vencimiento y referencias de evidencia/aceptación antes de devolverlo. Un fallo no devuelve token ni modifica los contextos existentes. Un JWT no vencido se rechaza si no existe su contexto, incluido después de reiniciar H2.
+- **CA-027:** Dado una nueva identificación exitosa, cuando se emite su JWT, entonces el backend confirma en la misma BD del registro un contexto para ese jti con RFC, emisión, vencimiento y referencias de evidencia/aceptación antes de devolverlo. Un fallo no devuelve token ni modifica los contextos existentes. Un JWT no vencido se rechaza si no existe su contexto.
 
 **Requerimiento relacionado:** RF-REG-01; COMP-EFIRMA-001.
