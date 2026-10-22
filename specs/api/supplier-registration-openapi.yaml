@@ -131,10 +131,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegistrationExistenceResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '403':
-          $ref: '#/components/responses/AccessDenied'
         '500':
           $ref: '#/components/responses/InternalError'
         '401':
