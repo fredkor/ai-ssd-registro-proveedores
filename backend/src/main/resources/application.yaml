@@ -20,6 +20,10 @@ spring:
       # ADR-0009: los requests rechazan propiedades no definidas con VALIDATION_ERROR
       fail-on-unknown-properties: true
 
+# ADR-0019: /error es la ruta interna de ProblemErrorController, no una operación del contrato
+springdoc:
+  paths-to-exclude: /error
+
 # ADR-0015: emisor y audiencia del JWT de registro; las llaves RSA (PEM) se ubican por variables de entorno
 registration:
   jwt:

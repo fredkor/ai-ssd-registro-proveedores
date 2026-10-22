@@ -82,8 +82,16 @@ class RegistrationTokenSecurityTest {
 
     @Test
     void US01_CA017_issuedToken_authenticatesProtectedRoute() throws Exception {
-        // The route has no controller yet: once authenticated it answers 404 instead of 401.
         callProtected(issuedToken())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.exists").isBoolean());
+    }
+
+    @Test
+    void ADR0019_unknownRouteWithToken_isResourceNotFound() throws Exception {
+        // Unknown routes are revealed only after authentication.
+        mockMvc.perform(get("/api/v1/supplier-registrations/unknown")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + issuedToken()))
             .andExpect(status().isNotFound())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))

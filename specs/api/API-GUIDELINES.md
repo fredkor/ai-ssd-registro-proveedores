@@ -25,6 +25,9 @@
 - ADR-0009 exige enviar todas las propiedades de los requests, también en objetos anidados.
   Los campos opcionales sin valor y los no aplicables se envían como null; omitir propiedades
   o enviar propiedades desconocidas produce VALIDATION_ERROR. Null no conserva el valor anterior.
+- En las respuestas, una propiedad opcional (no `required`) sin valor se omite; una propiedad
+  obligatoria `nullable` se envía como null. Por ejemplo, `RegistrationExistenceResponse` sin
+  expediente es `{"exists": false}`.
 - No se inventan reglas de recorte, normalización o longitud no definidas en RF y modelo.
 - El resultado aceptado de Firma Electrónica del solicitante se conserva íntegro; el contrato
   debe permitir su transmisión sin perder propiedades y sin incluir llave privada o contraseña.
