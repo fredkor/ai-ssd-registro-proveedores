@@ -192,6 +192,27 @@ class GeneralDataCatalogAdapterTest {
         assertEquals("character varying(500)", columnType("business_activity", "description"));
     }
 
+    @Test
+    void US08_CA022_stratifications_returnOnlyActiveEntriesOrderedById() {
+        assertEquals(List.of(new CatalogRecord(1, "COOPERATIVAS"), new CatalogRecord(2, "GRANDE"),
+                new CatalogRecord(3, "MEDIANA"), new CatalogRecord(4, "MICRO"), new CatalogRecord(6, "PEQUEÑA")),
+            adapter.findActiveStratifications());
+    }
+
+    @Test
+    void ADR0017_stratificationMigration_keepsInactiveEntry() {
+        assertEquals(6L, ((Number) entityManager.createNativeQuery("SELECT COUNT(*) FROM stratification")
+            .getSingleResult()).longValue());
+        assertEquals(List.of("NO MIPYME"), entityManager.createNativeQuery(
+            "SELECT description FROM stratification WHERE NOT active").getResultList());
+    }
+
+    @Test
+    void ADR0017_stratificationSchema_usesApprovedSqlTypes() {
+        assertEquals("character varying(500)", columnType("stratification", "description"));
+        assertEquals("boolean", columnType("stratification", "active"));
+    }
+
     private String columnType(String column) {
         return columnType("country", column);
     }

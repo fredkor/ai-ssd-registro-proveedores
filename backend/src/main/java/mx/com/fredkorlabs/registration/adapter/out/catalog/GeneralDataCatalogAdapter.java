@@ -17,15 +17,18 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
     private final SectorJpaRepository sectors;
     private final SubsectorJpaRepository subsectors;
     private final BusinessActivityJpaRepository businessActivities;
+    private final StratificationJpaRepository stratifications;
 
     public GeneralDataCatalogAdapter(CountryJpaRepository countries, LegalOwnershipJpaRepository legalOwnerships,
                                      SectorJpaRepository sectors, SubsectorJpaRepository subsectors,
-                                     BusinessActivityJpaRepository businessActivities) {
+                                     BusinessActivityJpaRepository businessActivities,
+                                     StratificationJpaRepository stratifications) {
         this.countries = countries;
         this.legalOwnerships = legalOwnerships;
         this.sectors = sectors;
         this.subsectors = subsectors;
         this.businessActivities = businessActivities;
+        this.stratifications = stratifications;
     }
 
     @Override
@@ -66,6 +69,13 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
     public List<CatalogRecord> findBusinessActivities() {
         return businessActivities.findAllByOrderByIdAsc().stream()
             .map(activity -> new CatalogRecord(activity.getId(), activity.getDescription()))
+            .toList();
+    }
+
+    @Override
+    public List<CatalogRecord> findActiveStratifications() {
+        return stratifications.findByActiveTrueOrderByIdAsc().stream()
+            .map(stratification -> new CatalogRecord(stratification.getId(), stratification.getDescription()))
             .toList();
     }
 

@@ -16,6 +16,7 @@ import mx.com.fredkorlabs.registration.application.port.in.GetCountriesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsQuery;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetSectorsUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetStratificationsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsQuery;
 import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsUseCase;
 import org.springframework.http.ResponseEntity;
@@ -33,17 +34,20 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
     private final GetSectorsUseCase getSectors;
     private final GetSubsectorsUseCase getSubsectors;
     private final GetBusinessActivitiesUseCase getBusinessActivities;
+    private final GetStratificationsUseCase getStratifications;
 
     public RegistrationCatalogsController(GetCountriesUseCase getCountries,
                                           GetLegalOwnershipsUseCase getLegalOwnerships,
                                           GetSectorsUseCase getSectors,
                                           GetSubsectorsUseCase getSubsectors,
-                                          GetBusinessActivitiesUseCase getBusinessActivities) {
+                                          GetBusinessActivitiesUseCase getBusinessActivities,
+                                          GetStratificationsUseCase getStratifications) {
         this.getCountries = getCountries;
         this.getLegalOwnerships = getLegalOwnerships;
         this.getSectors = getSectors;
         this.getSubsectors = getSubsectors;
         this.getBusinessActivities = getBusinessActivities;
+        this.getStratifications = getStratifications;
     }
 
     @Override
@@ -86,7 +90,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
 
     @Override
     public ResponseEntity<CatalogOptionListResponse> getStratifications() {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        return ResponseEntity.ok(toCatalogOptions(getStratifications.execute()));
     }
 
     @Override
