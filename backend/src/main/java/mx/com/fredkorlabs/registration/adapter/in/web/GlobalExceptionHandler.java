@@ -6,6 +6,7 @@ import jakarta.validation.Path;
 import mx.com.fredkorlabs.registration.adapter.in.web.ProblemResponses.FieldProblem;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.ErrorCode;
 import mx.com.fredkorlabs.registration.application.port.in.InvalidIdentificationDataException;
+import mx.com.fredkorlabs.registration.application.port.in.InvalidQueryParameterException;
 import mx.com.fredkorlabs.registration.application.port.in.RegistrationAccessDeniedException;
 import mx.com.fredkorlabs.registration.application.port.in.RegistrationAlreadyExistsException;
 import mx.com.fredkorlabs.registration.application.port.in.RegistrationNotFoundException;
@@ -182,6 +183,20 @@ public class GlobalExceptionHandler {
                                                                 HttpServletRequest request) {
         return validationError("Request parameter is required",
             List.of(FieldProblem.atParameter(ex.getParameterName(), "is required")), request);
+    }
+
+    @ExceptionHandler(InvalidRequestParameterException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidRequestParameter(InvalidRequestParameterException ex,
+                                                                       HttpServletRequest request) {
+        return validationError("Request parameter is invalid",
+            List.of(FieldProblem.atParameter(ex.getParameter(), ex.getReason())), request);
+    }
+
+    @ExceptionHandler(InvalidQueryParameterException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidQueryParameter(InvalidQueryParameterException ex,
+                                                                     HttpServletRequest request) {
+        return validationError("Request parameter is invalid",
+            List.of(FieldProblem.atParameter(ex.getParameter(), ex.getReason())), request);
     }
 
     @ExceptionHandler(MissingServletRequestPartException.class)
