@@ -11,6 +11,7 @@ import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.LegalOwner
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.Origin;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.TaxRegime;
 import mx.com.fredkorlabs.registration.application.port.in.CatalogOptionsResult;
+import mx.com.fredkorlabs.registration.application.port.in.GetBusinessActivitiesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetCountriesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsQuery;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsUseCase;
@@ -31,15 +32,18 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
     private final GetLegalOwnershipsUseCase getLegalOwnerships;
     private final GetSectorsUseCase getSectors;
     private final GetSubsectorsUseCase getSubsectors;
+    private final GetBusinessActivitiesUseCase getBusinessActivities;
 
     public RegistrationCatalogsController(GetCountriesUseCase getCountries,
                                           GetLegalOwnershipsUseCase getLegalOwnerships,
                                           GetSectorsUseCase getSectors,
-                                          GetSubsectorsUseCase getSubsectors) {
+                                          GetSubsectorsUseCase getSubsectors,
+                                          GetBusinessActivitiesUseCase getBusinessActivities) {
         this.getCountries = getCountries;
         this.getLegalOwnerships = getLegalOwnerships;
         this.getSectors = getSectors;
         this.getSubsectors = getSubsectors;
+        this.getBusinessActivities = getBusinessActivities;
     }
 
     @Override
@@ -77,7 +81,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
 
     @Override
     public ResponseEntity<CatalogOptionListResponse> getBusinessActivities() {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        return ResponseEntity.ok(toCatalogOptions(getBusinessActivities.execute()));
     }
 
     @Override
