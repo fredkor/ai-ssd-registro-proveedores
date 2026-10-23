@@ -32,6 +32,11 @@ public class UnusedSupplierRegistrationPersistence implements SupplierRegistrati
     }
 
     @Override
+    public Optional<StoredRegistration> find(SupplierRegistrationId id) {
+        throw unused();
+    }
+
+    @Override
     public void saveResume(SupplierRegistration registration, SignatureEvidenceReference newEvidence,
                            NoticeAcceptanceReference newAcceptance) {
         throw unused();

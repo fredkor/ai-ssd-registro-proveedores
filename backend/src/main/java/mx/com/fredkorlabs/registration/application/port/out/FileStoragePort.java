@@ -8,4 +8,7 @@ public interface FileStoragePort {
      * again; a failed removal is logged for manual reconciliation (ADR-0010).
      */
     void store(String relativePath, byte[] content);
+
+    /** Reads stored content; a missing file is a technical inconsistency, never an absent document. */
+    byte[] read(String relativePath);
 }

@@ -75,4 +75,22 @@ class VolumeFileStorageAdapterTest {
         assertThrows(IllegalArgumentException.class, () -> adapter.store("../escape.pdf", CONTENT));
         assertThrows(IllegalArgumentException.class, () -> adapter.store("", CONTENT));
     }
+
+    @Test
+    void US10_CA005_read_returnsTheStoredContent() {
+        VolumeFileStorageAdapter adapter = new VolumeFileStorageAdapter(root);
+        adapter.store(PATH, CONTENT);
+
+        assertArrayEquals(CONTENT, adapter.read(PATH));
+    }
+
+    @Test
+    void ADR0010_missingContent_isATechnicalFailure() {
+        assertThrows(RuntimeException.class, () -> new VolumeFileStorageAdapter(root).read(PATH));
+    }
+
+    @Test
+    void ADR0010_readOutsideTheRoot_isRejected() {
+        assertThrows(IllegalArgumentException.class, () -> new VolumeFileStorageAdapter(root).read("../secret.pdf"));
+    }
 }

@@ -1,12 +1,15 @@
 package mx.com.fredkorlabs.registration.configuration;
 
+import mx.com.fredkorlabs.registration.adapter.in.transaction.TransactionalDownloadFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.adapter.in.transaction.TransactionalUploadFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.adapter.out.document.VolumeFileStorageAdapter;
+import mx.com.fredkorlabs.registration.application.port.in.DownloadFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.UploadFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.application.port.out.FileMetadataPort;
 import mx.com.fredkorlabs.registration.application.port.out.FileStoragePort;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationContextPort;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
+import mx.com.fredkorlabs.registration.application.service.DownloadFiscalDocumentService;
 import mx.com.fredkorlabs.registration.application.service.UploadFiscalDocumentService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -31,5 +34,14 @@ public class FiscalDocumentConfiguration {
             FileStoragePort fileStorage, FileMetadataPort fileMetadata, Clock clock) {
         return new TransactionalUploadFiscalDocumentUseCase(new UploadFiscalDocumentService(
             registrationContext, supplierRegistrationPersistence, fileStorage, fileMetadata, clock));
+    }
+
+    @Bean
+    public DownloadFiscalDocumentUseCase downloadFiscalDocumentUseCase(
+            RegistrationContextPort registrationContext,
+            SupplierRegistrationPersistencePort supplierRegistrationPersistence,
+            FileMetadataPort fileMetadata, FileStoragePort fileStorage) {
+        return new TransactionalDownloadFiscalDocumentUseCase(new DownloadFiscalDocumentService(
+            registrationContext, supplierRegistrationPersistence, fileMetadata, fileStorage));
     }
 }

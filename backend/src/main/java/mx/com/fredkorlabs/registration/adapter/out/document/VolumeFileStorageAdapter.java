@@ -48,6 +48,15 @@ public class VolumeFileStorageAdapter implements FileStoragePort {
         }
     }
 
+    @Override
+    public byte[] read(String relativePath) {
+        try {
+            return Files.readAllBytes(resolve(relativePath));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Document content could not be read", e);
+        }
+    }
+
     private static void discard(String relativePath, Path target) {
         try {
             Files.deleteIfExists(target);

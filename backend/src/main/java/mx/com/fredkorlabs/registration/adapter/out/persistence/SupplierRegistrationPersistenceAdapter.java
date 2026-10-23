@@ -91,6 +91,11 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
     }
 
     @Override
+    public Optional<StoredRegistration> find(SupplierRegistrationId id) {
+        return repository.findById(id.value()).map(this::toStoredRegistration);
+    }
+
+    @Override
     public void saveResume(SupplierRegistration registration, SignatureEvidenceReference newEvidence,
                            NoticeAcceptanceReference newAcceptance) {
         SupplierRegistrationJpaEntity entity = repository.findById(registration.id().value()).orElseThrow();
