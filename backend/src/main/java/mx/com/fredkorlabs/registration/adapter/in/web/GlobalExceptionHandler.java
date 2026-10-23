@@ -4,12 +4,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import mx.com.fredkorlabs.registration.adapter.in.web.ProblemResponses.FieldProblem;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.ErrorCode;
 import mx.com.fredkorlabs.registration.application.port.in.InvalidIdentificationDataException;
+import mx.com.fredkorlabs.registration.application.port.in.RegistrationAccessDeniedException;
 import mx.com.fredkorlabs.registration.application.port.in.RegistrationAlreadyExistsException;
+import mx.com.fredkorlabs.registration.application.port.in.RegistrationNotFoundException;
 import mx.com.fredkorlabs.registration.application.port.in.RegistrationSessionUnavailableException;
 import mx.com.fredkorlabs.registration.application.port.in.SignatureVerificationFailedException;
 import mx.com.fredkorlabs.registration.domain.exception.ApplicantRfcMismatchException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidCertificateIdentityException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidNoticeVersionException;
+import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationStateException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -98,6 +101,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleDuplicateRegistration(RegistrationAlreadyExistsException ex,
                                                                      HttpServletRequest request) {
         return ProblemResponses.response(ErrorCode.DUPLICATE_RFC, ex.getMessage(), List.of(),
+            request.getRequestURI());
+    }
+
+    @ExceptionHandler(RegistrationNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleRegistrationNotFound(RegistrationNotFoundException ex,
+                                                                    HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.REGISTRATION_NOT_FOUND, ex.getMessage(), List.of(),
+            request.getRequestURI());
+    }
+
+    @ExceptionHandler(RegistrationAccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAccessDenied(RegistrationAccessDeniedException ex,
+                                                            HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.REGISTRATION_ACCESS_DENIED, ex.getMessage(), List.of(),
+            request.getRequestURI());
+    }
+
+    @ExceptionHandler(InvalidRegistrationStateException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidState(InvalidRegistrationStateException ex,
+                                                            HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.INVALID_STATE_TRANSITION, ex.getMessage(), List.of(),
             request.getRequestURI());
     }
 

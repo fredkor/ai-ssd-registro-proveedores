@@ -11,6 +11,7 @@ import mx.com.fredkorlabs.registration.application.port.out.RegistrationContextP
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationSession;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationStatusView;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
+import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
@@ -194,6 +195,17 @@ class StartSupplierRegistrationServiceTest {
             inserted.add(registration);
             insertedEvidence.add(initialEvidence);
             insertedAcceptances.add(acceptance);
+        }
+
+        @Override
+        public Optional<StoredRegistration> findForUpdate(SupplierRegistrationId id) {
+            throw new UnsupportedOperationException("Not used by this use case");
+        }
+
+        @Override
+        public void saveResume(SupplierRegistration registration, SignatureEvidenceReference newEvidence,
+                               NoticeAcceptanceReference newAcceptance) {
+            throw new UnsupportedOperationException("Not used by this use case");
         }
     }
 }

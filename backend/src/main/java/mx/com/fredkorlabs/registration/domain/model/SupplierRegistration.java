@@ -6,6 +6,8 @@ import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationState
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class SupplierRegistration {
 
@@ -55,10 +57,41 @@ public class SupplierRegistration {
                 acceptance, evidence, null, null, null, progress);
     }
 
+    /** Rebuilds the stored state without running the creation nor any transition (domain model §8). */
+    public static SupplierRegistration reconstitute(SupplierRegistrationId id,
+                                                    RegistrationStatus status,
+                                                    ApplicantIdentity applicant,
+                                                    NoticeAcceptance latestAcceptance,
+                                                    List<ApplicantSignatureEvidence> acceptedEvidence,
+                                                    GeneralData generalData,
+                                                    FiscalIdentificationDocument associatedDocument,
+                                                    CucopParticipation cucopParticipation,
+                                                    Map<RegistrationSection, SectionStatus> sectionProgress) {
+        Objects.requireNonNull(id, "Registration id is required");
+        Objects.requireNonNull(status, "Registration status is required");
+        Objects.requireNonNull(applicant, "Applicant identity is required");
+        Objects.requireNonNull(latestAcceptance, "Notice acceptance is required");
+        if (acceptedEvidence == null || acceptedEvidence.isEmpty()) {
+            throw new IllegalArgumentException("At least the initial signature evidence is required");
+        }
+        EnumMap<RegistrationSection, SectionStatus> progress = new EnumMap<>(RegistrationSection.class);
+        progress.putAll(sectionProgress);
+        if (progress.size() != RegistrationSection.values().length || progress.containsValue(null)) {
+            throw new IllegalArgumentException("Every section must have a progress status");
+        }
+        return new SupplierRegistration(id, status, applicant, latestAcceptance, new ArrayList<>(acceptedEvidence),
+                generalData, associatedDocument, cucopParticipation, progress);
+    }
+
+    /** INV-13: only a registration IN_PROGRESS can be resumed as a draft. */
+    public void ensureResumable() {
+        validateInProgress();
+    }
+
     public void resume(String newLegalName,
                        NoticeAcceptance newAcceptance,
                        ApplicantSignatureEvidence newEvidence) {
-        validateInProgress();
+        ensureResumable();
         this.applicant = new ApplicantIdentity(this.applicant.rfc(), newLegalName);
         this.latestAcceptance = newAcceptance;
         this.acceptedEvidence.add(newEvidence);
