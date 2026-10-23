@@ -6,6 +6,7 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import jakarta.persistence.EntityManager;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceAlreadyUsedException;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
+import mx.com.fredkorlabs.registration.application.port.out.RegistrationSession;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
@@ -176,6 +177,27 @@ class IdentificationPersistenceAdapterTest {
                 JOIN information_schema.key_column_usage k ON tc.constraint_name = k.constraint_name
                 WHERE tc.table_name = 'registration_context' AND tc.constraint_type = 'UNIQUE'
                 AND k.column_name = 'notice_acceptance_id'""").getSingleResult()).longValue());
+    }
+
+    @Test
+    void US04_CA006_resolve_returnsIdentityEvidenceAndAcceptanceOfTheContext() {
+        NoticeAcceptanceReference acceptance = newAcceptance();
+        SignatureEvidenceReference evidence = newEvidence();
+        String jti = decoder().decode(contexts.issue(IDENTITY, evidence, acceptance, ISSUED_AT, EXPIRES_AT)).getId();
+        entityManager.clear();
+
+        RegistrationSession session = contexts.resolve(jti).orElseThrow();
+        assertEquals(IDENTITY, session.identity());
+        assertEquals(COMPLETE_RESULT, session.evidence().completeResult());
+        assertEquals(evidence, session.evidenceReference());
+        assertEquals(new NoticeAcceptance("1.0", ISSUED_AT), session.acceptance());
+        assertEquals(acceptance, session.acceptanceReference());
+    }
+
+    @Test
+    void ADR0015_resolve_unknownOrMalformedJti_isEmpty() {
+        assertTrue(contexts.resolve(UUID.randomUUID().toString()).isEmpty());
+        assertTrue(contexts.resolve("not-a-uuid").isEmpty());
     }
 
     private String columnType(String table, String column) {

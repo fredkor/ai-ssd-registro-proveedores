@@ -2,6 +2,7 @@ package mx.com.fredkorlabs.registration.adapter.in.web;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 /**
@@ -14,10 +15,19 @@ final class RegistrationTokenPrincipal {
     }
 
     static String currentRfc() {
+        return currentToken().getSubject();
+    }
+
+    /** jti of the token, which identifies its stored context (ADR-0015). */
+    static String currentTokenId() {
+        return currentToken().getId();
+    }
+
+    private static Jwt currentToken() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof JwtAuthenticationToken token)) {
             throw new IllegalStateException("Protected operation reached without a registration token");
         }
-        return token.getToken().getSubject();
+        return token.getToken();
     }
 }

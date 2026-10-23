@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import mx.com.fredkorlabs.registration.adapter.in.web.ProblemResponses.FieldProblem;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.ErrorCode;
 import mx.com.fredkorlabs.registration.application.port.in.InvalidIdentificationDataException;
+import mx.com.fredkorlabs.registration.application.port.in.RegistrationAlreadyExistsException;
+import mx.com.fredkorlabs.registration.application.port.in.RegistrationSessionUnavailableException;
 import mx.com.fredkorlabs.registration.application.port.in.SignatureVerificationFailedException;
 import mx.com.fredkorlabs.registration.domain.exception.ApplicantRfcMismatchException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidCertificateIdentityException;
@@ -90,6 +92,22 @@ public class GlobalExceptionHandler {
                                                                            HttpServletRequest request) {
         return ProblemResponses.response(ErrorCode.SIGNATURE_VERIFICATION_FAILED, ex.getMessage(), List.of(),
             request.getRequestURI());
+    }
+
+    @ExceptionHandler(RegistrationAlreadyExistsException.class)
+    public ResponseEntity<ProblemDetail> handleDuplicateRegistration(RegistrationAlreadyExistsException ex,
+                                                                     HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.DUPLICATE_RFC, ex.getMessage(), List.of(),
+            request.getRequestURI());
+    }
+
+    @ExceptionHandler(RegistrationSessionUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handleSessionUnavailable(RegistrationSessionUnavailableException ex,
+                                                                  HttpServletRequest request) {
+        ResponseEntity<ProblemDetail> response = ProblemResponses.response(ErrorCode.REGISTRATION_TOKEN_INVALID,
+            "Registration token is missing or invalid", List.of(), request.getRequestURI());
+        return ResponseEntity.status(response.getStatusCode()).headers(response.getHeaders())
+            .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer").body(response.getBody());
     }
 
     @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})

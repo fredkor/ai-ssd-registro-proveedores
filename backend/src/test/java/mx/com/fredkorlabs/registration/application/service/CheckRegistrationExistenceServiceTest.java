@@ -2,10 +2,13 @@ package mx.com.fredkorlabs.registration.application.service;
 
 import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExistenceQuery;
 import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExistenceResult;
+import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationStatusView;
+import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationStatus;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
+import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
 import org.junit.jupiter.api.Test;
 
@@ -78,6 +81,12 @@ class CheckRegistrationExistenceServiceTest {
             queried.add(rfc);
             if (failure != null) throw failure;
             return Optional.ofNullable(found);
+        }
+
+        @Override
+        public void insert(SupplierRegistration registration, SignatureEvidenceReference initialEvidence,
+                           NoticeAcceptanceReference acceptance) {
+            throw new UnsupportedOperationException("Not used by this use case");
         }
     }
 }

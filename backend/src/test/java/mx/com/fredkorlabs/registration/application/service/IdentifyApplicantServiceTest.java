@@ -11,6 +11,7 @@ import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceAlre
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptancePersistencePort;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationContextPort;
+import mx.com.fredkorlabs.registration.application.port.out.RegistrationSession;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureCheck;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
 import mx.com.fredkorlabs.registration.domain.exception.ApplicantRfcMismatchException;
@@ -26,6 +27,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -225,5 +227,8 @@ class IdentifyApplicantServiceTest {
 
         @Override
         public boolean isActive(String jti, String rfc, Instant now) { return true; }
+
+        @Override
+        public Optional<RegistrationSession> resolve(String jti) { return Optional.empty(); }
     }
 }
