@@ -3,6 +3,8 @@ package mx.com.fredkorlabs.registration.adapter.out.catalog;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import mx.com.fredkorlabs.registration.application.port.out.CountryRecord;
+import mx.com.fredkorlabs.registration.domain.model.LegalOwnershipOption;
+import mx.com.fredkorlabs.registration.domain.model.TaxRegime;
 import mx.com.fredkorlabs.registration.testsupport.PostgresTestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,10 +65,73 @@ class GeneralDataCatalogAdapterTest {
         assertEquals("character varying(500)", columnType("international_name"));
     }
 
+    @Test
+    void US08_CA014_legalOwnershipCandidates_areCountryRowsPlusNotDef() {
+        List<LegalOwnershipOption> candidates = adapter.findLegalOwnershipCandidates("AT");
+
+        assertEquals(23, candidates.size());
+        assertTrue(candidates.contains(new LegalOwnershipOption(99, "NOT_DEF", "RNS.LEGALSTRUCTURE/NOTDEFINED", null, null)));
+        assertTrue(candidates.contains(new LegalOwnershipOption(122, "AT00001", "EINZELUNTERNEHMEN", "AT", null)));
+    }
+
+    @Test
+    void US08_CA003_legalOwnershipCandidates_mapRegimeTextToTechnicalCode() {
+        List<LegalOwnershipOption> mexico = adapter.findLegalOwnershipCandidates("MX");
+
+        assertEquals(27, mexico.stream().filter(option -> option.regime() == TaxRegime.LEGAL_ENTITY).count());
+        assertEquals(4, mexico.stream().filter(option -> option.regime() == TaxRegime.INDIVIDUAL).count());
+        assertTrue(mexico.contains(new LegalOwnershipOption(6, "MX00006",
+            "4.- PERSONA FÍSICA CON ACTIVIDAD EMPRESARIAL (EMPRESARIO INDIVIDUAL)", "MX", TaxRegime.INDIVIDUAL)));
+    }
+
+    @Test
+    void ADR0020_countryExists_comparesCodesExactly() {
+        assertTrue(adapter.countryExists("MX"));
+        assertFalse(adapter.countryExists("mx"));
+        assertFalse(adapter.countryExists("ZZ"));
+    }
+
+    @Test
+    void ADR0017_legalOwnershipMigration_loadsCatalogsWithOriginalIds() {
+        assertEquals(180L, ((Number) entityManager.createNativeQuery("SELECT COUNT(*) FROM legal_ownership")
+            .getSingleResult()).longValue());
+        assertEquals(List.of("PERSONA MORAL", "PERSONA FÍSICA"), entityManager.createNativeQuery(
+            "SELECT description FROM tax_regime ORDER BY id").getResultList());
+        assertEquals("EUROPÄISCHEN GESELLSCHAFT\u00a0(SE)", entityManager.createNativeQuery(
+            "SELECT description FROM legal_ownership WHERE key = 'AT00022'").getSingleResult());
+    }
+
+    @Test
+    void ADR0017_database_rejectsUnknownCountryInLegalOwnership() {
+        assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
+                "INSERT INTO legal_ownership (id, key, description, iso_country, regime) VALUES (999, 'ZZ00001', 'X', 'ZZ', null)")
+            .executeUpdate());
+    }
+
+    @Test
+    void ADR0017_database_rejectsUnknownRegimeText() {
+        assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
+                "INSERT INTO legal_ownership (id, key, description, iso_country, regime) VALUES (998, 'MX99999', 'X', 'MX', 'PERSONA FISICA')")
+            .executeUpdate());
+    }
+
+    @Test
+    void ADR0017_legalOwnershipSchema_usesApprovedSqlTypes() {
+        assertEquals("character varying(50)", columnType("legal_ownership", "key"));
+        assertEquals("character varying(500)", columnType("legal_ownership", "description"));
+        assertEquals("character varying(50)", columnType("legal_ownership", "iso_country"));
+        assertEquals("character varying(500)", columnType("legal_ownership", "regime"));
+        assertEquals("character varying(500)", columnType("tax_regime", "description"));
+    }
+
     private String columnType(String column) {
+        return columnType("country", column);
+    }
+
+    private String columnType(String table, String column) {
         return (String) entityManager.createNativeQuery(
                 "SELECT format_type(atttypid, atttypmod) FROM pg_attribute "
-                    + "WHERE attrelid = 'country'::regclass AND attname = ?1")
-            .setParameter(1, column).getSingleResult();
+                    + "WHERE attrelid = to_regclass(?1) AND attname = ?2")
+            .setParameter(1, table).setParameter(2, column).getSingleResult();
     }
 }

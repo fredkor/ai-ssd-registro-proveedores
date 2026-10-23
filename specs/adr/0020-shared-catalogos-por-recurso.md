@@ -41,7 +41,9 @@ Jurídica se entregaba completa y el frontend la filtraba.
   - Con `NATIONAL` se devuelven los registros del país y del régimen. Con `FOREIGN`, los del país
     más `NOT_DEF`, sin filtro de régimen. Un país sin opciones responde lista vacía (`NATIONAL`) o
     solo `NOT_DEF` (`FOREIGN`).
-  - Un parámetro ausente, de más o inválido responde VALIDATION_ERROR con `parameter`.
+  - Un parámetro ausente, de más (no definido en la operación o repetido) o inválido responde
+    VALIDATION_ERROR con `parameter`. Un `countryCode` que no existe en el catálogo de países
+    (comparación exacta) es inválido (decisión del 2026-10-22).
   - Guardar Datos Generales sigue validando las mismas condiciones.
 - Todas las operaciones requieren el token de registro (ADR-0015). Su respuesta no depende del
   solicitante: es la misma para todos los que envían los mismos parámetros.

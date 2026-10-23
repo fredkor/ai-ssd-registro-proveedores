@@ -6,19 +6,29 @@ import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CountryOpt
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CountryOptionResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CucopCatalogResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.LegalOwnershipOptionListResponse;
+import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.LegalOwnershipOptionResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.Origin;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.TaxRegime;
 import mx.com.fredkorlabs.registration.application.port.in.GetCountriesUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsQuery;
+import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Set;
 
 @RestController
 public class RegistrationCatalogsController implements RegistrationCatalogsApi {
 
-    private final GetCountriesUseCase getCountries;
+    private static final Set<String> LEGAL_OWNERSHIP_PARAMETERS = Set.of("origin", "countryCode", "taxRegime");
 
-    public RegistrationCatalogsController(GetCountriesUseCase getCountries) {
+    private final GetCountriesUseCase getCountries;
+    private final GetLegalOwnershipsUseCase getLegalOwnerships;
+
+    public RegistrationCatalogsController(GetCountriesUseCase getCountries,
+                                          GetLegalOwnershipsUseCase getLegalOwnerships) {
         this.getCountries = getCountries;
+        this.getLegalOwnerships = getLegalOwnerships;
     }
 
     @Override
@@ -31,7 +41,17 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
     @Override
     public ResponseEntity<LegalOwnershipOptionListResponse> getLegalOwnerships(Origin origin, String countryCode,
                                                                                TaxRegime taxRegime) {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        QueryParameters.requireOnly(LEGAL_OWNERSHIP_PARAMETERS);
+        return ResponseEntity.ok(new LegalOwnershipOptionListResponse(getLegalOwnerships.execute(
+                new GetLegalOwnershipsQuery(origin.getValue(), countryCode,
+                    taxRegime == null ? null : taxRegime.getValue()))
+            .items().stream()
+            .map(option -> {
+                LegalOwnershipOptionResponse response = new LegalOwnershipOptionResponse(
+                    option.key(), option.id(), option.description(), option.countryCode());
+                return option.taxRegime() == null ? response : response.taxRegime(TaxRegime.fromValue(option.taxRegime()));
+            })
+            .toList()));
     }
 
     @Override

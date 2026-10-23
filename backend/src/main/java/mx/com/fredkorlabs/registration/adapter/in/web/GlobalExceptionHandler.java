@@ -1,9 +1,12 @@
 package mx.com.fredkorlabs.registration.adapter.in.web;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 import mx.com.fredkorlabs.registration.adapter.in.web.ProblemResponses.FieldProblem;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.ErrorCode;
 import mx.com.fredkorlabs.registration.application.port.in.InvalidIdentificationDataException;
+import mx.com.fredkorlabs.registration.application.port.in.InvalidQueryParameterException;
 import mx.com.fredkorlabs.registration.application.port.in.RegistrationAccessDeniedException;
 import mx.com.fredkorlabs.registration.application.port.in.RegistrationAlreadyExistsException;
 import mx.com.fredkorlabs.registration.application.port.in.RegistrationNotFoundException;
@@ -182,6 +185,20 @@ public class GlobalExceptionHandler {
             List.of(FieldProblem.atParameter(ex.getParameterName(), "is required")), request);
     }
 
+    @ExceptionHandler(InvalidRequestParameterException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidRequestParameter(InvalidRequestParameterException ex,
+                                                                       HttpServletRequest request) {
+        return validationError("Request parameter is invalid",
+            List.of(FieldProblem.atParameter(ex.getParameter(), ex.getReason())), request);
+    }
+
+    @ExceptionHandler(InvalidQueryParameterException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidQueryParameter(InvalidQueryParameterException ex,
+                                                                     HttpServletRequest request) {
+        return validationError("Request parameter is invalid",
+            List.of(FieldProblem.atParameter(ex.getParameter(), ex.getReason())), request);
+    }
+
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseEntity<ProblemDetail> handleMissingPart(MissingServletRequestPartException ex,
                                                            HttpServletRequest request) {
@@ -196,6 +213,17 @@ public class GlobalExceptionHandler {
             .flatMap(result -> result.getResolvableErrors().stream().map(error -> FieldProblem.atParameter(
                 Objects.requireNonNullElse(result.getMethodParameter().getParameterName(), "parameter"),
                 Objects.requireNonNullElse(error.getDefaultMessage(), "is invalid"))))
+            .toList();
+        return validationError("Request parameter is invalid", errors, request);
+    }
+
+    // The generated interfaces are @Validated: constrained parameters are checked by a method-validation proxy.
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ProblemDetail> handleParameterConstraint(ConstraintViolationException ex,
+                                                                   HttpServletRequest request) {
+        List<FieldProblem> errors = ex.getConstraintViolations().stream()
+            .map(violation -> FieldProblem.atParameter(lastNodeName(violation.getPropertyPath()),
+                Objects.requireNonNullElse(violation.getMessage(), "is invalid")))
             .toList();
         return validationError("Request parameter is invalid", errors, request);
     }
@@ -217,6 +245,14 @@ public class GlobalExceptionHandler {
     private static ResponseEntity<ProblemDetail> validationError(String detail, List<FieldProblem> errors,
                                                                  HttpServletRequest request) {
         return ProblemResponses.response(ErrorCode.VALIDATION_ERROR, detail, errors, request.getRequestURI());
+    }
+
+    private static String lastNodeName(Path path) {
+        String name = "parameter";
+        for (Path.Node node : path) {
+            if (node.getName() != null) name = node.getName();
+        }
+        return name;
     }
 
     private static JacksonException jacksonCause(Throwable error) {

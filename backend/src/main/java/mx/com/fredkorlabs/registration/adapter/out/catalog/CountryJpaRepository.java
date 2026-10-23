@@ -7,4 +7,6 @@ import java.util.List;
 public interface CountryJpaRepository extends JpaRepository<CountryJpaEntity, Integer> {
 
     List<CountryJpaEntity> findAllByOrderByIdAsc();
+
+    boolean existsByCode(String code);
 }

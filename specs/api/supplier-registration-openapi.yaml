@@ -465,7 +465,8 @@ paths:
       operationId: getLegalOwnerships
       description: Titularidad jurídica filtrada en backend según domain/catalogs.md (ADR-0020). NATIONAL devuelve los
         registros del país y del régimen; FOREIGN, los del país más NOT_DEF, sin filtro de régimen. taxRegime es
-        obligatorio con NATIONAL y no se permite con FOREIGN. Orden ascendente por key.
+        obligatorio con NATIONAL y no se permite con FOREIGN. Orden ascendente por key. Un parámetro ausente,
+        no definido, repetido o inválido responde VALIDATION_ERROR con parameter.
       x-spec-refs:
       - RF-REG-05
       - US08
@@ -486,7 +487,8 @@ paths:
           type: string
           minLength: 1
           maxLength: 50
-        description: Clave del país seleccionado (countryCode del catálogo de países).
+        description: Clave del país seleccionado (countryCode del catálogo de países). Una clave que no existe
+          en el catálogo (comparación exacta) responde VALIDATION_ERROR con parameter countryCode.
       - name: taxRegime
         in: query
         required: false
