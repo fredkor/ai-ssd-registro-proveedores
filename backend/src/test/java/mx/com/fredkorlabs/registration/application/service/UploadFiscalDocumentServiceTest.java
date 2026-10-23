@@ -58,8 +58,22 @@ class UploadFiscalDocumentServiceTest {
     private final FakePersistence persistence = new FakePersistence();
     private final List<String> storedPaths = new ArrayList<>();
     private final List<StoredFileMetadata> registered = new ArrayList<>();
-    private final FileStoragePort storage = (relativePath, content) -> storedPaths.add(relativePath);
-    private final FileMetadataPort metadata = registered::add;
+    private final FileStoragePort storage = new FileStoragePort() {
+        @Override
+        public void store(String relativePath, byte[] content) { storedPaths.add(relativePath); }
+
+        @Override
+        public byte[] read(String relativePath) { throw new UnsupportedOperationException("Not used by this use case"); }
+    };
+    private final FileMetadataPort metadata = new FileMetadataPort() {
+        @Override
+        public void register(StoredFileMetadata file) { registered.add(file); }
+
+        @Override
+        public Optional<StoredFileMetadata> find(UUID fileId) {
+            throw new UnsupportedOperationException("Not used by this use case");
+        }
+    };
     private final RegistrationContextPort contexts = new RegistrationContextPort() {
         @Override
         public String issue(ApplicantIdentity identity, SignatureEvidenceReference evidence,

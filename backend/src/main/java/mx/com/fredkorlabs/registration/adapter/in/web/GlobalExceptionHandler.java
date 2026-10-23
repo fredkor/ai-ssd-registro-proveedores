@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
 import mx.com.fredkorlabs.registration.adapter.in.web.ProblemResponses.FieldProblem;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.ErrorCode;
+import mx.com.fredkorlabs.registration.application.port.in.FiscalDocumentNotFoundException;
 import mx.com.fredkorlabs.registration.application.port.in.InvalidIdentificationDataException;
 import mx.com.fredkorlabs.registration.application.port.in.InvalidQueryParameterException;
 import mx.com.fredkorlabs.registration.application.port.in.RegistrationAccessDeniedException;
@@ -114,6 +115,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleRegistrationNotFound(RegistrationNotFoundException ex,
                                                                     HttpServletRequest request) {
         return ProblemResponses.response(ErrorCode.REGISTRATION_NOT_FOUND, ex.getMessage(), List.of(),
+            request.getRequestURI());
+    }
+
+    @ExceptionHandler(FiscalDocumentNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleFiscalDocumentNotFound(FiscalDocumentNotFoundException ex,
+                                                                      HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.FISCAL_DOCUMENT_NOT_FOUND, ex.getMessage(), List.of(),
             request.getRequestURI());
     }
 

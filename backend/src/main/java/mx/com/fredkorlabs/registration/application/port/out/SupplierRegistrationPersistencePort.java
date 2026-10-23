@@ -22,6 +22,9 @@ public interface SupplierRegistrationPersistencePort {
     /** Reconstitutes the registration and locks its row until the transaction ends (design §7.2). */
     Optional<StoredRegistration> findForUpdate(SupplierRegistrationId id);
 
+    /** Reconstitutes the registration without locking it, for read-only operations. */
+    Optional<StoredRegistration> find(SupplierRegistrationId id);
+
     /** Stores a resumption: verified legal name, latest acceptance and the new evidence in the history. */
     void saveResume(SupplierRegistration registration, SignatureEvidenceReference newEvidence,
                     NoticeAcceptanceReference newAcceptance);
