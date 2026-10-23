@@ -354,7 +354,7 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: Un único PDF, máximo 5 MiB (5,242,880 bytes) inclusive sobre el archivo. Extensión .pdf sin distinguir mayúsculas/minúsculas y contenido PDF comprobado en servidor; no basta el nombre ni el MIME declarado. No se interpreta maxLength como bytes.
+                  description: Un único PDF, máximo 5 MiB (5,242,880 bytes) inclusive sobre el archivo. Extensión .pdf sin distinguir mayúsculas/minúsculas y contenido PDF comprobado en servidor por su firma (primeros bytes %PDF-); no basta el nombre ni el MIME declarado. No se interpreta maxLength como bytes. Una parte no definida o repetida responde VALIDATION_ERROR con parameter.
                   x-max-size-bytes: 5242880
               required:
               - file
@@ -1651,7 +1651,7 @@ components:
       x-error-codes:
       - DOCUMENT_TOO_LARGE
     UnsupportedDocument:
-      description: Se requiere extensión .pdf sin distinguir mayúsculas/minúsculas y contenido PDF comprobado en servidor; extensión o contenido incorrectos producen DOCUMENT_FORMAT_NOT_SUPPORTED.
+      description: Se requiere extensión .pdf sin distinguir mayúsculas/minúsculas y contenido PDF comprobado en servidor por su firma (primeros bytes %PDF-); extensión o contenido incorrectos producen DOCUMENT_FORMAT_NOT_SUPPORTED.
       content:
         application/problem+json:
           schema:
