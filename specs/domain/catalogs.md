@@ -112,10 +112,10 @@ un rango ni un tamaño físico adicional.
 
 | Catálogo | Campos | Valor de `nivel` |
 | :--- | :--- | :--- |
-| `capitulo` | `id`, `clave`, `descripcion`, `nivel` | 1 |
-| `concepto` | `id`, `clave`, `descripcion`, `nivel` | 2 |
-| `partida_generica` | `id`, `clave`, `descripcion`, `nivel` | 3 |
-| `partida_especifica` | `id`, `clave`, `descripcion`, `nivel` | 4 |
+| `capitulo` | `id`, `clave`, `descripcion`, `nivel` | 1 ([valores](catalog-values.md#catalog-14)) |
+| `concepto` | `id`, `clave`, `descripcion`, `nivel` | 2 ([valores](catalog-values.md#catalog-15)) |
+| `partida_generica` | `id`, `clave`, `descripcion`, `nivel` | 3 ([valores](catalog-values.md#catalog-16)) |
+| `partida_especifica` | `id`, `clave`, `descripcion`, `nivel` | 4 ([valores](catalog-values.md#catalog-17)) |
 
 - `id` identifica el registro; `clave` contiene su clave de catálogo y `descripcion` su descripción.
 - La jerarquía de presentación es Capítulo → Concepto → Partida genérica → Partida específica.
@@ -123,12 +123,23 @@ un rango ni un tamaño físico adicional.
   Partida genérica referencia un Concepto y Partida específica referencia una Partida genérica.
   Capítulo es el nivel raíz. El nombre físico del campo de referencia se precisará al
   documentar el esquema de los catálogos existentes.
-- Todas las partidas genéricas tienen partidas específicas.
+- Todo capítulo, concepto y partida genérica tiene al menos una partida específica entre sus
+  descendientes; los nodos sin específicas no forman parte del catálogo (decisión del 2026-10-22).
 - Las reglas de selección se definen en RF-REG-08 y HU-REG-011.
 
-### Definiciones pendientes de CUCoP
+### Precisiones físicas de CUCoP
 
+Resueltas por el [esquema de catálogos aprobado](../architecture/catalog-database-proposal.md):
+
+- Tablas `cucop_chapter`, `cucop_concept`, `cucop_generic_item` y `cucop_specific_item`; el ID del
+  padre está en `chapter_id`, `concept_id` y `generic_item_id`, respectivamente.
 - Tipos físicos fijados el 2026-10-21: IDs `INTEGER`, clave `VARCHAR(50)`, descripción `VARCHAR(500)`
-  ([esquema de catálogos](../architecture/catalog-database-proposal.md#tipos-sql)).
-- Nombre físico del campo que contiene el ID del padre en cada catálogo hijo.
-- Mapeo físico del esquema existente al adaptador JPA de la misma base de datos. La API devuelve el árbol completo en una consulta; búsqueda y expansión se realizan en frontend.
+  ([tipos SQL](../architecture/catalog-database-proposal.md#tipos-sql)).
+- La API devuelve el árbol completo ya jerarquizado en una consulta: la raíz contiene los capítulos
+  y cada nodo trae sus hijos en `items` (vacío en las partidas específicas); los hermanos se ordenan
+  por clave (decisiones del 2026-10-22 y 2026-10-23). Búsqueda y expansión se realizan en frontend.
+- La regla de que todo nodo tiene al menos una partida específica se verifica con pruebas sobre los
+  datos cargados.
+- Las descripciones conservan la acentuación del catálogo de origen, que no es uniforme entre niveles
+  (p. ej. ADMINISTRACION y ADMINISTRACIÓN). La búsqueda por palabra del frontend (US11 CA-009) ignora
+  acentos y mayúsculas (decisión del 2026-10-22).

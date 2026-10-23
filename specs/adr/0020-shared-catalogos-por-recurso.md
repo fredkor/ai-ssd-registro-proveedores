@@ -47,7 +47,8 @@ Jurídica se entregaba completa y el frontend la filtraba.
   - Guardar Datos Generales sigue validando las mismas condiciones.
 - Todas las operaciones requieren el token de registro (ADR-0015). Su respuesta no depende del
   solicitante: es la misma para todos los que envían los mismos parámetros.
-- CUCoP no cambia: `getCucopCatalog` devuelve el árbol completo en una consulta (RF-REG-08).
+- CUCoP sigue siendo un solo recurso: `getCucopCatalog` devuelve el árbol completo ya jerarquizado
+  en una consulta (RF-REG-08); cada nodo trae sus hijos en `items` (decisión del 2026-10-23).
 - **Caché:** no se implementa en esta etapa. Cada caso de uso de catálogo podrá envolverse en un
   decorador de caché en `configuration`, como los decoradores transaccionales, sin cambiar el
   contrato. El almacenamiento, la vigencia por catálogo y la invalidación ante datos nuevos se

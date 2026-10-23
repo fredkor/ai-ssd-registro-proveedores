@@ -6,6 +6,7 @@ import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CatalogOpt
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CountryOptionListResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CountryOptionResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CucopCatalogResponse;
+import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CucopTreeNodeResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.LegalOwnershipOptionListResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.LegalOwnershipOptionResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.Origin;
@@ -14,6 +15,8 @@ import mx.com.fredkorlabs.registration.application.port.in.CatalogOptionsResult;
 import mx.com.fredkorlabs.registration.application.port.in.GetAnnualSalesRangesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetBusinessActivitiesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetCountriesUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetCucopCatalogResult.CucopNode;
+import mx.com.fredkorlabs.registration.application.port.in.GetCucopCatalogUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsQuery;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetPrimaryActivitiesUseCase;
@@ -41,6 +44,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
     private final GetPrimaryActivitiesUseCase getPrimaryActivities;
     private final GetWorkerCountRangesUseCase getWorkerCountRanges;
     private final GetAnnualSalesRangesUseCase getAnnualSalesRanges;
+    private final GetCucopCatalogUseCase getCucopCatalog;
 
     public RegistrationCatalogsController(GetCountriesUseCase getCountries,
                                           GetLegalOwnershipsUseCase getLegalOwnerships,
@@ -50,7 +54,8 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
                                           GetStratificationsUseCase getStratifications,
                                           GetPrimaryActivitiesUseCase getPrimaryActivities,
                                           GetWorkerCountRangesUseCase getWorkerCountRanges,
-                                          GetAnnualSalesRangesUseCase getAnnualSalesRanges) {
+                                          GetAnnualSalesRangesUseCase getAnnualSalesRanges,
+                                          GetCucopCatalogUseCase getCucopCatalog) {
         this.getCountries = getCountries;
         this.getLegalOwnerships = getLegalOwnerships;
         this.getSectors = getSectors;
@@ -60,6 +65,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
         this.getPrimaryActivities = getPrimaryActivities;
         this.getWorkerCountRanges = getWorkerCountRanges;
         this.getAnnualSalesRanges = getAnnualSalesRanges;
+        this.getCucopCatalog = getCucopCatalog;
     }
 
     @Override
@@ -122,12 +128,20 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
 
     @Override
     public ResponseEntity<CucopCatalogResponse> getCucopCatalog() {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        return ResponseEntity.ok(new CucopCatalogResponse(getCucopCatalog.execute().items().stream()
+            .map(RegistrationCatalogsController::toTreeNode)
+            .toList()));
     }
 
     private static CatalogOptionListResponse toCatalogOptions(CatalogOptionsResult result) {
         return new CatalogOptionListResponse(result.items().stream()
             .map(option -> new CatalogOptionResponse(option.id(), option.description()))
             .toList());
+    }
+
+    private static CucopTreeNodeResponse toTreeNode(CucopNode node) {
+        return new CucopTreeNodeResponse(node.id(), node.key(), node.description(),
+            CucopTreeNodeResponse.LevelEnum.fromValue(node.level()),
+            node.items().stream().map(RegistrationCatalogsController::toTreeNode).toList());
     }
 }
