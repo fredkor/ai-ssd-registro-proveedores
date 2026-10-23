@@ -2,9 +2,8 @@ package mx.com.fredkorlabs.registration.application.service;
 
 import mx.com.fredkorlabs.registration.application.port.in.CatalogOptionsResult.CatalogOption;
 import mx.com.fredkorlabs.registration.application.port.out.CatalogRecord;
-import mx.com.fredkorlabs.registration.application.port.out.CountryRecord;
 import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
-import mx.com.fredkorlabs.registration.domain.model.LegalOwnershipOption;
+import mx.com.fredkorlabs.registration.testsupport.UnusedGeneralDataCatalog;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -33,22 +32,7 @@ class GetSectorsServiceTest {
     }
 
     private static GeneralDataCatalogPort sectors(Supplier<List<CatalogRecord>> sectors) {
-        return new GeneralDataCatalogPort() {
-            @Override
-            public List<CountryRecord> findCountries() {
-                throw new UnsupportedOperationException("Not used by this use case");
-            }
-
-            @Override
-            public boolean countryExists(String countryCode) {
-                throw new UnsupportedOperationException("Not used by this use case");
-            }
-
-            @Override
-            public List<LegalOwnershipOption> findLegalOwnershipCandidates(String countryCode) {
-                throw new UnsupportedOperationException("Not used by this use case");
-            }
-
+        return new UnusedGeneralDataCatalog() {
             @Override
             public List<CatalogRecord> findSectors() {
                 return sectors.get();

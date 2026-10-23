@@ -3,10 +3,12 @@ package mx.com.fredkorlabs.registration.configuration;
 import mx.com.fredkorlabs.registration.application.port.in.GetCountriesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetSectorsUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsUseCase;
 import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
 import mx.com.fredkorlabs.registration.application.service.GetCountriesService;
 import mx.com.fredkorlabs.registration.application.service.GetLegalOwnershipsService;
 import mx.com.fredkorlabs.registration.application.service.GetSectorsService;
+import mx.com.fredkorlabs.registration.application.service.GetSubsectorsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -27,5 +29,10 @@ public class RegistrationCatalogConfiguration {
     @Bean
     public GetSectorsUseCase getSectorsUseCase(GeneralDataCatalogPort generalDataCatalog) {
         return new GetSectorsService(generalDataCatalog);
+    }
+
+    @Bean
+    public GetSubsectorsUseCase getSubsectorsUseCase(GeneralDataCatalogPort generalDataCatalog) {
+        return new GetSubsectorsService(generalDataCatalog);
     }
 }

@@ -144,6 +144,42 @@ class GeneralDataCatalogAdapterTest {
         assertEquals("character varying(500)", columnType("sector", "description"));
     }
 
+    @Test
+    void US08_CA023_subsectors_belongToTheSelectedSectorOrderedById() {
+        List<CatalogRecord> found = adapter.findSubsectors(5);
+
+        assertEquals(21, found.size());
+        List<Integer> ids = found.stream().map(CatalogRecord::id).toList();
+        assertEquals(ids.stream().sorted().toList(), ids);
+        assertEquals(List.of(new CatalogRecord(1, "111 AGRICULTURA"), new CatalogRecord(2, "112 CRÍA Y EXPLOTACIÓN DE ANIMALES"),
+                new CatalogRecord(3, "113 APROVECHAMIENTO FORESTAL"), new CatalogRecord(4, "114 PESCA, CAZA Y CAPTURA"),
+                new CatalogRecord(5, "115 SERVICIOS RELACIONADOS CON LAS ACTIVIDADES AGROPECUARIAS Y FORESTALES")),
+            adapter.findSubsectors(1));
+    }
+
+    @Test
+    void ADR0020_subsectorsOfUnknownSector_areEmpty() {
+        assertTrue(adapter.findSubsectors(999).isEmpty());
+    }
+
+    @Test
+    void ADR0017_subsectorMigration_loadsCatalogWithSectorReferences() {
+        assertEquals(94L, ((Number) entityManager.createNativeQuery("SELECT COUNT(*) FROM subsector")
+            .getSingleResult()).longValue());
+        assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
+                "INSERT INTO subsector (id, sector_id, description) VALUES (999, 999, 'SIN SECTOR')")
+            .executeUpdate());
+    }
+
+    @Test
+    void ADR0017_subsectorSchema_usesApprovedTypesAndSectorIndex() {
+        assertEquals("integer", columnType("subsector", "sector_id"));
+        assertEquals("character varying(500)", columnType("subsector", "description"));
+        assertEquals(1L, ((Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'subsector' AND indexname = 'subsector_sector_id_idx'")
+            .getSingleResult()).longValue());
+    }
+
     private String columnType(String column) {
         return columnType("country", column);
     }
