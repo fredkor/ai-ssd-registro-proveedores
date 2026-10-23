@@ -48,6 +48,9 @@ erDiagram
   no se asigna un ID nuevo.
 - `tax_regime` representa los IDs del catálogo existente; los códigos técnicos del dominio
   siguen siendo `LEGAL_ENTITY` e `INDIVIDUAL`.
+- `getCountries` proyecta `country.id` como `id`, `country.name` (nombre en castellano) como
+  `description` y `country.code` como `countryCode` (decisión del 2026-10-22). `international_name`
+  se conserva en la tabla y no se expone.
 
 ## Sector y subsector
 

@@ -13,7 +13,10 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 public class PostgresTestcontainersConfiguration {
 
-    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(DockerImageName.parse("postgres:17"));
+    // Every cached Spring test context keeps its own connection pool (10 by default) against this one
+    // container, and Spring caches up to 32 contexts: the default limit of 100 connections is not enough.
+    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(DockerImageName.parse("postgres:17"))
+        .withCommand("postgres", "-c", "max_connections=400");
 
     @Bean
     @ServiceConnection
