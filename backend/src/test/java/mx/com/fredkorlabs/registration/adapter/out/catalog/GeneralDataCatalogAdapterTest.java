@@ -180,6 +180,18 @@ class GeneralDataCatalogAdapterTest {
             .getSingleResult()).longValue());
     }
 
+    @Test
+    void US08_CA022_businessActivities_loadTheWholeCatalogOrderedById() {
+        assertEquals(List.of(new CatalogRecord(1, "INDUSTRIAL"), new CatalogRecord(2, "COMERCIAL"),
+            new CatalogRecord(3, "DE SERVICIOS")), adapter.findBusinessActivities());
+    }
+
+    @Test
+    void ADR0017_businessActivitySchema_usesApprovedSqlTypes() {
+        assertEquals("integer", columnType("business_activity", "id"));
+        assertEquals("character varying(500)", columnType("business_activity", "description"));
+    }
+
     private String columnType(String column) {
         return columnType("country", column);
     }

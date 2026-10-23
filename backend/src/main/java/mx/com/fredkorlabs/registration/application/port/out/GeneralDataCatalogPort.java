@@ -21,4 +21,7 @@ public interface GeneralDataCatalogPort {
 
     /** Subsectors of the sector, ordered by id; empty for an unknown sector. */
     List<CatalogRecord> findSubsectors(int sectorId);
+
+    /** Every business activity (Giro), ordered by id. */
+    List<CatalogRecord> findBusinessActivities();
 }
