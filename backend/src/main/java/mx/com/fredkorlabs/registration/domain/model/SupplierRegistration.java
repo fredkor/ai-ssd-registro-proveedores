@@ -1,7 +1,7 @@
 package mx.com.fredkorlabs.registration.domain.model;
 
 import mx.com.fredkorlabs.registration.domain.exception.FiscalDocumentAlreadyExistsException;
-import mx.com.fredkorlabs.registration.domain.exception.InvalidGeneralDataException;
+import mx.com.fredkorlabs.registration.domain.exception.FiscalDocumentRequiredException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationStateException;
 
 import java.util.ArrayList;
@@ -98,61 +98,23 @@ public class SupplierRegistration {
         this.acceptedEvidence.add(newEvidence);
     }
 
-    public void saveGeneralData(GeneralData candidate,
-                                GeneralDataValidationContext context,
-                                boolean hasFiscalDocument) {
+    /** INV-34: General Data is saved only while the registration is IN_PROGRESS. */
+    public void ensureGeneralDataCanBeSaved() {
         validateInProgress();
+    }
 
-        TaxRegime regime = applicant.taxRegime();
-
-        // INV-21: sector/subsector rules per regime
-        if (regime == TaxRegime.LEGAL_ENTITY) {
-            if (candidate.sectorId() == null || candidate.subsectorId() == null) {
-                throw new InvalidGeneralDataException(
-                    "Sector and subsector are required for legal entities");
-            }
-        } else {
-            if (candidate.sectorId() != null || candidate.subsectorId() != null) {
-                throw new InvalidGeneralDataException(
-                    "Sector and subsector are not applicable for individuals");
-            }
+    /**
+     * Replaces General Data with a validated whole (INV-34) and completes the section. It requires the fiscal
+     * document already associated (INV-27); CUCoP is not affected (INV-37).
+     */
+    public void saveGeneralData(GeneralData data) {
+        ensureGeneralDataCanBeSaved();
+        Objects.requireNonNull(data, "General Data is required");
+        if (associatedDocument == null) {
+            throw new FiscalDocumentRequiredException("A fiscal identification document must be uploaded first");
         }
-
-        // INV-26: phones required for legal entities
-        if (regime == TaxRegime.LEGAL_ENTITY && candidate.phones().isEmpty()) {
-            throw new InvalidGeneralDataException(
-                "At least one phone number is required for legal entities");
-        }
-
-        // INV-17, INV-20, INV-22, INV-23: catalog compatibility via context
-        if (!context.countryExists()) {
-            throw new InvalidGeneralDataException("Country not found in catalog");
-        }
-        if (!context.legalOwnershipCompatible()) {
-            throw new InvalidGeneralDataException(
-                "Legal ownership is not compatible with origin and regime");
-        }
-        if (regime == TaxRegime.LEGAL_ENTITY && candidate.sectorId() != null
-                && !context.subsectorBelongsToSector()) {
-            throw new InvalidGeneralDataException(
-                "Subsector does not belong to the selected sector");
-        }
-        if (!context.businessActivityExists() || !context.stratificationExists()
-                || !context.primaryActivityExists() || !context.workerCountRangeExists()
-                || !context.annualSalesRangeExists()) {
-            throw new InvalidGeneralDataException(
-                "One or more catalog selections are invalid");
-        }
-
-        // INV-27: fiscal document required to complete general data
-        if (!hasFiscalDocument) {
-            throw new InvalidGeneralDataException(
-                "Fiscal identification document is required to complete general data");
-        }
-
-        this.generalData = candidate;
+        this.generalData = data;
         sectionProgress.put(RegistrationSection.GENERAL_DATA, SectionStatus.COMPLETED);
-        // INV-37: CUCoP progress is not modified
     }
 
     public void saveCucopParticipation(CucopParticipation participation) {

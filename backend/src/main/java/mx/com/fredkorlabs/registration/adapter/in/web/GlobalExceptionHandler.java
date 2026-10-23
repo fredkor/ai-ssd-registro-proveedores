@@ -17,6 +17,8 @@ import mx.com.fredkorlabs.registration.domain.exception.ApplicantRfcMismatchExce
 import mx.com.fredkorlabs.registration.domain.exception.DocumentFormatNotSupportedException;
 import mx.com.fredkorlabs.registration.domain.exception.DocumentTooLargeException;
 import mx.com.fredkorlabs.registration.domain.exception.FiscalDocumentAlreadyExistsException;
+import mx.com.fredkorlabs.registration.domain.exception.FiscalDocumentRequiredException;
+import mx.com.fredkorlabs.registration.domain.exception.InvalidGeneralDataException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidCertificateIdentityException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidNoticeVersionException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationStateException;
@@ -137,6 +139,21 @@ public class GlobalExceptionHandler {
                                                             HttpServletRequest request) {
         return ProblemResponses.response(ErrorCode.INVALID_STATE_TRANSITION, ex.getMessage(), List.of(),
             request.getRequestURI());
+    }
+
+    @ExceptionHandler(InvalidGeneralDataException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidGeneralData(InvalidGeneralDataException ex,
+                                                                  HttpServletRequest request) {
+        return validationError("General Data does not satisfy its rules", ex.violations().stream()
+            .map(violation -> FieldProblem.atPointer(JsonPointers.of(List.of(violation.field().split("/"))),
+                violation.reason()))
+            .toList(), request);
+    }
+
+    @ExceptionHandler(FiscalDocumentRequiredException.class)
+    public ResponseEntity<ProblemDetail> handleFiscalDocumentRequired(FiscalDocumentRequiredException ex,
+                                                                      HttpServletRequest request) {
+        return validationError(ex.getMessage(), List.of(), request);
     }
 
     @ExceptionHandler(FiscalDocumentAlreadyExistsException.class)

@@ -52,6 +52,11 @@ public class UnusedSupplierRegistrationPersistence implements SupplierRegistrati
         throw unused();
     }
 
+    @Override
+    public void saveGeneralData(SupplierRegistration registration) {
+        throw unused();
+    }
+
     private static UnsupportedOperationException unused() {
         return new UnsupportedOperationException("Not used by this use case");
     }

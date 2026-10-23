@@ -19,8 +19,8 @@ import java.lang.reflect.Type;
 import java.util.List;
 
 /**
- * Keeps the raw JSON body of generated request DTOs (needed to preserve ResultadoFirma exactly)
- * and enforces property presence before deserialization (ADR-0009).
+ * Keeps the raw JSON body of generated request DTOs (needed to preserve ResultadoFirma exactly),
+ * enforces property presence and trims editable texts before deserialization and validation (ADR-0009).
  */
 @ControllerAdvice
 public class RawRequestBodyAdvice extends RequestBodyAdviceAdapter {
@@ -46,13 +46,19 @@ public class RawRequestBodyAdvice extends RequestBodyAdviceAdapter {
         RequestContextHolder.currentRequestAttributes()
             .setAttribute(RAW_BODY_ATTRIBUTE, body, RequestAttributes.SCOPE_REQUEST);
         JsonNode tree = parseOrNull(body);
+        byte[] effectiveBody = body;
         if (tree != null) {
             RequestPropertyPresence.check(tree, (Class<?>) targetType, List.of());
+            if (EditableTextFields.apply((Class<?>) targetType)) {
+                EditableTextFields.normalize(tree, (Class<?>) targetType);
+                effectiveBody = jsonMapper.writeValueAsBytes(tree);
+            }
         }
+        byte[] deserializedBody = effectiveBody;
         return new HttpInputMessage() {
             @Override
             public InputStream getBody() {
-                return new ByteArrayInputStream(body);
+                return new ByteArrayInputStream(deserializedBody);
             }
 
             @Override

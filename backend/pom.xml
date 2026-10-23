@@ -129,6 +129,10 @@
 							<generatorName>spring</generatorName>
 							<!-- Omite @NotNull en propiedades nullable; la presencia se valida aparte (ADR-0009) -->
 							<templateDirectory>${project.basedir}/src/main/resources/openapi-templates</templateDirectory>
+							<!-- format: uri como String: @Size no aplica a java.net.URI y el formato lo valida el dominio (INV-24) -->
+							<typeMappings>
+								<typeMapping>URI=String</typeMapping>
+							</typeMappings>
 							<apiPackage>mx.com.fredkorlabs.registration.adapter.in.web.generated</apiPackage>
 							<modelPackage>mx.com.fredkorlabs.registration.adapter.in.web.generated.model</modelPackage>
 							<generateSupportingFiles>false</generateSupportingFiles>

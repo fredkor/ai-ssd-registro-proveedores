@@ -1,5 +1,6 @@
 package mx.com.fredkorlabs.registration.application.port.out;
 
+import mx.com.fredkorlabs.registration.domain.model.GeneralDataCatalogContext;
 import mx.com.fredkorlabs.registration.domain.model.LegalOwnershipOption;
 
 import java.util.List;
@@ -36,4 +37,7 @@ public interface GeneralDataCatalogPort {
 
     /** Every annual sales range (Ventas anuales), ordered by id. */
     List<CatalogRecord> findAnnualSalesRanges();
+
+    /** Resolves every selection of a General Data submission in one call, to validate it when saving. */
+    GeneralDataCatalogContext resolveGeneralDataReferences(GeneralDataSelection selection);
 }

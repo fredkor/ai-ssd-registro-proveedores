@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import mx.com.fredkorlabs.registration.application.port.out.CatalogRecord;
 import mx.com.fredkorlabs.registration.application.port.out.CountryRecord;
+import mx.com.fredkorlabs.registration.application.port.out.GeneralDataSelection;
+import mx.com.fredkorlabs.registration.domain.model.GeneralDataCatalogContext;
 import mx.com.fredkorlabs.registration.domain.model.LegalOwnershipOption;
 import mx.com.fredkorlabs.registration.domain.model.TaxRegime;
 import mx.com.fredkorlabs.registration.testsupport.PostgresTestcontainersConfiguration;
@@ -254,6 +256,50 @@ class GeneralDataCatalogAdapterTest {
     void ADR0017_annualSalesRangeSchema_usesApprovedSqlTypes() {
         assertEquals("integer", columnType("annual_sales_range", "id"));
         assertEquals("character varying(500)", columnType("annual_sales_range", "description"));
+    }
+
+    @Test
+    void US08_CA008_generalDataReferences_resolveEverySelectionInOneCall() {
+        GeneralDataCatalogContext context = adapter.resolveGeneralDataReferences(
+            new GeneralDataSelection(151, 1, 5, 21, 1, 2, 3, 4, 2));
+
+        assertEquals("MX", context.countryCode());
+        assertEquals(new LegalOwnershipOption(1, "MX00001", "1.- SOCIEDAD ANÓNIMA (S.A.)", "MX", TaxRegime.LEGAL_ENTITY),
+            context.legalOwnership());
+        assertTrue(context.sectorExists());
+        assertEquals(5, context.subsectorSectorId());
+        assertTrue(context.businessActivityExists());
+        assertTrue(context.stratificationActive());
+        assertTrue(context.primaryActivityExists());
+        assertTrue(context.workerCountRangeExists());
+        assertTrue(context.annualSalesRangeExists());
+    }
+
+    @Test
+    void US08_CA008_unknownOrInactiveSelections_resolveAsNotCurrent() {
+        GeneralDataCatalogContext context = adapter.resolveGeneralDataReferences(
+            new GeneralDataSelection(9999, 9999, 9999, 9999, 9999, 5, 9999, 9999, 9999));
+
+        assertNull(context.countryCode());
+        assertNull(context.legalOwnership());
+        assertFalse(context.sectorExists());
+        assertNull(context.subsectorSectorId());
+        assertFalse(context.businessActivityExists());
+        assertFalse(context.stratificationActive(), "NO MIPYME (5) is inactive");
+        assertFalse(context.primaryActivityExists());
+        assertFalse(context.workerCountRangeExists());
+        assertFalse(context.annualSalesRangeExists());
+    }
+
+    @Test
+    void US08_CA008_absentSelections_resolveWithoutQueryingNullIds() {
+        GeneralDataCatalogContext context = adapter.resolveGeneralDataReferences(
+            new GeneralDataSelection(4, 99, null, null, 1, 2, 3, 4, 2));
+
+        assertEquals("DE", context.countryCode());
+        assertTrue(context.legalOwnership().isNotDefined());
+        assertFalse(context.sectorExists());
+        assertNull(context.subsectorSectorId());
     }
 
     private String columnType(String column) {

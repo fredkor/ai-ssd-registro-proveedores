@@ -1,7 +1,7 @@
 package mx.com.fredkorlabs.registration.domain;
 
 import mx.com.fredkorlabs.registration.domain.exception.FiscalDocumentAlreadyExistsException;
-import mx.com.fredkorlabs.registration.domain.exception.InvalidGeneralDataException;
+import mx.com.fredkorlabs.registration.domain.exception.FiscalDocumentRequiredException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationStateException;
 import mx.com.fredkorlabs.registration.domain.model.*;
 import org.junit.jupiter.api.Test;
@@ -57,12 +57,8 @@ class SupplierRegistrationTest {
             1, null, null,
             1, 1, 1, 1, 1,
             null,
-            List.of()
+            null
         );
-    }
-
-    private GeneralDataValidationContext allValidContext() {
-        return new GeneralDataValidationContext(true, true, true, true, true, true, true, true);
     }
 
     private FiscalIdentificationDocument createDocument(SupplierRegistrationId regId) {
@@ -106,35 +102,39 @@ class SupplierRegistrationTest {
     void US08_CA006_saveGeneralData_validLegalEntity_marksGeneralDataCompleted() {
         SupplierRegistration reg = createLegalEntityRegistration();
         reg.associateFiscalDocument(createDocument(reg.id()));
-        reg.saveGeneralData(legalEntityGeneralData(), allValidContext(), true);
+        reg.saveGeneralData(legalEntityGeneralData());
         assertEquals(SectionStatus.COMPLETED, reg.sectionStatus(RegistrationSection.GENERAL_DATA));
     }
 
     @Test
-    void US08_CA004_saveGeneralData_individualWithSectorAndSubsector_isRejected() {
-        SupplierRegistration reg = createIndividualRegistration();
-        reg.associateFiscalDocument(createDocument(reg.id()));
-        GeneralData dataWithSector = new GeneralData(
-            Origin.NATIONAL, 1, new Nationality("Mexicana"), null,
-            1, 1, 1,  // sectorId and subsectorId should not be present for INDIVIDUAL
-            1, 1, 1, 1, 1, null, List.of()
-        );
-        assertThrows(InvalidGeneralDataException.class,
-            () -> reg.saveGeneralData(dataWithSector, allValidContext(), true));
+    void US10_CA003_saveGeneralData_withoutFiscalDocument_isRejectedAndStaysPending() {
+        SupplierRegistration reg = createLegalEntityRegistration();
+
+        assertThrows(FiscalDocumentRequiredException.class, () -> reg.saveGeneralData(legalEntityGeneralData()));
+        assertNull(reg.generalData());
+        assertEquals(SectionStatus.PENDING, reg.sectionStatus(RegistrationSection.GENERAL_DATA));
     }
 
-    // --- US09: phones ---
+    @Test
+    void US06_CA003_saveGeneralData_replacesTheWholeSection() {
+        SupplierRegistration reg = createIndividualRegistration();
+        reg.associateFiscalDocument(createDocument(reg.id()));
+        reg.saveGeneralData(individualGeneralData());
+
+        GeneralData replacement = new GeneralData(Origin.FOREIGN, 4, new Nationality("Alemana"),
+            new ForeignFiscalCode("DE123"), 99, null, null, 2, 2, 2, 2, 2, null, null);
+        reg.saveGeneralData(replacement);
+
+        assertEquals(replacement, reg.generalData());
+        assertEquals(SectionStatus.COMPLETED, reg.sectionStatus(RegistrationSection.GENERAL_DATA));
+    }
 
     @Test
-    void US09_CA004_saveGeneralData_legalEntityWithoutPhones_isRejected() {
-        SupplierRegistration reg = createLegalEntityRegistration();
-        reg.associateFiscalDocument(createDocument(reg.id()));
-        GeneralData noPhones = new GeneralData(
-            Origin.NATIONAL, 1, new Nationality("Mexicana"), null,
-            1, 1, 1, 1, 1, 1, 1, 1, null, List.of()
-        );
-        assertThrows(InvalidGeneralDataException.class,
-            () -> reg.saveGeneralData(noPhones, allValidContext(), true));
+    void US08_registeredRegistration_cannotSaveGeneralData() {
+        SupplierRegistration reg = reconstituted(RegistrationStatus.REGISTERED, progressWithCucopCompleted());
+
+        assertThrows(InvalidRegistrationStateException.class, reg::ensureGeneralDataCanBeSaved);
+        assertThrows(InvalidRegistrationStateException.class, () -> reg.saveGeneralData(individualGeneralData()));
     }
 
     // --- US10: fiscal document ---
@@ -143,7 +143,7 @@ class SupplierRegistrationTest {
     void US10_CA007_dissociateFiscalDocument_leavesGeneralDataPendingAndCucopIntact() {
         SupplierRegistration reg = createLegalEntityRegistration();
         reg.associateFiscalDocument(createDocument(reg.id()));
-        reg.saveGeneralData(legalEntityGeneralData(), allValidContext(), true);
+        reg.saveGeneralData(legalEntityGeneralData());
         reg.saveCucopParticipation(validParticipation());
 
         assertEquals(SectionStatus.COMPLETED, reg.sectionStatus(RegistrationSection.GENERAL_DATA));
@@ -163,7 +163,7 @@ class SupplierRegistrationTest {
     void US11_CA011_saveCucopParticipation_valid_marksCucopCompleted() {
         SupplierRegistration reg = createLegalEntityRegistration();
         reg.associateFiscalDocument(createDocument(reg.id()));
-        reg.saveGeneralData(legalEntityGeneralData(), allValidContext(), true);
+        reg.saveGeneralData(legalEntityGeneralData());
         reg.saveCucopParticipation(validParticipation());
         assertEquals(SectionStatus.COMPLETED, reg.sectionStatus(RegistrationSection.CUCOP));
     }
@@ -174,11 +174,11 @@ class SupplierRegistrationTest {
     void US06_CA006_saveGeneralData_afterCucop_doesNotChangeCucopProgress() {
         SupplierRegistration reg = createLegalEntityRegistration();
         reg.associateFiscalDocument(createDocument(reg.id()));
-        reg.saveGeneralData(legalEntityGeneralData(), allValidContext(), true);
+        reg.saveGeneralData(legalEntityGeneralData());
         reg.saveCucopParticipation(validParticipation());
 
         // Save GeneralData again; the fiscal document stays associated
-        reg.saveGeneralData(legalEntityGeneralData(), allValidContext(), true);
+        reg.saveGeneralData(legalEntityGeneralData());
 
         // CUCOP must still be COMPLETED
         assertEquals(SectionStatus.COMPLETED, reg.sectionStatus(RegistrationSection.CUCOP));

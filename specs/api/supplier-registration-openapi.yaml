@@ -1159,7 +1159,7 @@ components:
       x-domain-rules:
       - Todas las propiedades deben enviarse; los opcionales sin valor y los campos no aplicables se envían como null.
       - Para persona física, sectorId, subsectorId y phones se envían explícitamente como null.
-      - 'NATIONAL: país México y nacionalidad Mexicana, ambos de solo lectura.'
+      - 'NATIONAL: país México (countryCode MX del catálogo) y nacionalidad Mexicana, ambos de solo lectura; tras recortar, nationality debe ser exactamente Mexicana.'
       - 'FOREIGN: país seleccionado, nacionalidad alfanumérica hasta 250 y código fiscal obligatorio hasta
         20.'
       - 'LEGAL_ENTITY: sector, subsector y al menos un teléfono obligatorios; subsector depende de sector.'

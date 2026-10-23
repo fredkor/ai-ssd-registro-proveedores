@@ -15,8 +15,8 @@
 | Código fiscal extranjero | Campo de texto editable, separado del RFC, visible y obligatorio únicamente para origen Extranjero. Máximo 20 caracteres. |
 | Nombre completo / Razón social | Obligatorio, obtenido de la e.firma y de solo lectura. |
 | Origen | Obligatorio: Nacional o Extranjero. Seleccionado por el proveedor. |
-| Nacionalidad | Obligatoria. Nacional: Mexicana, de solo lectura. Extranjero: captura alfanumérica de hasta 250 caracteres. |
-| País | Obligatorio para todos. Origen Nacional: México seleccionado y de solo lectura. Origen Extranjero: seleccionable del catálogo de países. |
+| Nacionalidad | Obligatoria. Nacional: Mexicana, de solo lectura; el backend exige exactamente `Mexicana` tras recortar y rechaza otro valor con VALIDATION_ERROR (decisión del 2026-10-23). Extranjero: captura alfanumérica de hasta 250 caracteres. |
+| País | Obligatorio para todos. Origen Nacional: México seleccionado y de solo lectura; es el país con clave `MX` del catálogo. Origen Extranjero: seleccionable del catálogo de países. |
 | Titularidad jurídica | Obligatoria, seleccionada de catálogo. Para nacionales filtra por país y régimen; para extranjeros incluye las opciones del país o clave NOT_DEF, sin filtro por régimen. Orden ascendente por clave. |
 | Sector y Subsector | Obligatorios únicamente para persona moral, seleccionados de catálogo. El subsector corresponde al sector elegido. |
 | Giro | Obligatorio, seleccionado de catálogo. |
