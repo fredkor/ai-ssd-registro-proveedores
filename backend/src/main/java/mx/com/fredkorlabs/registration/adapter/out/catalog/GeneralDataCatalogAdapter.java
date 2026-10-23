@@ -1,5 +1,6 @@
 package mx.com.fredkorlabs.registration.adapter.out.catalog;
 
+import mx.com.fredkorlabs.registration.application.port.out.CatalogRecord;
 import mx.com.fredkorlabs.registration.application.port.out.CountryRecord;
 import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
 import mx.com.fredkorlabs.registration.domain.model.LegalOwnershipOption;
@@ -13,10 +14,13 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
 
     private final CountryJpaRepository countries;
     private final LegalOwnershipJpaRepository legalOwnerships;
+    private final SectorJpaRepository sectors;
 
-    public GeneralDataCatalogAdapter(CountryJpaRepository countries, LegalOwnershipJpaRepository legalOwnerships) {
+    public GeneralDataCatalogAdapter(CountryJpaRepository countries, LegalOwnershipJpaRepository legalOwnerships,
+                                     SectorJpaRepository sectors) {
         this.countries = countries;
         this.legalOwnerships = legalOwnerships;
+        this.sectors = sectors;
     }
 
     @Override
@@ -36,6 +40,13 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
         return legalOwnerships.findByCountryOrNotDefined(countryCode).stream()
             .map(option -> new LegalOwnershipOption(option.getId(), option.getKey(), option.getDescription(),
                 option.getIsoCountry(), regimeOf(option.getRegime())))
+            .toList();
+    }
+
+    @Override
+    public List<CatalogRecord> findSectors() {
+        return sectors.findAllByOrderByIdAsc().stream()
+            .map(sector -> new CatalogRecord(sector.getId(), sector.getDescription()))
             .toList();
     }
 

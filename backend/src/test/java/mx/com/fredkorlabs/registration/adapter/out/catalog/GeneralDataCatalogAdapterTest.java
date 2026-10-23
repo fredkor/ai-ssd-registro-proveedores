@@ -2,6 +2,7 @@ package mx.com.fredkorlabs.registration.adapter.out.catalog;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
+import mx.com.fredkorlabs.registration.application.port.out.CatalogRecord;
 import mx.com.fredkorlabs.registration.application.port.out.CountryRecord;
 import mx.com.fredkorlabs.registration.domain.model.LegalOwnershipOption;
 import mx.com.fredkorlabs.registration.domain.model.TaxRegime;
@@ -122,6 +123,25 @@ class GeneralDataCatalogAdapterTest {
         assertEquals("character varying(50)", columnType("legal_ownership", "iso_country"));
         assertEquals("character varying(500)", columnType("legal_ownership", "regime"));
         assertEquals("character varying(500)", columnType("tax_regime", "description"));
+    }
+
+    @Test
+    void US08_CA022_sectors_loadTheWholeCatalogOrderedById() {
+        List<CatalogRecord> found = adapter.findSectors();
+
+        assertEquals(20, found.size());
+        assertEquals(new CatalogRecord(1,
+            "11 AGRICULTURA, CRÍA Y EXPLOTACIÓN DE ANIMALES, APROVECHAMIENTO FORESTAL, PESCA Y CAZA"), found.getFirst());
+        assertEquals(new CatalogRecord(5, "31-33 INDUSTRIAS MANUFACTURERAS"), found.get(4));
+        assertEquals(20, found.getLast().id());
+        List<Integer> ids = found.stream().map(CatalogRecord::id).toList();
+        assertEquals(ids.stream().sorted().toList(), ids);
+    }
+
+    @Test
+    void ADR0017_sectorSchema_usesApprovedSqlTypes() {
+        assertEquals("integer", columnType("sector", "id"));
+        assertEquals("character varying(500)", columnType("sector", "description"));
     }
 
     private String columnType(String column) {
