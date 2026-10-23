@@ -20,7 +20,8 @@ import java.util.List;
 
 /**
  * Keeps the raw JSON body of generated request DTOs (needed to preserve ResultadoFirma exactly),
- * enforces property presence and trims editable texts before deserialization and validation (ADR-0009).
+ * enforces property presence and unique items, and trims editable texts before deserialization and validation
+ * (ADR-0009, INV-31).
  */
 @ControllerAdvice
 public class RawRequestBodyAdvice extends RequestBodyAdviceAdapter {
@@ -49,6 +50,7 @@ public class RawRequestBodyAdvice extends RequestBodyAdviceAdapter {
         byte[] effectiveBody = body;
         if (tree != null) {
             RequestPropertyPresence.check(tree, (Class<?>) targetType, List.of());
+            RequestUniqueItems.check(tree, (Class<?>) targetType, List.of());
             if (EditableTextFields.apply((Class<?>) targetType)) {
                 EditableTextFields.normalize(tree, (Class<?>) targetType);
                 effectiveBody = jsonMapper.writeValueAsBytes(tree);

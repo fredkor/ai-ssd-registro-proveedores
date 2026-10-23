@@ -168,6 +168,48 @@ class SupplierRegistrationTest {
         assertEquals(SectionStatus.COMPLETED, reg.sectionStatus(RegistrationSection.CUCOP));
     }
 
+    @Test
+    void US11_CA001_saveCucopParticipation_withoutGeneralData_isRejectedAndStaysPending() {
+        SupplierRegistration reg = createLegalEntityRegistration();
+
+        assertThrows(InvalidRegistrationStateException.class, () -> reg.saveCucopParticipation(validParticipation()));
+        assertEquals(SectionStatus.PENDING, reg.sectionStatus(RegistrationSection.CUCOP));
+        assertNull(reg.cucopParticipation());
+    }
+
+    @Test
+    void US11_CA001_saveCucopParticipation_afterDeletingTheFiscalDocument_isRejected() {
+        SupplierRegistration reg = createLegalEntityRegistration();
+        reg.associateFiscalDocument(createDocument(reg.id()));
+        reg.saveGeneralData(legalEntityGeneralData());
+        reg.dissociateFiscalDocument();
+
+        // INV-30: saved General Data that went back to PENDING does not allow CUCoP.
+        assertNotNull(reg.generalData());
+        assertThrows(InvalidRegistrationStateException.class, reg::ensureCucopParticipationCanBeSaved);
+    }
+
+    @Test
+    void US11_CA011_saveCucopParticipation_again_replacesTheSelection() {
+        SupplierRegistration reg = createLegalEntityRegistration();
+        reg.associateFiscalDocument(createDocument(reg.id()));
+        reg.saveGeneralData(legalEntityGeneralData());
+        reg.saveCucopParticipation(validParticipation());
+        CucopParticipation other = new CucopParticipation(Set.of(ParticipationType.PUBLIC_WORKS_CONTRACTOR),
+            Set.of(new CucopSpecificItem(2, 1, "10101002", "Otra partida", 4)));
+
+        reg.saveCucopParticipation(other);
+
+        assertEquals(other, reg.cucopParticipation());
+    }
+
+    @Test
+    void US11_registeredRegistration_cannotSaveCucop() {
+        SupplierRegistration reg = reconstituted(RegistrationStatus.REGISTERED, progressWithCucopCompleted());
+
+        assertThrows(InvalidRegistrationStateException.class, () -> reg.saveCucopParticipation(validParticipation()));
+    }
+
     // --- US06: INV-37 cross-section isolation ---
 
     @Test

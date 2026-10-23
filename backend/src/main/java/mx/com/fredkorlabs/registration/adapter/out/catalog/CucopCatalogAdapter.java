@@ -8,6 +8,9 @@ import mx.com.fredkorlabs.registration.domain.model.CucopGenericItem;
 import mx.com.fredkorlabs.registration.domain.model.CucopSpecificItem;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.List;
+
 @Component
 public class CucopCatalogAdapter implements CucopCatalogPort {
 
@@ -44,5 +47,13 @@ public class CucopCatalogAdapter implements CucopCatalogPort {
                 .map(specific -> new CucopSpecificItem(specific.getId(), specific.getGenericItemId(),
                     specific.getKey(), specific.getDescription(), specific.getLevel()))
                 .toList());
+    }
+
+    @Override
+    public List<CucopSpecificItem> findSpecificItems(Collection<Integer> ids) {
+        return specificItems.findAllById(ids).stream()
+            .map(specific -> new CucopSpecificItem(specific.getId(), specific.getGenericItemId(),
+                specific.getKey(), specific.getDescription(), specific.getLevel()))
+            .toList();
     }
 }

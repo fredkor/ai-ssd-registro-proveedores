@@ -14,6 +14,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -46,6 +47,13 @@ class CucopCatalogAdapterTest {
             "SUELDOS BASE AL PERSONAL EVENTUAL", 3)));
         assertTrue(catalog.specificItems().contains(new CucopSpecificItem(1, 1, "21101",
             "MATERIALES Y ÚTILES DE OFICINA", 4)));
+    }
+
+    @Test
+    void US11_CA012_findSpecificItems_resolvesOnlyLevelFourIds() {
+        // 361 is a generic item without a specific item of the same id; 999999 is in no level.
+        assertEquals(Set.of(new CucopSpecificItem(1, 1, "21101", "MATERIALES Y ÚTILES DE OFICINA", 4)),
+            Set.copyOf(adapter.findSpecificItems(List.of(1, 361, 999999))));
     }
 
     @Test

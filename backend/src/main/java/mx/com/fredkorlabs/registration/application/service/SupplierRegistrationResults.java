@@ -4,8 +4,12 @@ import mx.com.fredkorlabs.registration.application.port.in.SupplierRegistrationR
 import mx.com.fredkorlabs.registration.application.port.out.FiscalDocumentView;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
+import mx.com.fredkorlabs.registration.domain.model.CucopParticipation;
+import mx.com.fredkorlabs.registration.domain.model.CucopSpecificItem;
 import mx.com.fredkorlabs.registration.domain.model.GeneralData;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
+
+import java.util.Comparator;
 
 /** Projection shared by the use cases that return the registration. */
 final class SupplierRegistrationResults {
@@ -40,7 +44,22 @@ final class SupplierRegistrationResults {
             fiscalDocument == null ? null : new SupplierRegistrationResult.FiscalDocumentItem(fiscalDocument.id(),
                 fiscalDocument.originalName(), fiscalDocument.extension(), fiscalDocument.sizeBytes(),
                 fiscalDocument.uploadedAt()),
-            generalDataOf(registration.generalData()));
+            generalDataOf(registration.generalData()),
+            cucopParticipationOf(registration.cucopParticipation()));
+    }
+
+    private static SupplierRegistrationResult.CucopParticipationItem cucopParticipationOf(
+            CucopParticipation participation) {
+        if (participation == null) {
+            return null;
+        }
+        return new SupplierRegistrationResult.CucopParticipationItem(
+            participation.participationTypes().stream().sorted().map(Enum::name).toList(),
+            participation.specificItems().stream()
+                .sorted(Comparator.comparingInt(CucopSpecificItem::id))
+                .map(item -> new SupplierRegistrationResult.SpecificItem(item.id(), item.key(), item.description(),
+                    item.level(), item.genericItemId()))
+                .toList());
     }
 
     private static SupplierRegistrationResult.GeneralDataItem generalDataOf(GeneralData data) {

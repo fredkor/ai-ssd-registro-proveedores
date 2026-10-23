@@ -10,11 +10,14 @@ import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceRef
 import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
+import mx.com.fredkorlabs.registration.domain.model.CucopParticipation;
+import mx.com.fredkorlabs.registration.domain.model.CucopSpecificItem;
 import mx.com.fredkorlabs.registration.domain.model.ForeignFiscalCode;
 import mx.com.fredkorlabs.registration.domain.model.GeneralData;
 import mx.com.fredkorlabs.registration.domain.model.Nationality;
 import mx.com.fredkorlabs.registration.domain.model.NoticeAcceptance;
 import mx.com.fredkorlabs.registration.domain.model.Origin;
+import mx.com.fredkorlabs.registration.domain.model.ParticipationType;
 import mx.com.fredkorlabs.registration.domain.model.PhoneNumber;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationSection;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationStatus;
@@ -403,6 +406,103 @@ class SupplierRegistrationPersistenceAdapterTest {
                 JOIN information_schema.key_column_usage k ON tc.constraint_name = k.constraint_name
                 WHERE tc.table_name = 'supplier_registration' AND tc.constraint_type = 'FOREIGN KEY'
                 AND k.column_name = 'tax_regime_id'""").getSingleResult()).longValue());
+    }
+
+    private static final CucopSpecificItem OFFICE = new CucopSpecificItem(1, 1, "21101",
+        "MATERIALES Y ÚTILES DE OFICINA", 4);
+    private static final CucopSpecificItem PRINTING = new CucopSpecificItem(2, 2, "21201",
+        "MATERIALES Y ÚTILES DE IMPRESIÓN Y REPRODUCCIÓN", 4);
+
+    private SupplierRegistration withCucop(SupplierRegistrationId id, CucopParticipation participation) {
+        SupplierRegistration registration = withGeneralData(id,
+            legalEntityData(List.of(new PhoneNumber("5512345678", null))));
+        registration.saveCucopParticipation(participation);
+        adapter.saveCucopParticipation(registration);
+        entityManager.clear();
+        return adapter.findForUpdate(id).orElseThrow().registration();
+    }
+
+    @Test
+    void US11_CA011_cucop_isSavedAndReconstitutedWithItsProgress() {
+        SupplierRegistrationId id = insert("CUA010101CUA").registration().id();
+        CucopParticipation participation = new CucopParticipation(Set.of(ParticipationType.values()),
+            Set.of(OFFICE, PRINTING));
+
+        SupplierRegistration stored = withCucop(id, participation);
+
+        assertEquals(participation, stored.cucopParticipation());
+        assertEquals(SectionStatus.COMPLETED, stored.sectionStatus(RegistrationSection.CUCOP));
+        assertEquals(SectionStatus.COMPLETED, stored.sectionStatus(RegistrationSection.GENERAL_DATA));
+    }
+
+    @Test
+    void US11_CA011_newSave_replacesTypesAndItemsAsAWhole() {
+        SupplierRegistrationId id = insert("CUB010101CUB").registration().id();
+        withCucop(id, new CucopParticipation(Set.of(ParticipationType.values()), Set.of(OFFICE, PRINTING)));
+        SupplierRegistration registration = adapter.findForUpdate(id).orElseThrow().registration();
+        CucopParticipation replacement = new CucopParticipation(Set.of(ParticipationType.PUBLIC_WORKS_CONTRACTOR),
+            Set.of(PRINTING));
+        registration.saveCucopParticipation(replacement);
+
+        adapter.saveCucopParticipation(registration);
+        entityManager.clear();
+
+        assertEquals(replacement, adapter.findForUpdate(id).orElseThrow().registration().cucopParticipation());
+        assertEquals(List.of(2), entityManager.createNativeQuery(
+                "SELECT specific_item_id FROM registration_cucop_item WHERE registration_id = ?1")
+            .setParameter(1, id.value()).getResultList());
+    }
+
+    @Test
+    void US11_withoutCucop_reconstitutesNoParticipation() {
+        SupplierRegistrationId id = insert("CUC010101CUC").registration().id();
+        entityManager.clear();
+
+        assertNull(adapter.findForUpdate(id).orElseThrow().registration().cucopParticipation());
+    }
+
+    @Test
+    void INV37_savingGeneralDataAgain_keepsTheCucopSelection() {
+        SupplierRegistrationId id = insert("CUD010101CUD").registration().id();
+        CucopParticipation participation = new CucopParticipation(
+            Set.of(ParticipationType.GOODS_AND_SERVICES_SUPPLIER), Set.of(OFFICE));
+        SupplierRegistration registration = withCucop(id, participation);
+        registration.saveGeneralData(legalEntityData(List.of(new PhoneNumber("5511111111", null))));
+
+        adapter.saveGeneralData(registration);
+        entityManager.clear();
+
+        SupplierRegistration stored = adapter.findForUpdate(id).orElseThrow().registration();
+        assertEquals(participation, stored.cucopParticipation());
+        assertEquals(SectionStatus.COMPLETED, stored.sectionStatus(RegistrationSection.CUCOP));
+    }
+
+    @Test
+    void INV32_database_rejectsSelectionsThatAreNotSpecificItems() {
+        SupplierRegistrationId id = insert("CUE010101CUE").registration().id();
+        withCucop(id, new CucopParticipation(Set.of(ParticipationType.GOODS_AND_SERVICES_SUPPLIER), Set.of(OFFICE)));
+
+        // 361 is a generic item without a specific item of the same id.
+        assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
+                "INSERT INTO registration_cucop_item (registration_id, specific_item_id) VALUES (?1, 361)")
+            .setParameter(1, id.value()).executeUpdate());
+    }
+
+    @Test
+    void INV31_database_rejectsUnknownParticipationType() {
+        SupplierRegistrationId id = insert("CUF010101CUF").registration().id();
+        withCucop(id, new CucopParticipation(Set.of(ParticipationType.GOODS_AND_SERVICES_SUPPLIER), Set.of(OFFICE)));
+
+        assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
+                "INSERT INTO registration_participation_type (registration_id, participation_type) VALUES (?1, 'OTHER')")
+            .setParameter(1, id.value()).executeUpdate());
+    }
+
+    @Test
+    void ADR0017_cucopSchema_usesApprovedSqlTypes() {
+        assertEquals("uuid", columnType("cucop_participation", "registration_id"));
+        assertEquals("character varying(32)", columnType("registration_participation_type", "participation_type"));
+        assertEquals("integer", columnType("registration_cucop_item", "specific_item_id"));
     }
 
     @Test

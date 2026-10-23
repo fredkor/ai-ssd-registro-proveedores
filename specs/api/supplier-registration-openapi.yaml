@@ -268,9 +268,10 @@ paths:
       - SupplierRegistrations
       summary: Validar y guardar participación CUCoP
       operationId: saveCucopParticipation
-      description: Requiere Datos Generales guardados, uno o ambos tipos y al menos una específica. Resuelve
-        catálogo y guarda sección y progreso atómicamente. Continúa hacia Contactos. Atrás, selección y Deshacer
-        no guardan.
+      description: Requiere Datos Generales en COMPLETED (con PENDING, incluida la cédula eliminada, responde 409
+        INVALID_STATE_TRANSITION), uno o ambos tipos y al menos una específica, sin repetidos (400 con el pointer del
+        elemento repetido). Resuelve catálogo y guarda sección y progreso atómicamente. Continúa hacia Contactos.
+        Atrás, selección y Deshacer no guardan.
       x-spec-refs:
       - RF-REG-08
       - RF-REG-05
@@ -1305,6 +1306,7 @@ components:
           items:
             $ref: '#/components/schemas/CatalogId'
           minItems: 1
+          uniqueItems: true
       required:
       - participationTypes
       - specificItemIds

@@ -37,4 +37,7 @@ public interface SupplierRegistrationPersistencePort {
 
     /** Replaces General Data and its phones as a whole and stores the resulting section progress (INV-34). */
     void saveGeneralData(SupplierRegistration registration);
+
+    /** Replaces the CUCoP types and specific items as a whole and stores the resulting section progress (INV-34). */
+    void saveCucopParticipation(SupplierRegistration registration);
 }
