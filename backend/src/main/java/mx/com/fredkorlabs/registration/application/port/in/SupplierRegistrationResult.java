@@ -6,7 +6,7 @@ import java.util.UUID;
 
 /**
  * Projection of a registration: identity, latest notice acceptance, progress in section order and the
- * associated fiscal document and the saved General Data ({@code null} when absent).
+ * associated fiscal document, the saved General Data and the saved CUCoP participation ({@code null} when absent).
  */
 public record SupplierRegistrationResult(
     UUID id,
@@ -21,7 +21,8 @@ public record SupplierRegistrationResult(
     String noticeAcceptanceId,
     List<SectionProgressItem> progress,
     FiscalDocumentItem fiscalDocument,
-    GeneralDataItem generalData
+    GeneralDataItem generalData,
+    CucopParticipationItem cucopParticipation
 ) {
 
     public record SectionProgressItem(String section, String status) {}
@@ -36,4 +37,10 @@ public record SupplierRegistrationResult(
                                   int annualSalesRangeId, String website, List<PhoneItem> phones) {}
 
     public record PhoneItem(String number, String extension) {}
+
+    /** Participation types in contract order and specific items ordered by id. */
+    public record CucopParticipationItem(List<String> participationTypes, List<SpecificItem> specificItems) {}
+
+    /** A selected specific item (level 4) with the id of its generic item as parent. */
+    public record SpecificItem(int id, String key, String description, int level, int parentId) {}
 }

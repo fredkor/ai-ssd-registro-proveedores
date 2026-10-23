@@ -117,15 +117,22 @@ public class SupplierRegistration {
         sectionProgress.put(RegistrationSection.GENERAL_DATA, SectionStatus.COMPLETED);
     }
 
-    public void saveCucopParticipation(CucopParticipation participation) {
+    /**
+     * INV-34: only IN_PROGRESS. INV-30: General Data must be COMPLETED; PENDING is rejected even with saved data,
+     * e.g. after the fiscal document was deleted.
+     */
+    public void ensureCucopParticipationCanBeSaved() {
         validateInProgress();
-
-        // INV-30: general data must be saved first
         if (sectionProgress.get(RegistrationSection.GENERAL_DATA) != SectionStatus.COMPLETED) {
             throw new InvalidRegistrationStateException(
                 "General data must be saved before CUCoP participation");
         }
+    }
 
+    /** Replaces the CUCoP selection with a validated whole (INV-31, INV-34) and completes the section. */
+    public void saveCucopParticipation(CucopParticipation participation) {
+        ensureCucopParticipationCanBeSaved();
+        Objects.requireNonNull(participation, "CUCoP participation is required");
         this.cucopParticipation = participation;
         sectionProgress.put(RegistrationSection.CUCOP, SectionStatus.COMPLETED);
     }

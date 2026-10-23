@@ -21,6 +21,7 @@ import mx.com.fredkorlabs.registration.domain.exception.FiscalDocumentRequiredEx
 import mx.com.fredkorlabs.registration.domain.exception.InvalidGeneralDataException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidCertificateIdentityException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidNoticeVersionException;
+import mx.com.fredkorlabs.registration.domain.exception.InvalidCucopParticipationException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationStateException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +74,13 @@ public class GlobalExceptionHandler {
                                                                HttpServletRequest request) {
         return validationError("Request body does not match the contract",
             List.of(FieldProblem.atPointer(ex.getPointer(), "is required")), request);
+    }
+
+    @ExceptionHandler(RepeatedRequestItemException.class)
+    public ResponseEntity<ProblemDetail> handleRepeatedItem(RepeatedRequestItemException ex,
+                                                            HttpServletRequest request) {
+        return validationError("Request body does not match the contract",
+            List.of(FieldProblem.atPointer(ex.getPointer(), "is repeated")), request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -145,6 +153,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleInvalidGeneralData(InvalidGeneralDataException ex,
                                                                   HttpServletRequest request) {
         return validationError("General Data does not satisfy its rules", ex.violations().stream()
+            .map(violation -> FieldProblem.atPointer(JsonPointers.of(List.of(violation.field().split("/"))),
+                violation.reason()))
+            .toList(), request);
+    }
+
+    @ExceptionHandler(InvalidCucopParticipationException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidCucopParticipation(InvalidCucopParticipationException ex,
+                                                                         HttpServletRequest request) {
+        return validationError("CUCoP participation does not satisfy its rules", ex.violations().stream()
             .map(violation -> FieldProblem.atPointer(JsonPointers.of(List.of(violation.field().split("/"))),
                 violation.reason()))
             .toList(), request);

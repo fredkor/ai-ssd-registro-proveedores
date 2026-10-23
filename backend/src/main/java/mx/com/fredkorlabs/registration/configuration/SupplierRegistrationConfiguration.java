@@ -1,17 +1,21 @@
 package mx.com.fredkorlabs.registration.configuration;
 
 import mx.com.fredkorlabs.registration.adapter.in.transaction.TransactionalResumeSupplierRegistrationUseCase;
+import mx.com.fredkorlabs.registration.adapter.in.transaction.TransactionalSaveCucopParticipationUseCase;
 import mx.com.fredkorlabs.registration.adapter.in.transaction.TransactionalSaveGeneralDataUseCase;
 import mx.com.fredkorlabs.registration.adapter.in.transaction.TransactionalStartSupplierRegistrationUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExistenceUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.ResumeSupplierRegistrationUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.SaveCucopParticipationUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.SaveGeneralDataUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.StartSupplierRegistrationUseCase;
+import mx.com.fredkorlabs.registration.application.port.out.CucopCatalogPort;
 import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationContextPort;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
 import mx.com.fredkorlabs.registration.application.service.CheckRegistrationExistenceService;
 import mx.com.fredkorlabs.registration.application.service.ResumeSupplierRegistrationService;
+import mx.com.fredkorlabs.registration.application.service.SaveCucopParticipationService;
 import mx.com.fredkorlabs.registration.application.service.SaveGeneralDataService;
 import mx.com.fredkorlabs.registration.application.service.StartSupplierRegistrationService;
 import org.springframework.context.annotation.Bean;
@@ -50,5 +54,14 @@ public class SupplierRegistrationConfiguration {
             GeneralDataCatalogPort generalDataCatalog) {
         return new TransactionalSaveGeneralDataUseCase(new SaveGeneralDataService(
             registrationContext, supplierRegistrationPersistence, generalDataCatalog));
+    }
+
+    @Bean
+    public SaveCucopParticipationUseCase saveCucopParticipationUseCase(
+            RegistrationContextPort registrationContext,
+            SupplierRegistrationPersistencePort supplierRegistrationPersistence,
+            CucopCatalogPort cucopCatalog) {
+        return new TransactionalSaveCucopParticipationUseCase(new SaveCucopParticipationService(
+            registrationContext, supplierRegistrationPersistence, cucopCatalog));
     }
 }
