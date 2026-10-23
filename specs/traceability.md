@@ -218,7 +218,7 @@ pruebas frontend; no se sustituyen con pruebas de controladores.
 
 | CA | Operación principal | Reglas o fuente | Verificación prevista |
 | :--- | :--- | :--- | :--- |
-| CA-001 | `getCucopCatalog` | INV-30 | Interfaz y aplicación. |
+| CA-001 | `saveCucopParticipation` | INV-30 | Interfaz (acceso a la sección) y aplicación (el guardado exige Datos Generales guardados). `getCucopCatalog` no recibe expediente. |
 | CA-002 | Sin petición propia | US11 CA-002 | Interfaz. |
 | CA-003 | Sin petición propia | INV-31 | Interfaz. |
 | CA-004 | `saveCucopParticipation` | INV-31 | Interfaz y dominio. |

@@ -708,10 +708,12 @@ paths:
       - RegistrationCatalogs
       summary: Cargar el árbol CUCoP completo
       operationId: getCucopCatalog
-      description: Devuelve todos los capítulos, conceptos, partidas genéricas y específicas, incluidos sus
-        IDs de padre, en una sola consulta sin paginación. El frontend reconstruye el árbol y busca por clave
-        o palabra desde el tercer carácter, sin peticiones por expansión ni búsqueda. El volumen aproximado
-        de 300 elementos no es un límite contractual. La tabla visual de seleccionadas pagina 10 filas.
+      description: Devuelve el árbol CUCoP completo ya jerarquizado, en una sola consulta sin paginación. La raíz
+        items contiene los capítulos y cada nodo trae sus hijos en su propio items, hasta las partidas específicas,
+        cuyo items va vacío. Los hermanos se ordenan por key ascendente. El frontend busca por clave o palabra
+        desde el tercer carácter, sin peticiones por expansión ni búsqueda. El volumen aproximado de 300
+        elementos no es un límite contractual. La tabla visual de seleccionadas pagina 10 filas. Los IDs pueden
+        repetirse entre niveles.
       x-spec-refs:
       - RF-REG-08
       - US11
@@ -724,10 +726,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CucopCatalogResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '403':
-          $ref: '#/components/responses/AccessDenied'
         '500':
           $ref: '#/components/responses/InternalError'
         '401':
@@ -1483,21 +1481,52 @@ components:
       - description
       - level
       additionalProperties: false
-      description: Registro de catálogo. Capítulo raíz sin parentId; los demás niveles tienen el ID de su padre
-        inmediato. Solo niveles 3 y 4 tienen casillas editables. No prescribe estados visuales.
+      description: Partida específica seleccionada (nivel 4) con el ID de su partida genérica en parentId. Se usa
+        en CucopParticipationResponse; el catálogo se entrega con CucopTreeNodeResponse.
+    CucopTreeNodeResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/CatalogId'
+        key:
+          type: string
+        description:
+          type: string
+        level:
+          type: integer
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+        items:
+          type: array
+          description: Hijos del nivel inmediato inferior, ordenados por key ascendente; vacío en las partidas
+            específicas (nivel 4).
+          items:
+            $ref: '#/components/schemas/CucopTreeNodeResponse'
+      required:
+      - id
+      - key
+      - description
+      - level
+      - items
+      additionalProperties: false
+      description: Nodo del árbol CUCoP. El padre es el nodo que lo contiene. Solo niveles 3 y 4 tienen casillas
+        editables. No prescribe estados visuales.
     CucopCatalogResponse:
       type: object
       properties:
         items:
           type: array
+          description: Capítulos (nivel 1) ordenados por key ascendente, cada uno con su subárbol.
           items:
-            $ref: '#/components/schemas/CucopNodeResponse'
+            $ref: '#/components/schemas/CucopTreeNodeResponse'
       required:
       - items
       additionalProperties: false
-      description: Lista completa de nodos de los cuatro niveles, con IDs de padre para reconstruir todo el
-        árbol en frontend. Una sola respuesta, sin paginación ni búsqueda remota. Aproximadamente 300 elementos
-        es contexto de volumen, no máximo.
+      description: Árbol CUCoP completo de los cuatro niveles, ya jerarquizado. Una sola respuesta, sin paginación
+        ni búsqueda remota. Aproximadamente 300 elementos es contexto de volumen, no máximo.
     RegistrationToken:
       type: string
       minLength: 1

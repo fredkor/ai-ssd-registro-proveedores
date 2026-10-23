@@ -155,9 +155,9 @@ erDiagram
     cucopGenericItem ||..|{ cucopSpecificItem : "tiene al menos una"
 ```
 
-Cada hijo tiene un padre obligatorio del nivel inmediato anterior. Toda genérica debe tener
-al menos una específica: una FK por sí sola no garantiza esa regla; se verificará al preparar
-los datos y consultar el catálogo. Se proponen índices sobre las tres FK y checks para `level`.
+Cada hijo tiene un padre obligatorio del nivel inmediato anterior. Todo capítulo, concepto y
+genérica debe tener al menos una específica entre sus descendientes (decisión del 2026-10-22): una
+FK por sí sola no garantiza esa regla; se verifica con pruebas sobre los datos cargados. Se proponen índices sobre las tres FK y checks para `level`.
 `key` es única dentro de cada tabla de nivel (constraint UK); entre niveles distintos puede repetirse.
 Los IDs pueden coincidir entre niveles; la selección del expediente referencia exclusivamente
 `cucop_specific_item.id`, nunca un ID sin identificar el nivel.
