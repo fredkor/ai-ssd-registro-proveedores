@@ -45,6 +45,11 @@ public class UnusedGeneralDataCatalog implements GeneralDataCatalogPort {
         throw unused();
     }
 
+    @Override
+    public List<CatalogRecord> findPrimaryActivities() {
+        throw unused();
+    }
+
     private static UnsupportedOperationException unused() {
         return new UnsupportedOperationException("Not used by this use case");
     }

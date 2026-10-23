@@ -381,7 +381,7 @@ es la opción general para Extranjero. Su descripción se conserva literal.
 |:---|:---|
 |1|RECURSOS NATURALES|
 |2|CONSTRUCCIÓN|
-|3|"FABRICACIÓN PRODUCCIÓN O ELABORACIÓN"|
+|3|FABRICACIÓN PRODUCCIÓN O ELABORACIÓN|
 |4|COMERCIO AL POR MAYOR|
 |5|TRANSPORTE|
 |6|COMUNICACIÓN|

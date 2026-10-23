@@ -27,4 +27,7 @@ public interface GeneralDataCatalogPort {
 
     /** Active stratifications only, ordered by id. */
     List<CatalogRecord> findActiveStratifications();
+
+    /** Every primary activity (Actividad preponderante), ordered by id. */
+    List<CatalogRecord> findPrimaryActivities();
 }
