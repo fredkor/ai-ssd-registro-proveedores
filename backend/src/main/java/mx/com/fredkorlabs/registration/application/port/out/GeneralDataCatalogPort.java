@@ -18,4 +18,7 @@ public interface GeneralDataCatalogPort {
 
     /** Every sector, ordered by id. */
     List<CatalogRecord> findSectors();
+
+    /** Subsectors of the sector, ordered by id; empty for an unknown sector. */
+    List<CatalogRecord> findSubsectors(int sectorId);
 }

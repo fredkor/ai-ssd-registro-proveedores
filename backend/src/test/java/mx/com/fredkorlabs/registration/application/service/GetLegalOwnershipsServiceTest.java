@@ -4,11 +4,9 @@ import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsQue
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsResult;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsResult.LegalOwnershipItem;
 import mx.com.fredkorlabs.registration.application.port.in.InvalidQueryParameterException;
-import mx.com.fredkorlabs.registration.application.port.out.CatalogRecord;
-import mx.com.fredkorlabs.registration.application.port.out.CountryRecord;
-import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
 import mx.com.fredkorlabs.registration.domain.model.LegalOwnershipOption;
 import mx.com.fredkorlabs.registration.domain.model.TaxRegime;
+import mx.com.fredkorlabs.registration.testsupport.UnusedGeneralDataCatalog;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -63,13 +61,8 @@ class GetLegalOwnershipsServiceTest {
         assertTrue(catalog.candidatesFor.isEmpty());
     }
 
-    private static final class FakeCatalog implements GeneralDataCatalogPort {
+    private static final class FakeCatalog extends UnusedGeneralDataCatalog {
         private final List<String> candidatesFor = new ArrayList<>();
-
-        @Override
-        public List<CountryRecord> findCountries() {
-            throw new UnsupportedOperationException("Not used by this use case");
-        }
 
         @Override
         public boolean countryExists(String countryCode) {
@@ -84,11 +77,6 @@ class GetLegalOwnershipsServiceTest {
                 new LegalOwnershipOption(6, "MX00006", "PERSONA FÍSICA", "MX", TaxRegime.INDIVIDUAL),
                 new LegalOwnershipOption(1, "MX00001", "SOCIEDAD ANÓNIMA", "MX", TaxRegime.LEGAL_ENTITY),
                 new LegalOwnershipOption(122, "AT00001", "EINZELUNTERNEHMEN", "AT", null));
-        }
-
-        @Override
-        public List<CatalogRecord> findSectors() {
-            throw new UnsupportedOperationException("Not used by this use case");
         }
     }
 }

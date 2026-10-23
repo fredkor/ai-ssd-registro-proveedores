@@ -15,12 +15,14 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
     private final CountryJpaRepository countries;
     private final LegalOwnershipJpaRepository legalOwnerships;
     private final SectorJpaRepository sectors;
+    private final SubsectorJpaRepository subsectors;
 
     public GeneralDataCatalogAdapter(CountryJpaRepository countries, LegalOwnershipJpaRepository legalOwnerships,
-                                     SectorJpaRepository sectors) {
+                                     SectorJpaRepository sectors, SubsectorJpaRepository subsectors) {
         this.countries = countries;
         this.legalOwnerships = legalOwnerships;
         this.sectors = sectors;
+        this.subsectors = subsectors;
     }
 
     @Override
@@ -47,6 +49,13 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
     public List<CatalogRecord> findSectors() {
         return sectors.findAllByOrderByIdAsc().stream()
             .map(sector -> new CatalogRecord(sector.getId(), sector.getDescription()))
+            .toList();
+    }
+
+    @Override
+    public List<CatalogRecord> findSubsectors(int sectorId) {
+        return subsectors.findBySectorIdOrderByIdAsc(sectorId).stream()
+            .map(subsector -> new CatalogRecord(subsector.getId(), subsector.getDescription()))
             .toList();
     }
 

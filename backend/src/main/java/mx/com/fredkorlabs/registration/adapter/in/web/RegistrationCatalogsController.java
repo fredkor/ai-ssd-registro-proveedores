@@ -15,6 +15,8 @@ import mx.com.fredkorlabs.registration.application.port.in.GetCountriesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsQuery;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetSectorsUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsQuery;
+import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,13 +30,16 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
     private final GetCountriesUseCase getCountries;
     private final GetLegalOwnershipsUseCase getLegalOwnerships;
     private final GetSectorsUseCase getSectors;
+    private final GetSubsectorsUseCase getSubsectors;
 
     public RegistrationCatalogsController(GetCountriesUseCase getCountries,
                                           GetLegalOwnershipsUseCase getLegalOwnerships,
-                                          GetSectorsUseCase getSectors) {
+                                          GetSectorsUseCase getSectors,
+                                          GetSubsectorsUseCase getSubsectors) {
         this.getCountries = getCountries;
         this.getLegalOwnerships = getLegalOwnerships;
         this.getSectors = getSectors;
+        this.getSubsectors = getSubsectors;
     }
 
     @Override
@@ -67,7 +72,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
 
     @Override
     public ResponseEntity<CatalogOptionListResponse> getSubsectors(Integer sectorId) {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        return ResponseEntity.ok(toCatalogOptions(getSubsectors.execute(new GetSubsectorsQuery(sectorId))));
     }
 
     @Override
