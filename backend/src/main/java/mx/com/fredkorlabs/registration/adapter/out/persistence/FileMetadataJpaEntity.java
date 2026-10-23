@@ -93,4 +93,6 @@ public class FileMetadataJpaEntity implements Persistable<UUID> {
     public Instant getUploadedAt() { return uploadedAt; }
 
     public boolean isAssociated() { return associated; }
+
+    public void markNotAssociated() { this.associated = false; }
 }

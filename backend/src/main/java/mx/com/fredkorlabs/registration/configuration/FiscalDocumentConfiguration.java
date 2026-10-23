@@ -1,14 +1,17 @@
 package mx.com.fredkorlabs.registration.configuration;
 
+import mx.com.fredkorlabs.registration.adapter.in.transaction.TransactionalDeleteFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.adapter.in.transaction.TransactionalDownloadFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.adapter.in.transaction.TransactionalUploadFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.adapter.out.document.VolumeFileStorageAdapter;
+import mx.com.fredkorlabs.registration.application.port.in.DeleteFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.DownloadFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.UploadFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.application.port.out.FileMetadataPort;
 import mx.com.fredkorlabs.registration.application.port.out.FileStoragePort;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationContextPort;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
+import mx.com.fredkorlabs.registration.application.service.DeleteFiscalDocumentService;
 import mx.com.fredkorlabs.registration.application.service.DownloadFiscalDocumentService;
 import mx.com.fredkorlabs.registration.application.service.UploadFiscalDocumentService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -43,5 +46,14 @@ public class FiscalDocumentConfiguration {
             FileMetadataPort fileMetadata, FileStoragePort fileStorage) {
         return new TransactionalDownloadFiscalDocumentUseCase(new DownloadFiscalDocumentService(
             registrationContext, supplierRegistrationPersistence, fileMetadata, fileStorage));
+    }
+
+    @Bean
+    public DeleteFiscalDocumentUseCase deleteFiscalDocumentUseCase(
+            RegistrationContextPort registrationContext,
+            SupplierRegistrationPersistencePort supplierRegistrationPersistence,
+            FileMetadataPort fileMetadata) {
+        return new TransactionalDeleteFiscalDocumentUseCase(new DeleteFiscalDocumentService(
+            registrationContext, supplierRegistrationPersistence, fileMetadata));
     }
 }

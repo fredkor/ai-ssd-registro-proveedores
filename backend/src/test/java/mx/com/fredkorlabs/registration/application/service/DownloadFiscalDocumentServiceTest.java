@@ -74,6 +74,11 @@ class DownloadFiscalDocumentServiceTest {
             return Optional.of(new StoredFileMetadata(fileId, new SupplierRegistrationId(REGISTRATION_ID),
                 "Cédula Fiscal.pdf", PATH, "pdf", "application/pdf", PDF.length, UPLOADED_AT, true));
         }
+
+        @Override
+        public void markNotAssociated(UUID fileId) {
+            throw new UnsupportedOperationException("Not used by this use case");
+        }
     };
     private final FileStoragePort storage = new FileStoragePort() {
         @Override
