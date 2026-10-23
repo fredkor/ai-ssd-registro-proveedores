@@ -10,12 +10,19 @@ import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistration
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
 import mx.com.fredkorlabs.registration.domain.model.FiscalIdentificationDocument;
+import mx.com.fredkorlabs.registration.domain.model.ForeignFiscalCode;
+import mx.com.fredkorlabs.registration.domain.model.GeneralData;
+import mx.com.fredkorlabs.registration.domain.model.Nationality;
 import mx.com.fredkorlabs.registration.domain.model.NoticeAcceptance;
+import mx.com.fredkorlabs.registration.domain.model.Origin;
+import mx.com.fredkorlabs.registration.domain.model.PhoneNumber;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationSection;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
 import mx.com.fredkorlabs.registration.domain.model.StoredDocumentReference;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
+import mx.com.fredkorlabs.registration.domain.model.TaxRegime;
+import mx.com.fredkorlabs.registration.domain.model.Website;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
@@ -44,17 +51,20 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
     private final ApplicantSignatureEvidenceJpaRepository evidences;
     private final RegistrationFiscalDocumentJpaRepository fiscalDocuments;
     private final FileMetadataJpaRepository files;
+    private final GeneralDataJpaRepository generalData;
 
     public SupplierRegistrationPersistenceAdapter(SupplierRegistrationJpaRepository repository,
                                                   NoticeAcceptanceJpaRepository acceptances,
                                                   ApplicantSignatureEvidenceJpaRepository evidences,
                                                   RegistrationFiscalDocumentJpaRepository fiscalDocuments,
-                                                  FileMetadataJpaRepository files) {
+                                                  FileMetadataJpaRepository files,
+                                                  GeneralDataJpaRepository generalData) {
         this.repository = repository;
         this.acceptances = acceptances;
         this.evidences = evidences;
         this.fiscalDocuments = fiscalDocuments;
         this.files = files;
+        this.generalData = generalData;
     }
 
     @Override
@@ -119,7 +129,52 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
         repository.flush();
     }
 
-    // General Data and CUCoP are not persisted yet; they are absent until their operations exist.
+    @Override
+    public void saveGeneralData(SupplierRegistration registration) {
+        UUID id = registration.id().value();
+        GeneralData data = registration.generalData();
+        GeneralDataJpaEntity entity = generalData.findById(id).orElseGet(() -> new GeneralDataJpaEntity(id));
+        entity.replace(originId(data.origin()), data.countryId(), data.nationality().value(),
+            data.foreignFiscalCode() == null ? null : data.foreignFiscalCode().value(), data.legalOwnershipId(),
+            data.sectorId(), data.subsectorId(), data.businessActivityId(), data.stratificationId(),
+            data.primaryActivityId(), data.workerCountRangeId(), data.annualSalesRangeId(),
+            data.website() == null ? null : data.website().value(),
+            data.phones() == null ? List.of() : data.phones().stream()
+                .map(phone -> new PhoneEmbeddable(phone.number(), phone.extension()))
+                .toList());
+        generalData.save(entity);
+        repository.findById(id).orElseThrow().getSectionProgress()
+            .put(RegistrationSection.GENERAL_DATA, registration.sectionStatus(RegistrationSection.GENERAL_DATA));
+        repository.flush();
+    }
+
+    // Stored data was valid when saved: it is rebuilt without re-running the save rules (domain model §8).
+    private GeneralData toGeneralData(GeneralDataJpaEntity entity, TaxRegime regime) {
+        return new GeneralData(originOf(entity.getOriginId()), entity.getCountryId(),
+            new Nationality(entity.getNationality()),
+            entity.getForeignFiscalCode() == null ? null : new ForeignFiscalCode(entity.getForeignFiscalCode()),
+            entity.getLegalOwnershipId(), entity.getSectorId(), entity.getSubsectorId(), entity.getBusinessActivityId(),
+            entity.getStratificationId(), entity.getPrimaryActivityId(), entity.getWorkerCountRangeId(),
+            entity.getAnnualSalesRangeId(), entity.getWebsite() == null ? null : new Website(entity.getWebsite()),
+            regime == TaxRegime.INDIVIDUAL ? null : entity.getPhones().stream()
+                .map(phone -> new PhoneNumber(phone.getNumber(), phone.getExtension()))
+                .toList());
+    }
+
+    // Origin catalog ids (catalog-values.md, catalog 2; domain/catalogs.md): NACIONAL 1, EXTRANJERO 2.
+    private static int originId(Origin origin) {
+        return origin == Origin.NATIONAL ? 1 : 2;
+    }
+
+    private static Origin originOf(int originId) {
+        return switch (originId) {
+            case 1 -> Origin.NATIONAL;
+            case 2 -> Origin.FOREIGN;
+            default -> throw new IllegalStateException("Unknown origin in general data");
+        };
+    }
+
+    // CUCoP is not persisted yet; they are absent until their operations exist.
     private StoredRegistration toStoredRegistration(SupplierRegistrationJpaEntity entity) {
         NoticeAcceptanceJpaEntity acceptance = acceptances.findById(entity.getNoticeAcceptanceId()).orElseThrow();
         Map<UUID, ApplicantSignatureEvidenceJpaEntity> history = evidences.findAllById(entity.getSignatureEvidenceIds())
@@ -133,13 +188,14 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
         FileMetadataJpaEntity document = fiscalDocuments.findById(entity.getId())
             .map(association -> files.findById(association.getFileId()).orElseThrow())
             .orElse(null);
+        ApplicantIdentity applicant = new ApplicantIdentity(new Rfc(entity.getRfc()), entity.getLegalName());
         SupplierRegistration registration = SupplierRegistration.reconstitute(
             id,
             entity.getStatus(),
-            new ApplicantIdentity(new Rfc(entity.getRfc()), entity.getLegalName()),
+            applicant,
             new NoticeAcceptance(acceptance.getVersion(), acceptance.getAcceptedAt()),
             evidence,
-            null,
+            generalData.findById(entity.getId()).map(saved -> toGeneralData(saved, applicant.taxRegime())).orElse(null),
             document == null ? null : new FiscalIdentificationDocument(id, document.getOriginalName(),
                 new StoredDocumentReference(document.getId())),
             null,

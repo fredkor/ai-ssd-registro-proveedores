@@ -3,6 +3,8 @@ package mx.com.fredkorlabs.registration.testsupport;
 import mx.com.fredkorlabs.registration.application.port.out.CatalogRecord;
 import mx.com.fredkorlabs.registration.application.port.out.CountryRecord;
 import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
+import mx.com.fredkorlabs.registration.application.port.out.GeneralDataSelection;
+import mx.com.fredkorlabs.registration.domain.model.GeneralDataCatalogContext;
 import mx.com.fredkorlabs.registration.domain.model.LegalOwnershipOption;
 
 import java.util.List;
@@ -57,6 +59,11 @@ public class UnusedGeneralDataCatalog implements GeneralDataCatalogPort {
 
     @Override
     public List<CatalogRecord> findAnnualSalesRanges() {
+        throw unused();
+    }
+
+    @Override
+    public GeneralDataCatalogContext resolveGeneralDataReferences(GeneralDataSelection selection) {
         throw unused();
     }
 

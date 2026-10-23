@@ -5,7 +5,10 @@ import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.ApplicantI
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CucopParticipationRequest;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.FiscalDocumentResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.GeneralDataRequest;
+import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.GeneralDataResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.NoticeAcceptanceResponse;
+import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.Origin;
+import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.PhoneRequest;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.RegistrationExistenceResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.RegistrationSection;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.RegistrationStatus;
@@ -19,6 +22,9 @@ import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExis
 import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExistenceUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.ResumeSupplierRegistrationCommand;
 import mx.com.fredkorlabs.registration.application.port.in.ResumeSupplierRegistrationUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.SaveGeneralDataCommand;
+import mx.com.fredkorlabs.registration.application.port.in.SaveGeneralDataUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.SectionSaveResult;
 import mx.com.fredkorlabs.registration.application.port.in.StartSupplierRegistrationCommand;
 import mx.com.fredkorlabs.registration.application.port.in.StartSupplierRegistrationUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.SupplierRegistrationResult;
@@ -37,13 +43,16 @@ public class SupplierRegistrationsController implements SupplierRegistrationsApi
     private final CheckRegistrationExistenceUseCase checkRegistrationExistence;
     private final StartSupplierRegistrationUseCase startSupplierRegistration;
     private final ResumeSupplierRegistrationUseCase resumeSupplierRegistration;
+    private final SaveGeneralDataUseCase saveGeneralData;
 
     public SupplierRegistrationsController(CheckRegistrationExistenceUseCase checkRegistrationExistence,
                                            StartSupplierRegistrationUseCase startSupplierRegistration,
-                                           ResumeSupplierRegistrationUseCase resumeSupplierRegistration) {
+                                           ResumeSupplierRegistrationUseCase resumeSupplierRegistration,
+                                           SaveGeneralDataUseCase saveGeneralData) {
         this.checkRegistrationExistence = checkRegistrationExistence;
         this.startSupplierRegistration = startSupplierRegistration;
         this.resumeSupplierRegistration = resumeSupplierRegistration;
+        this.saveGeneralData = saveGeneralData;
     }
 
     @Override
@@ -73,7 +82,18 @@ public class SupplierRegistrationsController implements SupplierRegistrationsApi
 
     @Override
     public ResponseEntity<SectionSaveResponse> saveGeneralData(UUID registrationId, GeneralDataRequest request) {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        SectionSaveResult result = saveGeneralData.execute(new SaveGeneralDataCommand(registrationId,
+            RegistrationTokenPrincipal.currentTokenId(), request.getOrigin().getValue(), request.getCountryId(),
+            request.getNationality(), request.getForeignFiscalCode(), request.getLegalOwnershipId(),
+            request.getSectorId(), request.getSubsectorId(), request.getBusinessActivityId(),
+            request.getStratificationId(), request.getPrimaryActivityId(), request.getWorkerCountRangeId(),
+            request.getAnnualSalesRangeId(), request.getWebsite(),
+            request.getPhones() == null ? null : request.getPhones().stream()
+                .map(phone -> new SaveGeneralDataCommand.Phone(phone.getNumber(), phone.getExtension()))
+                .toList()));
+        return ResponseEntity.ok(new SectionSaveResponse(result.registrationId(),
+            RegistrationSection.fromValue(result.section()), SectionSaveResponse.StatusEnum.fromValue(result.status()),
+            RegistrationSection.fromValue(result.nextSection())));
     }
 
     @Override
@@ -94,12 +114,27 @@ public class SupplierRegistrationsController implements SupplierRegistrationsApi
                 .map(item -> new SectionProgressResponse(RegistrationSection.fromValue(item.section()),
                     SectionStatus.fromValue(item.status())))
                 .toList());
+        if (result.generalData() != null) {
+            response.generalData(toResponse(result.generalData()));
+        }
         SupplierRegistrationResult.FiscalDocumentItem document = result.fiscalDocument();
         if (document != null) {
             response.fiscalDocument(new FiscalDocumentResponse(document.id(), document.originalName(),
                 FiscalDocumentResponse.ExtensionEnum.fromValue(document.extension()), document.sizeBytes(),
                 document.uploadedAt().atOffset(ZoneOffset.UTC)));
         }
+        return response;
+    }
+
+    private static GeneralDataResponse toResponse(SupplierRegistrationResult.GeneralDataItem data) {
+        GeneralDataResponse response = new GeneralDataResponse(Origin.fromValue(data.origin()), data.countryId(),
+            data.nationality(), data.legalOwnershipId(), data.businessActivityId(), data.stratificationId(),
+            data.primaryActivityId(), data.workerCountRangeId(), data.annualSalesRangeId());
+        response.foreignFiscalCode(data.foreignFiscalCode()).sectorId(data.sectorId()).subsectorId(data.subsectorId())
+            .website(data.website())
+            .phones(data.phones() == null ? null : data.phones().stream()
+                .map(phone -> new PhoneRequest(phone.number(), phone.extension()))
+                .toList());
         return response;
     }
 }

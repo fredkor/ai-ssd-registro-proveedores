@@ -3,11 +3,15 @@ package mx.com.fredkorlabs.registration.adapter.out.catalog;
 import mx.com.fredkorlabs.registration.application.port.out.CatalogRecord;
 import mx.com.fredkorlabs.registration.application.port.out.CountryRecord;
 import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
+import mx.com.fredkorlabs.registration.application.port.out.GeneralDataSelection;
+import mx.com.fredkorlabs.registration.domain.model.GeneralDataCatalogContext;
 import mx.com.fredkorlabs.registration.domain.model.LegalOwnershipOption;
 import mx.com.fredkorlabs.registration.domain.model.TaxRegime;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
@@ -107,6 +111,31 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
         return annualSalesRanges.findAllByOrderByIdAsc().stream()
             .map(range -> new CatalogRecord(range.getId(), range.getDescription()))
             .toList();
+    }
+
+    @Override
+    public GeneralDataCatalogContext resolveGeneralDataReferences(GeneralDataSelection selection) {
+        return new GeneralDataCatalogContext(
+            find(countries, selection.countryId()).map(CountryJpaEntity::getCode).orElse(null),
+            find(legalOwnerships, selection.legalOwnershipId())
+                .map(option -> new LegalOwnershipOption(option.getId(), option.getKey(), option.getDescription(),
+                    option.getIsoCountry(), regimeOf(option.getRegime())))
+                .orElse(null),
+            exists(sectors, selection.sectorId()),
+            find(subsectors, selection.subsectorId()).map(SubsectorJpaEntity::getSectorId).orElse(null),
+            exists(businessActivities, selection.businessActivityId()),
+            find(stratifications, selection.stratificationId()).map(StratificationJpaEntity::isActive).orElse(false),
+            exists(primaryActivities, selection.primaryActivityId()),
+            exists(workerCountRanges, selection.workerCountRangeId()),
+            exists(annualSalesRanges, selection.annualSalesRangeId()));
+    }
+
+    private static <T> Optional<T> find(JpaRepository<T, Integer> repository, Integer id) {
+        return id == null ? Optional.empty() : repository.findById(id);
+    }
+
+    private static boolean exists(JpaRepository<?, Integer> repository, Integer id) {
+        return id != null && repository.existsById(id);
     }
 
     // tax_regime descriptions and their technical codes (domain/catalogs.md).

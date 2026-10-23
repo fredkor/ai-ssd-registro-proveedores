@@ -10,7 +10,12 @@ import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceRef
 import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
+import mx.com.fredkorlabs.registration.domain.model.ForeignFiscalCode;
+import mx.com.fredkorlabs.registration.domain.model.GeneralData;
+import mx.com.fredkorlabs.registration.domain.model.Nationality;
 import mx.com.fredkorlabs.registration.domain.model.NoticeAcceptance;
+import mx.com.fredkorlabs.registration.domain.model.Origin;
+import mx.com.fredkorlabs.registration.domain.model.PhoneNumber;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationSection;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationStatus;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
@@ -18,6 +23,7 @@ import mx.com.fredkorlabs.registration.domain.model.SectionStatus;
 import mx.com.fredkorlabs.registration.domain.model.StoredDocumentReference;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
+import mx.com.fredkorlabs.registration.domain.model.Website;
 import mx.com.fredkorlabs.registration.testsupport.PostgresTestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +31,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -281,6 +288,92 @@ class SupplierRegistrationPersistenceAdapterTest {
         assertEquals(SectionStatus.COMPLETED, stored.registration().sectionStatus(RegistrationSection.CUCOP));
         assertFalse(files.findById(fileId).orElseThrow().isAssociated());
         assertEquals(id.value(), files.findById(fileId).orElseThrow().getOwnerRegistrationId());
+    }
+
+    private SupplierRegistration withGeneralData(SupplierRegistrationId id, GeneralData data) {
+        UUID fileId = registerFile(id.value());
+        adapter.saveFiscalDocumentAssociation(id, new StoredDocumentReference(fileId));
+        entityManager.clear();
+        SupplierRegistration registration = adapter.findForUpdate(id).orElseThrow().registration();
+        registration.saveGeneralData(data);
+        adapter.saveGeneralData(registration);
+        entityManager.clear();
+        return adapter.findForUpdate(id).orElseThrow().registration();
+    }
+
+    private static GeneralData legalEntityData(List<PhoneNumber> phones) {
+        return new GeneralData(Origin.NATIONAL, 151, new Nationality("Mexicana"), null, 1, 5, 21, 1, 2, 3, 4, 2,
+            new Website("https://empresa.com"), phones);
+    }
+
+    @Test
+    void US06_CA005_generalData_isSavedAndReconstitutedWithItsPhonesInOrder() {
+        SupplierRegistrationId id = insert("VVV010101VVV").registration().id();
+        GeneralData data = legalEntityData(List.of(new PhoneNumber("5512345678", "12"),
+            new PhoneNumber("0012345678", null)));
+
+        SupplierRegistration stored = withGeneralData(id, data);
+
+        assertEquals(data, stored.generalData());
+        assertEquals(SectionStatus.COMPLETED, stored.sectionStatus(RegistrationSection.GENERAL_DATA));
+        assertEquals(List.of(0, 1), entityManager.createNativeQuery(
+                "SELECT position FROM registration_phone WHERE registration_id = ?1 ORDER BY position")
+            .setParameter(1, id.value()).getResultList());
+    }
+
+    @Test
+    void US09_CA007_newSave_replacesThePhoneCollectionAsAWhole() {
+        SupplierRegistrationId id = insert("WWW010101WWW").registration().id();
+        withGeneralData(id, legalEntityData(List.of(new PhoneNumber("5512345678", null),
+            new PhoneNumber("5587654321", null))));
+        SupplierRegistration registration = adapter.findForUpdate(id).orElseThrow().registration();
+        GeneralData replacement = legalEntityData(List.of(new PhoneNumber("5511111111", "9")));
+        registration.saveGeneralData(replacement);
+
+        adapter.saveGeneralData(registration);
+        entityManager.clear();
+
+        assertEquals(replacement, adapter.findForUpdate(id).orElseThrow().registration().generalData());
+        assertEquals(1L, ((Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM registration_phone WHERE registration_id = ?1")
+            .setParameter(1, id.value()).getSingleResult()).longValue());
+    }
+
+    @Test
+    void US09_CA001_individual_hasNoPhoneRowsAndReconstitutesNullPhones() {
+        // A 13-character RFC is an individual (INV-14).
+        SupplierRegistrationId id = insert("XYZA010101ABC").registration().id();
+        GeneralData data = new GeneralData(Origin.FOREIGN, 4, new Nationality("Alemana"),
+            new ForeignFiscalCode("DE123"), 99, null, null, 1, 2, 3, 4, 2, null, null);
+
+        SupplierRegistration stored = withGeneralData(id, data);
+
+        assertEquals(data, stored.generalData());
+        assertNull(stored.generalData().phones());
+        assertEquals(0L, ((Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM registration_phone WHERE registration_id = ?1")
+            .setParameter(1, id.value()).getSingleResult()).longValue());
+    }
+
+    @Test
+    void ADR0017_generalData_rejectsSelectionsOutsideTheCatalogs() {
+        SupplierRegistrationId id = insert("ZZZA010101ZZ").registration().id();
+
+        assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery("""
+                INSERT INTO general_data (registration_id, origin_id, country_id, nationality, legal_ownership_id,
+                business_activity_id, stratification_id, primary_activity_id, worker_count_range_id,
+                annual_sales_range_id) VALUES (?1, 1, 9999, 'Mexicana', 1, 1, 2, 3, 4, 2)""")
+            .setParameter(1, id.value()).executeUpdate());
+    }
+
+    @Test
+    void ADR0017_generalDataSchema_usesApprovedSqlTypes() {
+        assertEquals("character varying(250)", columnType("general_data", "nationality"));
+        assertEquals("character varying(20)", columnType("general_data", "foreign_fiscal_code"));
+        assertEquals("character varying(2048)", columnType("general_data", "website"));
+        assertEquals("integer", columnType("general_data", "origin_id"));
+        assertEquals("character varying(10)", columnType("registration_phone", "number"));
+        assertEquals("character varying(5)", columnType("registration_phone", "extension"));
     }
 
     @Test

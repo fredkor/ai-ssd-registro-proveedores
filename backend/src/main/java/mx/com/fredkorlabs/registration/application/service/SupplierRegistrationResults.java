@@ -4,6 +4,7 @@ import mx.com.fredkorlabs.registration.application.port.in.SupplierRegistrationR
 import mx.com.fredkorlabs.registration.application.port.out.FiscalDocumentView;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
+import mx.com.fredkorlabs.registration.domain.model.GeneralData;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 
 /** Projection shared by the use cases that return the registration. */
@@ -37,6 +38,21 @@ final class SupplierRegistrationResults {
                 .toList(),
             fiscalDocument == null ? null : new SupplierRegistrationResult.FiscalDocumentItem(fiscalDocument.id(),
                 fiscalDocument.originalName(), fiscalDocument.extension(), fiscalDocument.sizeBytes(),
-                fiscalDocument.uploadedAt()));
+                fiscalDocument.uploadedAt()),
+            generalDataOf(registration.generalData()));
+    }
+
+    private static SupplierRegistrationResult.GeneralDataItem generalDataOf(GeneralData data) {
+        if (data == null) {
+            return null;
+        }
+        return new SupplierRegistrationResult.GeneralDataItem(data.origin().name(), data.countryId(),
+            data.nationality().value(), data.foreignFiscalCode() == null ? null : data.foreignFiscalCode().value(),
+            data.legalOwnershipId(), data.sectorId(), data.subsectorId(), data.businessActivityId(),
+            data.stratificationId(), data.primaryActivityId(), data.workerCountRangeId(), data.annualSalesRangeId(),
+            data.website() == null ? null : data.website().value(),
+            data.phones() == null ? null : data.phones().stream()
+                .map(phone -> new SupplierRegistrationResult.PhoneItem(phone.number(), phone.extension()))
+                .toList());
     }
 }

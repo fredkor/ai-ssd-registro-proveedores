@@ -34,4 +34,7 @@ public interface SupplierRegistrationPersistencePort {
 
     /** Removes the active fiscal document reference and stores the resulting section progress (INV-29). */
     void saveFiscalDocumentDissociation(SupplierRegistration registration);
+
+    /** Replaces General Data and its phones as a whole and stores the resulting section progress (INV-34). */
+    void saveGeneralData(SupplierRegistration registration);
 }
