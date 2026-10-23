@@ -20,13 +20,15 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
     private final StratificationJpaRepository stratifications;
     private final PrimaryActivityJpaRepository primaryActivities;
     private final WorkerCountRangeJpaRepository workerCountRanges;
+    private final AnnualSalesRangeJpaRepository annualSalesRanges;
 
     public GeneralDataCatalogAdapter(CountryJpaRepository countries, LegalOwnershipJpaRepository legalOwnerships,
                                      SectorJpaRepository sectors, SubsectorJpaRepository subsectors,
                                      BusinessActivityJpaRepository businessActivities,
                                      StratificationJpaRepository stratifications,
                                      PrimaryActivityJpaRepository primaryActivities,
-                                     WorkerCountRangeJpaRepository workerCountRanges) {
+                                     WorkerCountRangeJpaRepository workerCountRanges,
+                                     AnnualSalesRangeJpaRepository annualSalesRanges) {
         this.countries = countries;
         this.legalOwnerships = legalOwnerships;
         this.sectors = sectors;
@@ -35,6 +37,7 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
         this.stratifications = stratifications;
         this.primaryActivities = primaryActivities;
         this.workerCountRanges = workerCountRanges;
+        this.annualSalesRanges = annualSalesRanges;
     }
 
     @Override
@@ -95,6 +98,13 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
     @Override
     public List<CatalogRecord> findWorkerCountRanges() {
         return workerCountRanges.findAllByOrderByIdAsc().stream()
+            .map(range -> new CatalogRecord(range.getId(), range.getDescription()))
+            .toList();
+    }
+
+    @Override
+    public List<CatalogRecord> findAnnualSalesRanges() {
+        return annualSalesRanges.findAllByOrderByIdAsc().stream()
             .map(range -> new CatalogRecord(range.getId(), range.getDescription()))
             .toList();
     }

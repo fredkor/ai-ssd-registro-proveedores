@@ -1,5 +1,6 @@
 package mx.com.fredkorlabs.registration.configuration;
 
+import mx.com.fredkorlabs.registration.application.port.in.GetAnnualSalesRangesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetBusinessActivitiesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetCountriesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsUseCase;
@@ -9,6 +10,7 @@ import mx.com.fredkorlabs.registration.application.port.in.GetStratificationsUse
 import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetWorkerCountRangesUseCase;
 import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
+import mx.com.fredkorlabs.registration.application.service.GetAnnualSalesRangesService;
 import mx.com.fredkorlabs.registration.application.service.GetBusinessActivitiesService;
 import mx.com.fredkorlabs.registration.application.service.GetCountriesService;
 import mx.com.fredkorlabs.registration.application.service.GetLegalOwnershipsService;
@@ -62,5 +64,10 @@ public class RegistrationCatalogConfiguration {
     @Bean
     public GetWorkerCountRangesUseCase getWorkerCountRangesUseCase(GeneralDataCatalogPort generalDataCatalog) {
         return new GetWorkerCountRangesService(generalDataCatalog);
+    }
+
+    @Bean
+    public GetAnnualSalesRangesUseCase getAnnualSalesRangesUseCase(GeneralDataCatalogPort generalDataCatalog) {
+        return new GetAnnualSalesRangesService(generalDataCatalog);
     }
 }
