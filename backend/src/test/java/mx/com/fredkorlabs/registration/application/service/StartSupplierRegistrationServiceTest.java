@@ -128,6 +128,7 @@ class StartSupplierRegistrationServiceTest {
         assertEquals("AAA010101AAA", result.rfc());
         assertEquals("EMPRESA EJEMPLO SA DE CV", result.legalName());
         assertEquals("LEGAL_ENTITY", result.taxRegime());
+        assertEquals(1, result.taxRegimeId());
         assertEquals("aaa010101aaa", result.username());
     }
 

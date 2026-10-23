@@ -24,6 +24,7 @@ import mx.com.fredkorlabs.registration.application.port.in.GetSectorsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetStratificationsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsQuery;
 import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetTaxRegimesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetWorkerCountRangesUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,6 +36,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
 
     private static final Set<String> LEGAL_OWNERSHIP_PARAMETERS = Set.of("origin", "countryCode", "taxRegime");
 
+    private final GetTaxRegimesUseCase getTaxRegimes;
     private final GetCountriesUseCase getCountries;
     private final GetLegalOwnershipsUseCase getLegalOwnerships;
     private final GetSectorsUseCase getSectors;
@@ -46,7 +48,8 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
     private final GetAnnualSalesRangesUseCase getAnnualSalesRanges;
     private final GetCucopCatalogUseCase getCucopCatalog;
 
-    public RegistrationCatalogsController(GetCountriesUseCase getCountries,
+    public RegistrationCatalogsController(GetTaxRegimesUseCase getTaxRegimes,
+                                          GetCountriesUseCase getCountries,
                                           GetLegalOwnershipsUseCase getLegalOwnerships,
                                           GetSectorsUseCase getSectors,
                                           GetSubsectorsUseCase getSubsectors,
@@ -56,6 +59,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
                                           GetWorkerCountRangesUseCase getWorkerCountRanges,
                                           GetAnnualSalesRangesUseCase getAnnualSalesRanges,
                                           GetCucopCatalogUseCase getCucopCatalog) {
+        this.getTaxRegimes = getTaxRegimes;
         this.getCountries = getCountries;
         this.getLegalOwnerships = getLegalOwnerships;
         this.getSectors = getSectors;
@@ -66,6 +70,11 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
         this.getWorkerCountRanges = getWorkerCountRanges;
         this.getAnnualSalesRanges = getAnnualSalesRanges;
         this.getCucopCatalog = getCucopCatalog;
+    }
+
+    @Override
+    public ResponseEntity<CatalogOptionListResponse> getTaxRegimes() {
+        return ResponseEntity.ok(toCatalogOptions(getTaxRegimes.execute()));
     }
 
     @Override

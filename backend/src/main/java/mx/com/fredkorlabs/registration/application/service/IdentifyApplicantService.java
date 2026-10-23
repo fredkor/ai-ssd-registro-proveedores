@@ -77,6 +77,7 @@ public class IdentifyApplicantService implements IdentifyApplicantUseCase {
             identity.rfc().value(),
             identity.legalName(),
             identity.taxRegime().name(),
+            identity.taxRegime().catalogId(),
             identity.username().value(),
             token,
             expiresAt);

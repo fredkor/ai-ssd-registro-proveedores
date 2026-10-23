@@ -15,6 +15,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,6 +32,21 @@ class GeneralDataCatalogAdapterTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Test
+    void US08_CA011_taxRegimes_loadTheWholeCatalogOrderedById() {
+        assertEquals(List.of(new CatalogRecord(1, "PERSONA MORAL"), new CatalogRecord(2, "PERSONA FÍSICA")),
+            adapter.findTaxRegimes());
+    }
+
+    @Test
+    void INV14_catalogIdsOfTheDomain_matchTheTaxRegimeCatalog() {
+        Map<Integer, String> catalog = adapter.findTaxRegimes().stream()
+            .collect(Collectors.toMap(CatalogRecord::id, CatalogRecord::description));
+
+        assertEquals("PERSONA MORAL", catalog.get(TaxRegime.LEGAL_ENTITY.catalogId()));
+        assertEquals("PERSONA FÍSICA", catalog.get(TaxRegime.INDIVIDUAL.catalogId()));
+    }
 
     @Test
     void US08_CA010_countries_loadTheWholeCatalogOrderedById() {

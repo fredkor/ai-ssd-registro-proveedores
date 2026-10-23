@@ -9,6 +9,7 @@ import mx.com.fredkorlabs.registration.application.port.in.GetPrimaryActivitiesU
 import mx.com.fredkorlabs.registration.application.port.in.GetSectorsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetStratificationsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetTaxRegimesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetWorkerCountRangesUseCase;
 import mx.com.fredkorlabs.registration.application.port.out.CucopCatalogPort;
 import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
@@ -21,6 +22,7 @@ import mx.com.fredkorlabs.registration.application.service.GetPrimaryActivitiesS
 import mx.com.fredkorlabs.registration.application.service.GetSectorsService;
 import mx.com.fredkorlabs.registration.application.service.GetStratificationsService;
 import mx.com.fredkorlabs.registration.application.service.GetSubsectorsService;
+import mx.com.fredkorlabs.registration.application.service.GetTaxRegimesService;
 import mx.com.fredkorlabs.registration.application.service.GetWorkerCountRangesService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +31,11 @@ import org.springframework.context.annotation.Configuration;
 public class RegistrationCatalogConfiguration {
 
     // Read-only catalog queries: registered directly, without a transactional decorator.
+    @Bean
+    public GetTaxRegimesUseCase getTaxRegimesUseCase(GeneralDataCatalogPort generalDataCatalog) {
+        return new GetTaxRegimesService(generalDataCatalog);
+    }
+
     @Bean
     public GetCountriesUseCase getCountriesUseCase(GeneralDataCatalogPort generalDataCatalog) {
         return new GetCountriesService(generalDataCatalog);

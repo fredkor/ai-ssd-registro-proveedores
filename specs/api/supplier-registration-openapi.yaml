@@ -431,6 +431,33 @@ paths:
           $ref: '#/components/responses/InternalError'
       security:
       - RegistrationToken: []
+  /api/v1/registration-catalogs/tax-regimes:
+    get:
+      tags:
+      - RegistrationCatalogs
+      summary: Consultar catálogo de régimen
+      operationId: getTaxRegimes
+      description: Catálogo completo en items, ordenado por id, sin paginación (ADR-0020). El frontend muestra la
+        descripción del registro cuyo id es identity.taxRegimeId.
+      x-spec-refs:
+      - RF-REG-05
+      - US08
+      x-use-case: GetTaxRegimesUseCase
+      x-implementation-ready: true
+      x-requires-accepted-identification: true
+      responses:
+        '200':
+          description: Operación completada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogOptionListResponse'
+        '401':
+          $ref: '#/components/responses/InvalidRegistrationToken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - RegistrationToken: []
   /api/v1/registration-catalogs/countries:
     get:
       tags:
@@ -1029,6 +1056,11 @@ components:
           description: Nombre extraído del primer atributo del sujeto del certificado con OID 2.5.4.3, 2.5.4.41 o 2.5.4.10, en su orden original; no se toma del campo razonSocial del request.
         taxRegime:
           $ref: '#/components/schemas/TaxRegime'
+        taxRegimeId:
+          allOf:
+          - $ref: '#/components/schemas/CatalogId'
+          description: ID del régimen en el catálogo getTaxRegimes, derivado del RFC como taxRegime (1 PERSONA MORAL,
+            2 PERSONA FÍSICA).
         username:
           type: string
           minLength: 12
@@ -1038,6 +1070,7 @@ components:
       - rfc
       - legalName
       - taxRegime
+      - taxRegimeId
       - username
       additionalProperties: false
     ApplicantIdentificationResponse:
@@ -1341,6 +1374,7 @@ components:
           rfc: AAA010101AAA
           legalName: Empresa de ejemplo
           taxRegime: LEGAL_ENTITY
+          taxRegimeId: 1
           username: aaa010101aaa
         noticeAcceptance:
           version: '1.0'

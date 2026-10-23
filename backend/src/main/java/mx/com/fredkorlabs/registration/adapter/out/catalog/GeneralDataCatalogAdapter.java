@@ -16,6 +16,7 @@ import java.util.Optional;
 @Component
 public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
 
+    private final TaxRegimeJpaRepository taxRegimes;
     private final CountryJpaRepository countries;
     private final LegalOwnershipJpaRepository legalOwnerships;
     private final SectorJpaRepository sectors;
@@ -26,13 +27,15 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
     private final WorkerCountRangeJpaRepository workerCountRanges;
     private final AnnualSalesRangeJpaRepository annualSalesRanges;
 
-    public GeneralDataCatalogAdapter(CountryJpaRepository countries, LegalOwnershipJpaRepository legalOwnerships,
+    public GeneralDataCatalogAdapter(TaxRegimeJpaRepository taxRegimes, CountryJpaRepository countries,
+                                     LegalOwnershipJpaRepository legalOwnerships,
                                      SectorJpaRepository sectors, SubsectorJpaRepository subsectors,
                                      BusinessActivityJpaRepository businessActivities,
                                      StratificationJpaRepository stratifications,
                                      PrimaryActivityJpaRepository primaryActivities,
                                      WorkerCountRangeJpaRepository workerCountRanges,
                                      AnnualSalesRangeJpaRepository annualSalesRanges) {
+        this.taxRegimes = taxRegimes;
         this.countries = countries;
         this.legalOwnerships = legalOwnerships;
         this.sectors = sectors;
@@ -42,6 +45,13 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
         this.primaryActivities = primaryActivities;
         this.workerCountRanges = workerCountRanges;
         this.annualSalesRanges = annualSalesRanges;
+    }
+
+    @Override
+    public List<CatalogRecord> findTaxRegimes() {
+        return taxRegimes.findAllByOrderByIdAsc().stream()
+            .map(regime -> new CatalogRecord(regime.getId(), regime.getDescription()))
+            .toList();
     }
 
     @Override

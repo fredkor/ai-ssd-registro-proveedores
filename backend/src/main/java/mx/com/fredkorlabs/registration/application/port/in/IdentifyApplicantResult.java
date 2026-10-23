@@ -6,6 +6,7 @@ public record IdentifyApplicantResult(
     String rfc,
     String legalName,
     String taxRegime,
+    int taxRegimeId,
     String username,
     String registrationToken,
     Instant tokenExpiresAt

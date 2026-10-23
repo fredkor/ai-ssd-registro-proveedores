@@ -377,6 +377,35 @@ class SupplierRegistrationPersistenceAdapterTest {
     }
 
     @Test
+    void INV14_insert_storesTheTaxRegimeDerivedFromTheRfc() {
+        UUID legalEntity = insert("TRA010101TRA").registration().id().value();
+        UUID individual = insert("HEGT7610034S2").registration().id().value();
+        entityManager.clear();
+
+        assertEquals(1, registrations.findById(legalEntity).orElseThrow().getTaxRegimeId());
+        assertEquals(2, registrations.findById(individual).orElseThrow().getTaxRegimeId());
+    }
+
+    @Test
+    void INV14_database_rejectsTaxRegimeContradictingTheRfcLength() {
+        UUID id = insert("TRB010101TRB").registration().id().value();
+
+        assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
+                "UPDATE supplier_registration SET tax_regime_id = 2 WHERE id = ?1")
+            .setParameter(1, id).executeUpdate());
+    }
+
+    @Test
+    void ADR0017_taxRegime_isAnIntegerReferencingTheCatalog() {
+        assertEquals("integer", columnType("supplier_registration", "tax_regime_id"));
+        assertEquals(1L, ((Number) entityManager.createNativeQuery("""
+                SELECT COUNT(*) FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage k ON tc.constraint_name = k.constraint_name
+                WHERE tc.table_name = 'supplier_registration' AND tc.constraint_type = 'FOREIGN KEY'
+                AND k.column_name = 'tax_regime_id'""").getSingleResult()).longValue());
+    }
+
+    @Test
     void US10_withoutDocument_reconstitutesNoAssociation() {
         Inserted inserted = insert("QQQ010101QQQ");
         entityManager.clear();

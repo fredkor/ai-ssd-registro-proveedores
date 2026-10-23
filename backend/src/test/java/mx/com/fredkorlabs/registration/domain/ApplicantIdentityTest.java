@@ -13,12 +13,14 @@ class ApplicantIdentityTest {
     void US08_CA011_rfcWith12Characters_derivesLegalEntityRegime() {
         ApplicantIdentity identity = new ApplicantIdentity(new Rfc("XAXX01010100"), "Corp SA");
         assertEquals(TaxRegime.LEGAL_ENTITY, identity.taxRegime());
+        assertEquals(1, identity.taxRegime().catalogId());
     }
 
     @Test
     void US08_CA012_rfcWith13Characters_derivesIndividualRegime() {
         ApplicantIdentity identity = new ApplicantIdentity(new Rfc("XAXX010101000"), "Juan Pérez");
         assertEquals(TaxRegime.INDIVIDUAL, identity.taxRegime());
+        assertEquals(2, identity.taxRegime().catalogId());
     }
 
     @Test

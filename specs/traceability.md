@@ -25,6 +25,7 @@ encabezados. Cada CA se referencia con su número actual de tres dígitos.
 | `uploadFiscalDocument` | POST `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `UploadFiscalDocumentUseCase` / `UploadFiscalDocumentService` | RF-REG-05, US10 | INV-27, INV-28; ADR-0010 | Documento, aplicación, web y persistencia. |
 | `downloadFiscalDocument` | GET `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `DownloadFiscalDocumentUseCase` / `DownloadFiscalDocumentService` | RF-REG-05, US10 | INV-12, INV-27, INV-28; ADR-0010 | Aplicación, web y documento. |
 | `deleteFiscalDocument` | DELETE `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `DeleteFiscalDocumentUseCase` / `DeleteFiscalDocumentService` | RF-REG-05, US10 | INV-27 a INV-29 | Web, aplicación y persistencia: desasociación y marca transaccionales; disco solo en limpieza diaria. |
+| `getTaxRegimes` | GET `/api/v1/registration-catalogs/tax-regimes` | `GetTaxRegimesUseCase` / `GetTaxRegimesService` | RF-REG-05, US08 | INV-14; ADR-0020 | Catálogos, web y aplicación. |
 | `getCountries` | GET `/api/v1/registration-catalogs/countries` | `GetCountriesUseCase` / `GetCountriesService` | RF-REG-05, US08 | INV-17; ADR-0020 | Catálogos, web y aplicación. |
 | `getLegalOwnerships` | GET `/api/v1/registration-catalogs/legal-ownerships` | `GetLegalOwnershipsUseCase` / `GetLegalOwnershipsService` | RF-REG-05, US08 | INV-20; ADR-0020 | Catálogos, web y aplicación. |
 | `getSectors` | GET `/api/v1/registration-catalogs/sectors` | `GetSectorsUseCase` / `GetSectorsService` | RF-REG-05, US08 | INV-21; ADR-0020 | Catálogos, web y aplicación. |
@@ -166,8 +167,8 @@ pruebas frontend; no se sustituyen con pruebas de controladores.
 | CA-008 | `getStratifications`, `saveGeneralData` | INV-23; ADR-0020 | Catálogos, dominio y web: solo registros activos; inactivo rechazado al guardar. |
 | CA-009 | Sin petición propia | INV-17 | Interfaz y reglas de Datos Generales. |
 | CA-010 | Sin petición propia | INV-17 | Interfaz y reglas de Datos Generales. |
-| CA-011 | Sin petición propia | INV-14 | Interfaz y reglas de Datos Generales. |
-| CA-012 | Sin petición propia | INV-14 | Interfaz y reglas de Datos Generales. |
+| CA-011 | `getTaxRegimes` | INV-14; ADR-0020 | Catálogos, web e interfaz: descripción del ID en `identity.taxRegimeId`. |
+| CA-012 | `getTaxRegimes` | INV-14; ADR-0020 | Catálogos, web e interfaz: descripción del ID en `identity.taxRegimeId`. |
 | CA-013 | `saveGeneralData` | INV-24; ADR-0009 | Dominio, aplicación y web: URL absoluta http/https con host; rechazar falta de protocolo/host, otros esquemas y longitud mayor a 2048 tras recorte; vacío a null, sin acceso a red. |
 | CA-014 | `getLegalOwnerships`, `saveGeneralData` | INV-20; ADR-0020 | Catálogos, aplicación e interfaz: país o NOT_DEF extranjero sin filtro por régimen; NOT_DEF con y sin opciones del país; respaldo vacío y orden por clave. |
 | CA-015 | Sin petición propia | INV-19 | Interfaz y reglas de Datos Generales. |
@@ -177,7 +178,7 @@ pruebas frontend; no se sustituyen con pruebas de controladores.
 | CA-019 | Sin petición propia | INV-15 | Interfaz y reglas de Datos Generales. |
 | CA-020 | Sin petición propia | INV-25 | Interfaz y reglas de Datos Generales. |
 | CA-021 | `saveGeneralData` | ADR-0009; RF-REG-05 | Dominio, aplicación y web. |
-| CA-022 | `getCountries`, `getSectors`, `getBusinessActivities`, `getStratifications`, `getPrimaryActivities`, `getWorkerCountRanges`, `getAnnualSalesRanges` | US08 CA-022; ADR-0020 | Catálogos, web e interfaz: un recurso por catálogo. |
+| CA-022 | `getTaxRegimes`, `getCountries`, `getSectors`, `getBusinessActivities`, `getStratifications`, `getPrimaryActivities`, `getWorkerCountRanges`, `getAnnualSalesRanges` | US08 CA-022; ADR-0020 | Catálogos, web e interfaz: un recurso por catálogo. |
 | CA-023 | `getSubsectors` | US08 CA-023; ADR-0020 | Catálogos, web e interfaz: subsectores del sector en la ruta. |
 | CA-024 | `saveGeneralData` | US08 CA-024 | Dominio, aplicación y web. |
 | CA-025 | `saveGeneralData` | ADR-0009; RF-REG-05 | Web, aplicación y dominio: recorte previo a validación y espacios interiores conservados. |

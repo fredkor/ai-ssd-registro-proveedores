@@ -47,7 +47,7 @@ public class ApplicantIdentificationsController implements ApplicantIdentificati
                 signature.getRazonSocial())));
         return ResponseEntity.ok(new ApplicantIdentificationResponse(
             new ApplicantIdentityResponse(result.rfc(), result.legalName(),
-                TaxRegime.fromValue(result.taxRegime()), result.username()),
+                TaxRegime.fromValue(result.taxRegime()), result.taxRegimeId(), result.username()),
             result.registrationToken(),
             OffsetDateTime.ofInstant(result.tokenExpiresAt(), ZoneOffset.UTC)));
     }

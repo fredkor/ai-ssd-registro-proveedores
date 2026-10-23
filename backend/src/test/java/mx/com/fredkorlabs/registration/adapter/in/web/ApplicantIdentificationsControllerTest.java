@@ -79,7 +79,7 @@ class ApplicantIdentificationsControllerTest {
 
     private void givenSuccess() {
         given(identifyApplicantUseCase.execute(any())).willReturn(new IdentifyApplicantResult(
-            "AAA010101AAA", "EMPRESA CERTIFICADO SA", "LEGAL_ENTITY", "aaa010101aaa",
+            "AAA010101AAA", "EMPRESA CERTIFICADO SA", "LEGAL_ENTITY", 1, "aaa010101aaa",
             "jwt-token", Instant.parse("2026-10-21T16:30:00Z")));
     }
 
@@ -92,6 +92,7 @@ class ApplicantIdentificationsControllerTest {
             .andExpect(jsonPath("$.identity.rfc").value("AAA010101AAA"))
             .andExpect(jsonPath("$.identity.legalName").value("EMPRESA CERTIFICADO SA"))
             .andExpect(jsonPath("$.identity.taxRegime").value("LEGAL_ENTITY"))
+            .andExpect(jsonPath("$.identity.taxRegimeId").value(1))
             .andExpect(jsonPath("$.identity.username").value("aaa010101aaa"))
             .andExpect(jsonPath("$.registrationToken").value("jwt-token"))
             .andExpect(jsonPath("$.tokenExpiresAt").value("2026-10-21T16:30:00Z"));
