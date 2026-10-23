@@ -1,11 +1,14 @@
 package mx.com.fredkorlabs.registration.domain;
 
 import mx.com.fredkorlabs.registration.domain.exception.InvalidGeneralDataException;
+import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationStateException;
 import mx.com.fredkorlabs.registration.domain.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -215,5 +218,75 @@ class SupplierRegistrationTest {
         assertEquals(List.of(evidence), reg.acceptedEvidence());
         assertNull(reg.generalData());
         assertNull(reg.cucopParticipation());
+    }
+
+    private SupplierRegistration reconstituted(RegistrationStatus status, Map<RegistrationSection, SectionStatus> progress) {
+        return SupplierRegistration.reconstitute(
+            new SupplierRegistrationId(UUID.fromString("7b1f8f8e-1c2d-4a4b-9a0e-5f6a7b8c9d0e")), status,
+            new ApplicantIdentity(new Rfc("XAXX01010100"), "Corp SA de CV"),
+            new NoticeAcceptance("1.0", Instant.parse("2026-10-21T15:30:00Z")),
+            List.of(new ApplicantSignatureEvidence("{\"initial\":true}")), null, null, null, progress);
+    }
+
+    private static Map<RegistrationSection, SectionStatus> progressWithCucopCompleted() {
+        Map<RegistrationSection, SectionStatus> progress = new EnumMap<>(RegistrationSection.class);
+        for (RegistrationSection section : RegistrationSection.values()) progress.put(section, SectionStatus.PENDING);
+        progress.put(RegistrationSection.GENERAL_DATA, SectionStatus.COMPLETED);
+        progress.put(RegistrationSection.CUCOP, SectionStatus.COMPLETED);
+        return progress;
+    }
+
+    @Test
+    void US05_CA003_reconstitute_keepsStoredStatusAndProgressWithoutTransitions() {
+        SupplierRegistration reg = reconstituted(RegistrationStatus.IN_PROGRESS, progressWithCucopCompleted());
+
+        assertEquals(RegistrationStatus.IN_PROGRESS, reg.status());
+        assertEquals(SectionStatus.COMPLETED, reg.sectionStatus(RegistrationSection.GENERAL_DATA));
+        assertEquals(SectionStatus.COMPLETED, reg.sectionStatus(RegistrationSection.CUCOP));
+        assertEquals(SectionStatus.PENDING, reg.sectionStatus(RegistrationSection.CONTACTS));
+        assertEquals(1, reg.acceptedEvidence().size());
+    }
+
+    @Test
+    void US05_CA003_reconstitute_requiresProgressForEverySection() {
+        Map<RegistrationSection, SectionStatus> incomplete = new EnumMap<>(RegistrationSection.class);
+        incomplete.put(RegistrationSection.GENERAL_DATA, SectionStatus.PENDING);
+
+        assertThrows(IllegalArgumentException.class, () -> reconstituted(RegistrationStatus.IN_PROGRESS, incomplete));
+    }
+
+    @Test
+    void US05_CA009_resume_updatesLegalNameAndAcceptanceKeepingRfcIdAndProgress() {
+        SupplierRegistration reg = reconstituted(RegistrationStatus.IN_PROGRESS, progressWithCucopCompleted());
+        NoticeAcceptance newAcceptance = new NoticeAcceptance("1.0", Instant.parse("2026-10-22T10:00:00Z"));
+
+        reg.resume("Corp Nueva SA de CV", newAcceptance, new ApplicantSignatureEvidence("{\"new\":true}"));
+
+        assertEquals(UUID.fromString("7b1f8f8e-1c2d-4a4b-9a0e-5f6a7b8c9d0e"), reg.id().value());
+        assertEquals("XAXX01010100", reg.applicant().rfc().value());
+        assertEquals("Corp Nueva SA de CV", reg.applicant().legalName());
+        assertEquals(newAcceptance, reg.latestAcceptance());
+        assertEquals(SectionStatus.COMPLETED, reg.sectionStatus(RegistrationSection.CUCOP));
+    }
+
+    @Test
+    void US05_CA010_resume_appendsEvidenceKeepingTheInitialOne() {
+        SupplierRegistration reg = reconstituted(RegistrationStatus.IN_PROGRESS, progressWithCucopCompleted());
+
+        reg.resume("Corp SA de CV", new NoticeAcceptance("1.0", Instant.parse("2026-10-22T10:00:00Z")),
+            new ApplicantSignatureEvidence("{\"new\":true}"));
+
+        assertEquals(List.of("{\"initial\":true}", "{\"new\":true}"),
+            reg.acceptedEvidence().stream().map(ApplicantSignatureEvidence::completeResult).toList());
+    }
+
+    @Test
+    void US05_CA006_registered_cannotBeResumed() {
+        SupplierRegistration reg = reconstituted(RegistrationStatus.REGISTERED, progressWithCucopCompleted());
+
+        assertThrows(InvalidRegistrationStateException.class, reg::ensureResumable);
+        assertThrows(InvalidRegistrationStateException.class, () -> reg.resume("Otro",
+            new NoticeAcceptance("1.0", Instant.now()), new ApplicantSignatureEvidence("{}")));
+        assertEquals("Corp SA de CV", reg.applicant().legalName());
     }
 }

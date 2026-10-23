@@ -5,6 +5,7 @@ import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExis
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationStatusView;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
+import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationStatus;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
@@ -86,6 +87,17 @@ class CheckRegistrationExistenceServiceTest {
         @Override
         public void insert(SupplierRegistration registration, SignatureEvidenceReference initialEvidence,
                            NoticeAcceptanceReference acceptance) {
+            throw new UnsupportedOperationException("Not used by this use case");
+        }
+
+        @Override
+        public Optional<StoredRegistration> findForUpdate(SupplierRegistrationId id) {
+            throw new UnsupportedOperationException("Not used by this use case");
+        }
+
+        @Override
+        public void saveResume(SupplierRegistration registration, SignatureEvidenceReference newEvidence,
+                               NoticeAcceptanceReference newAcceptance) {
             throw new UnsupportedOperationException("Not used by this use case");
         }
     }

@@ -4,7 +4,11 @@ import mx.com.fredkorlabs.registration.application.port.out.DuplicateRegistratio
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationStatusView;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
+import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
+import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
+import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
+import mx.com.fredkorlabs.registration.domain.model.NoticeAcceptance;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
@@ -12,9 +16,14 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrationPersistencePort {
@@ -27,9 +36,15 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
         "registration_signature_evidence_evidence_uk");
 
     private final SupplierRegistrationJpaRepository repository;
+    private final NoticeAcceptanceJpaRepository acceptances;
+    private final ApplicantSignatureEvidenceJpaRepository evidences;
 
-    public SupplierRegistrationPersistenceAdapter(SupplierRegistrationJpaRepository repository) {
+    public SupplierRegistrationPersistenceAdapter(SupplierRegistrationJpaRepository repository,
+                                                  NoticeAcceptanceJpaRepository acceptances,
+                                                  ApplicantSignatureEvidenceJpaRepository evidences) {
         this.repository = repository;
+        this.acceptances = acceptances;
+        this.evidences = evidences;
     }
 
     @Override
@@ -59,5 +74,47 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
             }
             throw e;
         }
+    }
+
+    @Override
+    public Optional<StoredRegistration> findForUpdate(SupplierRegistrationId id) {
+        return repository.findLockedById(id.value()).map(this::toStoredRegistration);
+    }
+
+    @Override
+    public void saveResume(SupplierRegistration registration, SignatureEvidenceReference newEvidence,
+                           NoticeAcceptanceReference newAcceptance) {
+        SupplierRegistrationJpaEntity entity = repository.findById(registration.id().value()).orElseThrow();
+        entity.resume(registration.applicant().legalName(), UUID.fromString(newAcceptance.value()),
+            UUID.fromString(newEvidence.value()));
+        repository.flush();
+    }
+
+    // General Data, fiscal document and CUCoP are not persisted yet; they are absent until their operations exist.
+    private StoredRegistration toStoredRegistration(SupplierRegistrationJpaEntity entity) {
+        NoticeAcceptanceJpaEntity acceptance = acceptances.findById(entity.getNoticeAcceptanceId()).orElseThrow();
+        Map<UUID, ApplicantSignatureEvidenceJpaEntity> history = evidences.findAllById(entity.getSignatureEvidenceIds())
+            .stream().collect(Collectors.toMap(ApplicantSignatureEvidenceJpaEntity::getId, Function.identity()));
+        // The initial evidence first; the history has no order of its own.
+        List<ApplicantSignatureEvidence> evidence = new ArrayList<>();
+        evidence.add(new ApplicantSignatureEvidence(history.remove(entity.getInitialEvidenceId()).getCompleteResult()));
+        history.values().forEach(other -> evidence.add(new ApplicantSignatureEvidence(other.getCompleteResult())));
+
+        SupplierRegistration registration = SupplierRegistration.reconstitute(
+            new SupplierRegistrationId(entity.getId()),
+            entity.getStatus(),
+            new ApplicantIdentity(new Rfc(entity.getRfc()), entity.getLegalName()),
+            new NoticeAcceptance(acceptance.getVersion(), acceptance.getAcceptedAt()),
+            evidence,
+            null,
+            null,
+            null,
+            entity.getSectionProgress());
+        return new StoredRegistration(
+            registration,
+            new NoticeAcceptanceReference(entity.getNoticeAcceptanceId().toString()),
+            entity.getSignatureEvidenceIds().stream()
+                .map(evidenceId -> new SignatureEvidenceReference(evidenceId.toString()))
+                .collect(Collectors.toSet()));
     }
 }

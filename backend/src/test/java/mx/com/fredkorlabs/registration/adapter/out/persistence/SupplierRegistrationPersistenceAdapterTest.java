@@ -6,6 +6,7 @@ import mx.com.fredkorlabs.registration.application.port.out.DuplicateRegistratio
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationStatusView;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
+import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
 import mx.com.fredkorlabs.registration.domain.model.NoticeAcceptance;
@@ -171,6 +172,59 @@ class SupplierRegistrationPersistenceAdapterTest {
         assertEquals("character varying(32)", columnType("section_progress", "section"));
         assertEquals("character varying(32)", columnType("section_progress", "status"));
         assertEquals("uuid", columnType("registration_signature_evidence", "signature_evidence_id"));
+    }
+
+    @Test
+    void US05_CA003_findForUpdate_reconstitutesStoredStateAndReferences() {
+        Inserted inserted = insert("MMM010101MMM");
+        UUID id = inserted.registration().id().value();
+        entityManager.createNativeQuery("UPDATE section_progress SET status = 'COMPLETED' "
+            + "WHERE registration_id = ?1 AND section IN ('GENERAL_DATA', 'CUCOP')").setParameter(1, id).executeUpdate();
+        entityManager.clear();
+
+        StoredRegistration stored = adapter.findForUpdate(new SupplierRegistrationId(id)).orElseThrow();
+
+        SupplierRegistration registration = stored.registration();
+        assertEquals(RegistrationStatus.IN_PROGRESS, registration.status());
+        assertEquals(new ApplicantIdentity(new Rfc("MMM010101MMM"), "EMPRESA SA"), registration.applicant());
+        assertEquals(new NoticeAcceptance("1.0", Instant.parse("2026-10-21T15:30:00Z")), registration.latestAcceptance());
+        assertEquals(SectionStatus.COMPLETED, registration.sectionStatus(RegistrationSection.GENERAL_DATA));
+        assertEquals(SectionStatus.COMPLETED, registration.sectionStatus(RegistrationSection.CUCOP));
+        assertEquals(SectionStatus.PENDING, registration.sectionStatus(RegistrationSection.CONTACTS));
+        assertEquals(new NoticeAcceptanceReference(inserted.acceptanceId().toString()), stored.acceptanceReference());
+        assertEquals(Set.of(new SignatureEvidenceReference(inserted.evidenceId().toString())), stored.evidenceReferences());
+    }
+
+    @Test
+    void US05_CA001_findForUpdate_unknownId_isEmpty() {
+        assertTrue(adapter.findForUpdate(new SupplierRegistrationId(UUID.randomUUID())).isEmpty());
+    }
+
+    @Test
+    void US05_CA010_saveResume_updatesNameAndAcceptanceAndAppendsEvidence() {
+        Inserted inserted = insert("NNN010101NNN");
+        UUID id = inserted.registration().id().value();
+        entityManager.clear();
+        UUID newAcceptance = acceptances.saveAndFlush(
+            new NoticeAcceptanceJpaEntity("1.0", Instant.parse("2026-10-22T09:00:00Z"))).getId();
+        UUID newEvidence = evidences.saveAndFlush(
+            new ApplicantSignatureEvidenceJpaEntity("NNN010101NNN", "EMPRESA NUEVA SA", "{\"new\":true}")).getId();
+        SupplierRegistration registration = adapter.findForUpdate(new SupplierRegistrationId(id)).orElseThrow().registration();
+        registration.resume("EMPRESA NUEVA SA", new NoticeAcceptance("1.0", Instant.parse("2026-10-22T09:00:00Z")),
+            new ApplicantSignatureEvidence("{\"new\":true}"));
+
+        adapter.saveResume(registration, new SignatureEvidenceReference(newEvidence.toString()),
+            new NoticeAcceptanceReference(newAcceptance.toString()));
+        entityManager.clear();
+
+        SupplierRegistrationJpaEntity stored = registrations.findById(id).orElseThrow();
+        assertEquals("NNN010101NNN", stored.getRfc());
+        assertEquals("EMPRESA NUEVA SA", stored.getLegalName());
+        assertEquals(newAcceptance, stored.getNoticeAcceptanceId());
+        assertEquals(inserted.evidenceId(), stored.getInitialEvidenceId());
+        assertEquals(Set.of(inserted.evidenceId(), newEvidence), stored.getSignatureEvidenceIds());
+        assertTrue(stored.getSectionProgress().values().stream().allMatch(status -> status == SectionStatus.PENDING));
+        assertTrue(acceptances.existsById(inserted.acceptanceId()));
     }
 
     private String columnType(String table, String column) {

@@ -6,7 +6,6 @@ import mx.com.fredkorlabs.registration.application.port.in.StartSupplierRegistra
 import mx.com.fredkorlabs.registration.application.port.in.StartSupplierRegistrationUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.SupplierRegistrationResult;
 import mx.com.fredkorlabs.registration.application.port.out.DuplicateRegistrationException;
-import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationContextPort;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationSession;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
@@ -50,25 +49,6 @@ public class StartSupplierRegistrationService implements StartSupplierRegistrati
             // A concurrent request created it after the lookup; the unique RFC constraint decides.
             throw new RegistrationAlreadyExistsException(DUPLICATE_DETAIL, e);
         }
-        return toResult(registration, session.acceptanceReference());
-    }
-
-    private static SupplierRegistrationResult toResult(SupplierRegistration registration,
-                                                       NoticeAcceptanceReference acceptanceReference) {
-        ApplicantIdentity identity = registration.applicant();
-        return new SupplierRegistrationResult(
-            registration.id().value(),
-            registration.status().name(),
-            identity.rfc().value(),
-            identity.legalName(),
-            identity.taxRegime().name(),
-            identity.username().value(),
-            registration.latestAcceptance().version(),
-            registration.latestAcceptance().acceptedAt(),
-            acceptanceReference.value(),
-            registration.progress().stream()
-                .map(progress -> new SupplierRegistrationResult.SectionProgressItem(
-                    progress.section().name(), progress.status().name()))
-                .toList());
+        return SupplierRegistrationResults.of(registration, session.acceptanceReference());
     }
 }

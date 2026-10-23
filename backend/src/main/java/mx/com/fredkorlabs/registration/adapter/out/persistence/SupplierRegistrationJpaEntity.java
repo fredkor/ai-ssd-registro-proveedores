@@ -99,6 +99,13 @@ public class SupplierRegistrationJpaEntity implements Persistable<UUID> {
 
     public UUID getNoticeAcceptanceId() { return noticeAcceptanceId; }
 
+    /** Resumption: legal name from the new verified certificate and its notice acceptance (US05). */
+    public void resume(String legalName, UUID noticeAcceptanceId, UUID signatureEvidenceId) {
+        this.legalName = legalName;
+        this.noticeAcceptanceId = noticeAcceptanceId;
+        this.signatureEvidenceIds.add(signatureEvidenceId);
+    }
+
     public UUID getInitialEvidenceId() { return initialEvidenceId; }
 
     public Map<RegistrationSection, SectionStatus> getSectionProgress() { return sectionProgress; }

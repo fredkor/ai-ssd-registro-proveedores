@@ -16,6 +16,8 @@ import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.TaxRegime;
 import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExistenceQuery;
 import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExistenceResult;
 import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExistenceUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.ResumeSupplierRegistrationCommand;
+import mx.com.fredkorlabs.registration.application.port.in.ResumeSupplierRegistrationUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.StartSupplierRegistrationCommand;
 import mx.com.fredkorlabs.registration.application.port.in.StartSupplierRegistrationUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.SupplierRegistrationResult;
@@ -33,11 +35,14 @@ public class SupplierRegistrationsController implements SupplierRegistrationsApi
 
     private final CheckRegistrationExistenceUseCase checkRegistrationExistence;
     private final StartSupplierRegistrationUseCase startSupplierRegistration;
+    private final ResumeSupplierRegistrationUseCase resumeSupplierRegistration;
 
     public SupplierRegistrationsController(CheckRegistrationExistenceUseCase checkRegistrationExistence,
-                                           StartSupplierRegistrationUseCase startSupplierRegistration) {
+                                           StartSupplierRegistrationUseCase startSupplierRegistration,
+                                           ResumeSupplierRegistrationUseCase resumeSupplierRegistration) {
         this.checkRegistrationExistence = checkRegistrationExistence;
         this.startSupplierRegistration = startSupplierRegistration;
+        this.resumeSupplierRegistration = resumeSupplierRegistration;
     }
 
     @Override
@@ -60,7 +65,9 @@ public class SupplierRegistrationsController implements SupplierRegistrationsApi
 
     @Override
     public ResponseEntity<SupplierRegistrationResponse> resumeSupplierRegistration(UUID registrationId) {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        SupplierRegistrationResult result = resumeSupplierRegistration.execute(
+            new ResumeSupplierRegistrationCommand(registrationId, RegistrationTokenPrincipal.currentTokenId()));
+        return ResponseEntity.ok(toResponse(result));
     }
 
     @Override
