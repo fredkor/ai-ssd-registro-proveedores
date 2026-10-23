@@ -24,4 +24,7 @@ public interface GeneralDataCatalogPort {
 
     /** Every business activity (Giro), ordered by id. */
     List<CatalogRecord> findBusinessActivities();
+
+    /** Active stratifications only, ordered by id. */
+    List<CatalogRecord> findActiveStratifications();
 }
