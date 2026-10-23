@@ -2,6 +2,8 @@ package mx.com.fredkorlabs.registration.adapter.in.web;
 
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.FiscalDocumentsApi;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.FiscalDocumentResponse;
+import mx.com.fredkorlabs.registration.application.port.in.DeleteFiscalDocumentCommand;
+import mx.com.fredkorlabs.registration.application.port.in.DeleteFiscalDocumentUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.DownloadFiscalDocumentQuery;
 import mx.com.fredkorlabs.registration.application.port.in.DownloadFiscalDocumentResult;
 import mx.com.fredkorlabs.registration.application.port.in.DownloadFiscalDocumentUseCase;
@@ -30,11 +32,14 @@ public class FiscalDocumentsController implements FiscalDocumentsApi {
 
     private final UploadFiscalDocumentUseCase uploadFiscalDocument;
     private final DownloadFiscalDocumentUseCase downloadFiscalDocument;
+    private final DeleteFiscalDocumentUseCase deleteFiscalDocument;
 
     public FiscalDocumentsController(UploadFiscalDocumentUseCase uploadFiscalDocument,
-                                     DownloadFiscalDocumentUseCase downloadFiscalDocument) {
+                                     DownloadFiscalDocumentUseCase downloadFiscalDocument,
+                                     DeleteFiscalDocumentUseCase deleteFiscalDocument) {
         this.uploadFiscalDocument = uploadFiscalDocument;
         this.downloadFiscalDocument = downloadFiscalDocument;
+        this.deleteFiscalDocument = deleteFiscalDocument;
     }
 
     @Override
@@ -60,7 +65,9 @@ public class FiscalDocumentsController implements FiscalDocumentsApi {
 
     @Override
     public ResponseEntity<Void> deleteFiscalDocument(UUID registrationId) {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        deleteFiscalDocument.execute(
+            new DeleteFiscalDocumentCommand(registrationId, RegistrationTokenPrincipal.currentTokenId()));
+        return ResponseEntity.noContent().build();
     }
 
     /**

@@ -317,4 +317,19 @@ class SupplierRegistrationTest {
 
         assertThrows(InvalidRegistrationStateException.class, reg::ensureFiscalDocumentCanBeAssociated);
     }
+
+    @Test
+    void US10_registeredRegistration_cannotDropItsFiscalDocument() {
+        SupplierRegistration reg = reconstituted(RegistrationStatus.REGISTERED, progressWithCucopCompleted());
+
+        assertThrows(InvalidRegistrationStateException.class, reg::ensureFiscalDocumentCanBeDissociated);
+        assertThrows(InvalidRegistrationStateException.class, reg::dissociateFiscalDocument);
+    }
+
+    @Test
+    void US10_dissociate_requiresAnAssociatedDocument() {
+        SupplierRegistration reg = createLegalEntityRegistration();
+
+        assertThrows(IllegalStateException.class, reg::dissociateFiscalDocument);
+    }
 }

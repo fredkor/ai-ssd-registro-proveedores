@@ -73,6 +73,11 @@ class UploadFiscalDocumentServiceTest {
         public Optional<StoredFileMetadata> find(UUID fileId) {
             throw new UnsupportedOperationException("Not used by this use case");
         }
+
+        @Override
+        public void markNotAssociated(UUID fileId) {
+            throw new UnsupportedOperationException("Not used by this use case");
+        }
     };
     private final RegistrationContextPort contexts = new RegistrationContextPort() {
         @Override

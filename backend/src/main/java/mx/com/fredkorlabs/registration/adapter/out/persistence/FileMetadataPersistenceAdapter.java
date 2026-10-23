@@ -25,6 +25,12 @@ public class FileMetadataPersistenceAdapter implements FileMetadataPort {
     }
 
     @Override
+    public void markNotAssociated(UUID fileId) {
+        files.findById(fileId).orElseThrow().markNotAssociated();
+        files.flush();
+    }
+
+    @Override
     public Optional<StoredFileMetadata> find(UUID fileId) {
         return files.findById(fileId).map(file -> new StoredFileMetadata(file.getId(),
             new SupplierRegistrationId(file.getOwnerRegistrationId()), file.getOriginalName(), file.getRelativePath(),

@@ -33,7 +33,8 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({SupplierRegistrationPersistenceAdapter.class, PostgresTestcontainersConfiguration.class})
+@Import({SupplierRegistrationPersistenceAdapter.class, FileMetadataPersistenceAdapter.class,
+    PostgresTestcontainersConfiguration.class})
 class SupplierRegistrationPersistenceAdapterTest {
 
     @Autowired
@@ -254,6 +255,32 @@ class SupplierRegistrationPersistenceAdapterTest {
         assertEquals("cedula.pdf", stored.registration().associatedDocument().originalName());
         assertEquals(new FiscalDocumentView(fileId, "cedula.pdf", "pdf", 9L,
             Instant.parse("2026-10-23T05:30:00.123456Z")), stored.fiscalDocument());
+    }
+
+    @Autowired
+    private FileMetadataPersistenceAdapter fileMetadata;
+
+    @Test
+    void US10_CA006_dissociation_removesReferenceMarksMetadataAndKeepsOtherProgress() {
+        SupplierRegistrationId id = insert("UUU010101UUU").registration().id();
+        UUID fileId = registerFile(id.value());
+        adapter.saveFiscalDocumentAssociation(id, new StoredDocumentReference(fileId));
+        entityManager.createNativeQuery("UPDATE section_progress SET status = 'COMPLETED' "
+            + "WHERE registration_id = ?1 AND section IN ('GENERAL_DATA', 'CUCOP')").setParameter(1, id.value()).executeUpdate();
+        entityManager.clear();
+        SupplierRegistration registration = adapter.findForUpdate(id).orElseThrow().registration();
+        registration.dissociateFiscalDocument();
+
+        adapter.saveFiscalDocumentDissociation(registration);
+        fileMetadata.markNotAssociated(fileId);
+        entityManager.clear();
+
+        StoredRegistration stored = adapter.findForUpdate(id).orElseThrow();
+        assertNull(stored.fiscalDocument());
+        assertEquals(SectionStatus.PENDING, stored.registration().sectionStatus(RegistrationSection.GENERAL_DATA));
+        assertEquals(SectionStatus.COMPLETED, stored.registration().sectionStatus(RegistrationSection.CUCOP));
+        assertFalse(files.findById(fileId).orElseThrow().isAssociated());
+        assertEquals(id.value(), files.findById(fileId).orElseThrow().getOwnerRegistrationId());
     }
 
     @Test

@@ -9,4 +9,7 @@ public interface FileMetadataPort {
     void register(StoredFileMetadata metadata);
 
     Optional<StoredFileMetadata> find(UUID fileId);
+
+    /** Logical deletion: keeps the metadata row and its location for the daily cleanup (ADR-0010). */
+    void markNotAssociated(UUID fileId);
 }

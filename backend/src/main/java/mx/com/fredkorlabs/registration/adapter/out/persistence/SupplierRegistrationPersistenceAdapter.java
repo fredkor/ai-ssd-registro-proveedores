@@ -11,6 +11,7 @@ import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
 import mx.com.fredkorlabs.registration.domain.model.FiscalIdentificationDocument;
 import mx.com.fredkorlabs.registration.domain.model.NoticeAcceptance;
+import mx.com.fredkorlabs.registration.domain.model.RegistrationSection;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
 import mx.com.fredkorlabs.registration.domain.model.StoredDocumentReference;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
@@ -107,6 +108,15 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
     @Override
     public void saveFiscalDocumentAssociation(SupplierRegistrationId registrationId, StoredDocumentReference document) {
         fiscalDocuments.saveAndFlush(new RegistrationFiscalDocumentJpaEntity(registrationId.value(), document.value()));
+    }
+
+    @Override
+    public void saveFiscalDocumentDissociation(SupplierRegistration registration) {
+        UUID id = registration.id().value();
+        fiscalDocuments.deleteById(id);
+        repository.findById(id).orElseThrow().getSectionProgress()
+            .put(RegistrationSection.GENERAL_DATA, registration.sectionStatus(RegistrationSection.GENERAL_DATA));
+        repository.flush();
     }
 
     // General Data and CUCoP are not persisted yet; they are absent until their operations exist.

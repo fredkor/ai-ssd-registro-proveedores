@@ -31,4 +31,7 @@ public interface SupplierRegistrationPersistencePort {
 
     /** Stores the active fiscal document reference of the registration (at most one, design §4). */
     void saveFiscalDocumentAssociation(SupplierRegistrationId registrationId, StoredDocumentReference document);
+
+    /** Removes the active fiscal document reference and stores the resulting section progress (INV-29). */
+    void saveFiscalDocumentDissociation(SupplierRegistration registration);
 }

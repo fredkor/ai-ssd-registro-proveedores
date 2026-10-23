@@ -182,7 +182,16 @@ public class SupplierRegistration {
         this.associatedDocument = document;
     }
 
+    /** INV-29: only a registration IN_PROGRESS can drop its fiscal document. */
+    public void ensureFiscalDocumentCanBeDissociated() {
+        validateInProgress();
+    }
+
     public void dissociateFiscalDocument() {
+        ensureFiscalDocumentCanBeDissociated();
+        if (associatedDocument == null) {
+            throw new IllegalStateException("No fiscal document is associated");
+        }
         this.associatedDocument = null;
         // INV-29: leaves GENERAL_DATA PENDING; INV-37: CUCOP is not affected
         sectionProgress.put(RegistrationSection.GENERAL_DATA, SectionStatus.PENDING);
