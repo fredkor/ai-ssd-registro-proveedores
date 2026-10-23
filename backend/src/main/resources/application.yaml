@@ -15,6 +15,11 @@ spring:
     # ADR-0011: mensajes de validación siempre en inglés, sin importar la JVM ni Accept-Language
     locale: en
     locale-resolver: fixed
+  servlet:
+    multipart:
+      # ADR-0010/US10: 5 MiB per file (the exact maximum is allowed); the request also carries headers and boundaries.
+      max-file-size: 5242880B
+      max-request-size: 6MB
   jackson:
     deserialization:
       # ADR-0009: los requests rechazan propiedades no definidas con VALIDATION_ERROR
@@ -34,3 +39,6 @@ registration:
     audience: supplier-registration-api
     public-key-location: ${REGISTRATION_JWT_PUBLIC_KEY_LOCATION:}
     private-key-location: ${REGISTRATION_JWT_PRIVATE_KEY_LOCATION:}
+  # ADR-0010: raíz del volumen documental; la ruta relativa de cada archivo se guarda en metadatos
+  documents:
+    root-location: ${REGISTRATION_DOCUMENTS_ROOT:/repository}

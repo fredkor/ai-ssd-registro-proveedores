@@ -1,6 +1,7 @@
 package mx.com.fredkorlabs.registration.application.service;
 
 import mx.com.fredkorlabs.registration.application.port.in.SupplierRegistrationResult;
+import mx.com.fredkorlabs.registration.application.port.out.FiscalDocumentView;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
@@ -13,6 +14,12 @@ final class SupplierRegistrationResults {
 
     static SupplierRegistrationResult of(SupplierRegistration registration,
                                          NoticeAcceptanceReference acceptanceReference) {
+        return of(registration, acceptanceReference, null);
+    }
+
+    static SupplierRegistrationResult of(SupplierRegistration registration,
+                                         NoticeAcceptanceReference acceptanceReference,
+                                         FiscalDocumentView fiscalDocument) {
         ApplicantIdentity identity = registration.applicant();
         return new SupplierRegistrationResult(
             registration.id().value(),
@@ -27,6 +34,9 @@ final class SupplierRegistrationResults {
             registration.progress().stream()
                 .map(progress -> new SupplierRegistrationResult.SectionProgressItem(
                     progress.section().name(), progress.status().name()))
-                .toList());
+                .toList(),
+            fiscalDocument == null ? null : new SupplierRegistrationResult.FiscalDocumentItem(fiscalDocument.id(),
+                fiscalDocument.originalName(), fiscalDocument.extension(), fiscalDocument.sizeBytes(),
+                fiscalDocument.uploadedAt()));
     }
 }

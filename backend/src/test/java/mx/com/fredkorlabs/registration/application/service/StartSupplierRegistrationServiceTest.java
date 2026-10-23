@@ -11,8 +11,6 @@ import mx.com.fredkorlabs.registration.application.port.out.RegistrationContextP
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationSession;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationStatusView;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
-import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
-import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
 import mx.com.fredkorlabs.registration.domain.model.NoticeAcceptance;
@@ -20,6 +18,7 @@ import mx.com.fredkorlabs.registration.domain.model.RegistrationStatus;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
+import mx.com.fredkorlabs.registration.testsupport.UnusedSupplierRegistrationPersistence;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -172,7 +171,7 @@ class StartSupplierRegistrationServiceTest {
         }
     }
 
-    private static final class FakePersistence implements SupplierRegistrationPersistencePort {
+    private static final class FakePersistence extends UnusedSupplierRegistrationPersistence {
         private RegistrationStatusView existing;
         private RuntimeException lookupFailure;
         private RuntimeException insertFailure;
@@ -197,15 +196,5 @@ class StartSupplierRegistrationServiceTest {
             insertedAcceptances.add(acceptance);
         }
 
-        @Override
-        public Optional<StoredRegistration> findForUpdate(SupplierRegistrationId id) {
-            throw new UnsupportedOperationException("Not used by this use case");
-        }
-
-        @Override
-        public void saveResume(SupplierRegistration registration, SignatureEvidenceReference newEvidence,
-                               NoticeAcceptanceReference newAcceptance) {
-            throw new UnsupportedOperationException("Not used by this use case");
-        }
     }
 }

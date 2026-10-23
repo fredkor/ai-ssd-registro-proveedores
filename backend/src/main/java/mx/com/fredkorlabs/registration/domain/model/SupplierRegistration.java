@@ -1,5 +1,6 @@
 package mx.com.fredkorlabs.registration.domain.model;
 
+import mx.com.fredkorlabs.registration.domain.exception.FiscalDocumentAlreadyExistsException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidGeneralDataException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationStateException;
 
@@ -167,7 +168,17 @@ public class SupplierRegistration {
         sectionProgress.put(RegistrationSection.CUCOP, SectionStatus.COMPLETED);
     }
 
+    /** INV-27/INV-28: only IN_PROGRESS, and at most one fiscal document associated at a time. */
+    public void ensureFiscalDocumentCanBeAssociated() {
+        validateInProgress();
+        if (associatedDocument != null) {
+            throw new FiscalDocumentAlreadyExistsException("A fiscal document is already associated");
+        }
+    }
+
+    /** Associates the uploaded document immediately; it does not complete General Data (INV-28). */
     public void associateFiscalDocument(FiscalIdentificationDocument document) {
+        ensureFiscalDocumentCanBeAssociated();
         this.associatedDocument = document;
     }
 

@@ -1,6 +1,7 @@
 package mx.com.fredkorlabs.registration.application.port.out;
 
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
+import mx.com.fredkorlabs.registration.domain.model.StoredDocumentReference;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
 
@@ -24,4 +25,7 @@ public interface SupplierRegistrationPersistencePort {
     /** Stores a resumption: verified legal name, latest acceptance and the new evidence in the history. */
     void saveResume(SupplierRegistration registration, SignatureEvidenceReference newEvidence,
                     NoticeAcceptanceReference newAcceptance);
+
+    /** Stores the active fiscal document reference of the registration (at most one, design §4). */
+    void saveFiscalDocumentAssociation(SupplierRegistrationId registrationId, StoredDocumentReference document);
 }

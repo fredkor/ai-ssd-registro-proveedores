@@ -9,10 +9,8 @@ import mx.com.fredkorlabs.registration.application.port.in.SupplierRegistrationR
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationContextPort;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationSession;
-import mx.com.fredkorlabs.registration.application.port.out.RegistrationStatusView;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
 import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
-import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationStateException;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
@@ -23,6 +21,7 @@ import mx.com.fredkorlabs.registration.domain.model.Rfc;
 import mx.com.fredkorlabs.registration.domain.model.SectionStatus;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
+import mx.com.fredkorlabs.registration.testsupport.UnusedSupplierRegistrationPersistence;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -223,7 +222,7 @@ class ResumeSupplierRegistrationServiceTest {
         }
     }
 
-    private static final class FakePersistence implements SupplierRegistrationPersistencePort {
+    private static final class FakePersistence extends UnusedSupplierRegistrationPersistence {
         private StoredRegistration stored;
         private RuntimeException lookupFailure;
         private RuntimeException saveFailure;
@@ -232,11 +231,6 @@ class ResumeSupplierRegistrationServiceTest {
         private final List<SupplierRegistration> saved = new ArrayList<>();
         private final List<SignatureEvidenceReference> savedEvidence = new ArrayList<>();
         private final List<NoticeAcceptanceReference> savedAcceptances = new ArrayList<>();
-
-        @Override
-        public Optional<RegistrationStatusView> findStatusByRfc(Rfc rfc) {
-            throw new UnsupportedOperationException("Not used by this use case");
-        }
 
         @Override
         public void insert(SupplierRegistration registration, SignatureEvidenceReference initialEvidence,

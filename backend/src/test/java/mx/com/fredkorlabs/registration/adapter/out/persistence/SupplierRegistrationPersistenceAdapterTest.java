@@ -3,6 +3,7 @@ package mx.com.fredkorlabs.registration.adapter.out.persistence;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import mx.com.fredkorlabs.registration.application.port.out.DuplicateRegistrationException;
+import mx.com.fredkorlabs.registration.application.port.out.FiscalDocumentView;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationStatusView;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
@@ -14,6 +15,7 @@ import mx.com.fredkorlabs.registration.domain.model.RegistrationSection;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationStatus;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
 import mx.com.fredkorlabs.registration.domain.model.SectionStatus;
+import mx.com.fredkorlabs.registration.domain.model.StoredDocumentReference;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
 import mx.com.fredkorlabs.registration.testsupport.PostgresTestcontainersConfiguration;
@@ -225,6 +227,80 @@ class SupplierRegistrationPersistenceAdapterTest {
         assertEquals(Set.of(inserted.evidenceId(), newEvidence), stored.getSignatureEvidenceIds());
         assertTrue(stored.getSectionProgress().values().stream().allMatch(status -> status == SectionStatus.PENDING));
         assertTrue(acceptances.existsById(inserted.acceptanceId()));
+    }
+
+    @Autowired
+    private FileMetadataJpaRepository files;
+
+    private UUID registerFile(UUID owner) {
+        UUID fileId = UUID.randomUUID();
+        files.saveAndFlush(new FileMetadataJpaEntity(fileId, owner, "cedula.pdf",
+            "2026/10/23/RFC/" + fileId + ".pdf", "pdf", "application/pdf", 9L,
+            Instant.parse("2026-10-23T05:30:00.123456Z"), true));
+        return fileId;
+    }
+
+    @Test
+    void US10_CA005_associatedDocument_isReconstitutedWithItsMetadata() {
+        Inserted inserted = insert("PPP010101PPP");
+        SupplierRegistrationId id = inserted.registration().id();
+        UUID fileId = registerFile(id.value());
+        adapter.saveFiscalDocumentAssociation(id, new StoredDocumentReference(fileId));
+        entityManager.clear();
+
+        StoredRegistration stored = adapter.findForUpdate(id).orElseThrow();
+
+        assertEquals(new StoredDocumentReference(fileId), stored.registration().associatedDocument().storedFile());
+        assertEquals("cedula.pdf", stored.registration().associatedDocument().originalName());
+        assertEquals(new FiscalDocumentView(fileId, "cedula.pdf", "pdf", 9L,
+            Instant.parse("2026-10-23T05:30:00.123456Z")), stored.fiscalDocument());
+    }
+
+    @Test
+    void US10_withoutDocument_reconstitutesNoAssociation() {
+        Inserted inserted = insert("QQQ010101QQQ");
+        entityManager.clear();
+
+        StoredRegistration stored = adapter.findForUpdate(inserted.registration().id()).orElseThrow();
+
+        assertNull(stored.registration().associatedDocument());
+        assertNull(stored.fiscalDocument());
+    }
+
+    @Test
+    void US10_CA004_database_allowsOneFiscalDocumentPerRegistration() {
+        Inserted inserted = insert("RRR010101RRR");
+        SupplierRegistrationId id = inserted.registration().id();
+        adapter.saveFiscalDocumentAssociation(id, new StoredDocumentReference(registerFile(id.value())));
+        UUID other = registerFile(id.value());
+
+        assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
+                "INSERT INTO registration_fiscal_document (registration_id, file_id) VALUES (?1, ?2)")
+            .setParameter(1, id.value()).setParameter(2, other).executeUpdate());
+    }
+
+    @Test
+    void ADR0010_database_rejectsDocumentOwnedByAnotherRegistration() {
+        UUID owner = insert("SSS010101SSS").registration().id().value();
+        UUID otherRegistration = insert("TTT010101TTT").registration().id().value();
+        UUID fileId = registerFile(owner);
+
+        assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
+                "INSERT INTO registration_fiscal_document (registration_id, file_id) VALUES (?1, ?2)")
+            .setParameter(1, otherRegistration).setParameter(2, fileId).executeUpdate());
+    }
+
+    @Test
+    void ADR0010_schema_usesApprovedTypesAndCleanupIndex() {
+        assertEquals("character varying(255)", columnType("file_metadata", "relative_path"));
+        assertEquals("character varying(10)", columnType("file_metadata", "extension"));
+        assertEquals("text", columnType("file_metadata", "original_name"));
+        assertEquals("bigint", columnType("file_metadata", "size_bytes"));
+        assertEquals("timestamp(6) with time zone", columnType("file_metadata", "uploaded_at"));
+        assertEquals("boolean", columnType("file_metadata", "associated"));
+        assertEquals(1L, ((Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'file_metadata_associated_uploaded_at_idx'")
+            .getSingleResult()).longValue());
     }
 
     private String columnType(String table, String column) {

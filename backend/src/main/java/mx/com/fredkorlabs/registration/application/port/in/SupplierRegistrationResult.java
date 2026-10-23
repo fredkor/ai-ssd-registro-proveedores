@@ -4,7 +4,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** Projection of a registration: identity, latest notice acceptance and progress, in section order. */
+/**
+ * Projection of a registration: identity, latest notice acceptance, progress in section order and the
+ * associated fiscal document ({@code null} when none is associated).
+ */
 public record SupplierRegistrationResult(
     UUID id,
     String status,
@@ -15,8 +18,12 @@ public record SupplierRegistrationResult(
     String noticeVersion,
     Instant noticeAcceptedAt,
     String noticeAcceptanceId,
-    List<SectionProgressItem> progress
+    List<SectionProgressItem> progress,
+    FiscalDocumentItem fiscalDocument
 ) {
 
     public record SectionProgressItem(String section, String status) {}
+
+    public record FiscalDocumentItem(UUID id, String originalName, String extension, long sizeBytes,
+                                     Instant uploadedAt) {}
 }
