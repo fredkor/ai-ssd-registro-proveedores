@@ -23,6 +23,9 @@ spring:
 # ADR-0019: /error es la ruta interna de ProblemErrorController, no una operación del contrato
 springdoc:
   paths-to-exclude: /error
+  # ADR-0008: Swagger UI muestra el contrato autoritativo (con su esquema Bearer), no el deducido del código
+  swagger-ui:
+    url: /supplier-registration-openapi.yaml
 
 # ADR-0015: emisor y audiencia del JWT de registro; las llaves RSA (PEM) se ubican por variables de entorno
 registration:
