@@ -185,7 +185,7 @@ paths:
       operationId: resumeSupplierRegistration
       description: Exige nueva identificación del mismo RFC. Recupera el mismo expediente y siempre abre Datos
         Generales; no sobrescribe datos ante un fallo. REGISTERED no puede reanudarse como borrador. La identidad
-        y aceptación se resuelven exclusivamente desde el token; no requiere cuerpo de petición. Al reanudar se actualiza legalName desde el nuevo certificado verificado del mismo RFC y se vincula históricamente su evidencia sin sobrescribir las anteriores; ambas acciones se confirman en una transacción. Se conservan UUID, datos capturados, documentos confirmados y progreso, incluido CUCoP. Un fallo revierte la actualización del nombre y vínculo histórico sin eliminar la evidencia conservada al identificar.
+        y aceptación se resuelven exclusivamente desde el token; no requiere cuerpo de petición. Al reanudar se actualiza legalName desde el nuevo certificado verificado del mismo RFC y se vincula históricamente su evidencia sin sobrescribir las anteriores; ambas acciones se confirman en una transacción. Se conservan UUID, datos capturados, documentos confirmados y progreso, incluido CUCoP. Un fallo revierte la actualización del nombre y vínculo histórico sin eliminar la evidencia conservada al identificar. Si la evidencia del token ya está vinculada al expediente (identificación ya aplicada al crearlo o reanudarlo, p. ej. un reintento), responde 200 con el estado actual sin modificarlo.
       x-spec-refs:
       - RF-REG-06
       - US05

@@ -6,6 +6,8 @@
 
 Al reanudar un expediente IN_PROGRESS tras una nueva identificación aceptada del mismo RFC, se mantiene el UUID del expediente y se actualiza su nombre completo / razón social con el extraído del nuevo certificado verificado conforme a ADR-0016. Se conservan íntegramente la evidencia inicial y las nuevas evidencias, vinculadas históricamente al mismo expediente, sin sobrescribirlas. La actualización no altera los datos capturados, documentos confirmados ni progreso de ninguna sección, incluido CUCoP. El RFC permanece inmutable. La actualización del nombre, el vínculo histórico de firma y la sustitución por la última aceptación del aviso fijo (US03 CA-007) se confirman en la misma transacción; un fallo no deja cambios parciales. Una identificación por sí sola no actualiza el expediente: el cambio se confirma al reanudarlo.
 
+Cada identificación se aplica una sola vez al expediente. Reanudar con un token cuya evidencia ya está vinculada al expediente (la de su creación o una reanudación ya confirmada, por ejemplo al reintentar) no vuelve a aplicarla: devuelve el expediente en su estado actual sin modificar nombre, aceptación, historial, datos ni progreso.
+
 ## Criterios de aceptación
 - **CA-001:** Dado expediente EN_CAPTURA, cuando valido nuevamente mi e.firma, entonces se habilita la reanudación asociada a mi RFC.
 - **CA-002:** Dado que reanudo, cuando se recuperan los datos, entonces veo secciones y valores persistidos.
