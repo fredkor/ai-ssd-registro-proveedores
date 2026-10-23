@@ -30,4 +30,7 @@ public interface GeneralDataCatalogPort {
 
     /** Every primary activity (Actividad preponderante), ordered by id. */
     List<CatalogRecord> findPrimaryActivities();
+
+    /** Every worker count range (Número de trabajadores), ordered by id. */
+    List<CatalogRecord> findWorkerCountRanges();
 }

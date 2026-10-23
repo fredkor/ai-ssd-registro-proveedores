@@ -7,6 +7,7 @@ import mx.com.fredkorlabs.registration.application.port.in.GetPrimaryActivitiesU
 import mx.com.fredkorlabs.registration.application.port.in.GetSectorsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetStratificationsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetWorkerCountRangesUseCase;
 import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
 import mx.com.fredkorlabs.registration.application.service.GetBusinessActivitiesService;
 import mx.com.fredkorlabs.registration.application.service.GetCountriesService;
@@ -15,6 +16,7 @@ import mx.com.fredkorlabs.registration.application.service.GetPrimaryActivitiesS
 import mx.com.fredkorlabs.registration.application.service.GetSectorsService;
 import mx.com.fredkorlabs.registration.application.service.GetStratificationsService;
 import mx.com.fredkorlabs.registration.application.service.GetSubsectorsService;
+import mx.com.fredkorlabs.registration.application.service.GetWorkerCountRangesService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -55,5 +57,10 @@ public class RegistrationCatalogConfiguration {
     @Bean
     public GetPrimaryActivitiesUseCase getPrimaryActivitiesUseCase(GeneralDataCatalogPort generalDataCatalog) {
         return new GetPrimaryActivitiesService(generalDataCatalog);
+    }
+
+    @Bean
+    public GetWorkerCountRangesUseCase getWorkerCountRangesUseCase(GeneralDataCatalogPort generalDataCatalog) {
+        return new GetWorkerCountRangesService(generalDataCatalog);
     }
 }

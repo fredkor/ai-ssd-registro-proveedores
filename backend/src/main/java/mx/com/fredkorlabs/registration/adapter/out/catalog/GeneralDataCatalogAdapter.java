@@ -19,12 +19,14 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
     private final BusinessActivityJpaRepository businessActivities;
     private final StratificationJpaRepository stratifications;
     private final PrimaryActivityJpaRepository primaryActivities;
+    private final WorkerCountRangeJpaRepository workerCountRanges;
 
     public GeneralDataCatalogAdapter(CountryJpaRepository countries, LegalOwnershipJpaRepository legalOwnerships,
                                      SectorJpaRepository sectors, SubsectorJpaRepository subsectors,
                                      BusinessActivityJpaRepository businessActivities,
                                      StratificationJpaRepository stratifications,
-                                     PrimaryActivityJpaRepository primaryActivities) {
+                                     PrimaryActivityJpaRepository primaryActivities,
+                                     WorkerCountRangeJpaRepository workerCountRanges) {
         this.countries = countries;
         this.legalOwnerships = legalOwnerships;
         this.sectors = sectors;
@@ -32,6 +34,7 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
         this.businessActivities = businessActivities;
         this.stratifications = stratifications;
         this.primaryActivities = primaryActivities;
+        this.workerCountRanges = workerCountRanges;
     }
 
     @Override
@@ -86,6 +89,13 @@ public class GeneralDataCatalogAdapter implements GeneralDataCatalogPort {
     public List<CatalogRecord> findPrimaryActivities() {
         return primaryActivities.findAllByOrderByIdAsc().stream()
             .map(activity -> new CatalogRecord(activity.getId(), activity.getDescription()))
+            .toList();
+    }
+
+    @Override
+    public List<CatalogRecord> findWorkerCountRanges() {
+        return workerCountRanges.findAllByOrderByIdAsc().stream()
+            .map(range -> new CatalogRecord(range.getId(), range.getDescription()))
             .toList();
     }
 
