@@ -2,15 +2,11 @@ package mx.com.fredkorlabs.registration.application.service;
 
 import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExistenceQuery;
 import mx.com.fredkorlabs.registration.application.port.in.CheckRegistrationExistenceResult;
-import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationStatusView;
-import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
-import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
-import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationStatus;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
-import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
+import mx.com.fredkorlabs.registration.testsupport.UnusedSupplierRegistrationPersistence;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -72,7 +68,7 @@ class CheckRegistrationExistenceServiceTest {
         assertEquals(List.of(new Rfc("HEGT7610034S2")), persistence.queried);
     }
 
-    private static final class FakePersistence implements SupplierRegistrationPersistencePort {
+    private static final class FakePersistence extends UnusedSupplierRegistrationPersistence {
         private RegistrationStatusView found;
         private RuntimeException failure;
         private final List<Rfc> queried = new ArrayList<>();
@@ -84,21 +80,5 @@ class CheckRegistrationExistenceServiceTest {
             return Optional.ofNullable(found);
         }
 
-        @Override
-        public void insert(SupplierRegistration registration, SignatureEvidenceReference initialEvidence,
-                           NoticeAcceptanceReference acceptance) {
-            throw new UnsupportedOperationException("Not used by this use case");
-        }
-
-        @Override
-        public Optional<StoredRegistration> findForUpdate(SupplierRegistrationId id) {
-            throw new UnsupportedOperationException("Not used by this use case");
-        }
-
-        @Override
-        public void saveResume(SupplierRegistration registration, SignatureEvidenceReference newEvidence,
-                               NoticeAcceptanceReference newAcceptance) {
-            throw new UnsupportedOperationException("Not used by this use case");
-        }
     }
 }

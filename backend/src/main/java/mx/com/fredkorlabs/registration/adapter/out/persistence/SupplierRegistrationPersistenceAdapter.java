@@ -1,6 +1,7 @@
 package mx.com.fredkorlabs.registration.adapter.out.persistence;
 
 import mx.com.fredkorlabs.registration.application.port.out.DuplicateRegistrationException;
+import mx.com.fredkorlabs.registration.application.port.out.FiscalDocumentView;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
 import mx.com.fredkorlabs.registration.application.port.out.RegistrationStatusView;
 import mx.com.fredkorlabs.registration.application.port.out.SignatureEvidenceReference;
@@ -8,8 +9,10 @@ import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
+import mx.com.fredkorlabs.registration.domain.model.FiscalIdentificationDocument;
 import mx.com.fredkorlabs.registration.domain.model.NoticeAcceptance;
 import mx.com.fredkorlabs.registration.domain.model.Rfc;
+import mx.com.fredkorlabs.registration.domain.model.StoredDocumentReference;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
 import org.hibernate.exception.ConstraintViolationException;
@@ -38,13 +41,19 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
     private final SupplierRegistrationJpaRepository repository;
     private final NoticeAcceptanceJpaRepository acceptances;
     private final ApplicantSignatureEvidenceJpaRepository evidences;
+    private final RegistrationFiscalDocumentJpaRepository fiscalDocuments;
+    private final FileMetadataJpaRepository files;
 
     public SupplierRegistrationPersistenceAdapter(SupplierRegistrationJpaRepository repository,
                                                   NoticeAcceptanceJpaRepository acceptances,
-                                                  ApplicantSignatureEvidenceJpaRepository evidences) {
+                                                  ApplicantSignatureEvidenceJpaRepository evidences,
+                                                  RegistrationFiscalDocumentJpaRepository fiscalDocuments,
+                                                  FileMetadataJpaRepository files) {
         this.repository = repository;
         this.acceptances = acceptances;
         this.evidences = evidences;
+        this.fiscalDocuments = fiscalDocuments;
+        this.files = files;
     }
 
     @Override
@@ -90,7 +99,12 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
         repository.flush();
     }
 
-    // General Data, fiscal document and CUCoP are not persisted yet; they are absent until their operations exist.
+    @Override
+    public void saveFiscalDocumentAssociation(SupplierRegistrationId registrationId, StoredDocumentReference document) {
+        fiscalDocuments.saveAndFlush(new RegistrationFiscalDocumentJpaEntity(registrationId.value(), document.value()));
+    }
+
+    // General Data and CUCoP are not persisted yet; they are absent until their operations exist.
     private StoredRegistration toStoredRegistration(SupplierRegistrationJpaEntity entity) {
         NoticeAcceptanceJpaEntity acceptance = acceptances.findById(entity.getNoticeAcceptanceId()).orElseThrow();
         Map<UUID, ApplicantSignatureEvidenceJpaEntity> history = evidences.findAllById(entity.getSignatureEvidenceIds())
@@ -100,14 +114,19 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
         evidence.add(new ApplicantSignatureEvidence(history.remove(entity.getInitialEvidenceId()).getCompleteResult()));
         history.values().forEach(other -> evidence.add(new ApplicantSignatureEvidence(other.getCompleteResult())));
 
+        SupplierRegistrationId id = new SupplierRegistrationId(entity.getId());
+        FileMetadataJpaEntity document = fiscalDocuments.findById(entity.getId())
+            .map(association -> files.findById(association.getFileId()).orElseThrow())
+            .orElse(null);
         SupplierRegistration registration = SupplierRegistration.reconstitute(
-            new SupplierRegistrationId(entity.getId()),
+            id,
             entity.getStatus(),
             new ApplicantIdentity(new Rfc(entity.getRfc()), entity.getLegalName()),
             new NoticeAcceptance(acceptance.getVersion(), acceptance.getAcceptedAt()),
             evidence,
             null,
-            null,
+            document == null ? null : new FiscalIdentificationDocument(id, document.getOriginalName(),
+                new StoredDocumentReference(document.getId())),
             null,
             entity.getSectionProgress());
         return new StoredRegistration(
@@ -115,6 +134,8 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
             new NoticeAcceptanceReference(entity.getNoticeAcceptanceId().toString()),
             entity.getSignatureEvidenceIds().stream()
                 .map(evidenceId -> new SignatureEvidenceReference(evidenceId.toString()))
-                .collect(Collectors.toSet()));
+                .collect(Collectors.toSet()),
+            document == null ? null : new FiscalDocumentView(document.getId(), document.getOriginalName(),
+                document.getExtension(), document.getSizeBytes(), document.getUploadedAt()));
     }
 }

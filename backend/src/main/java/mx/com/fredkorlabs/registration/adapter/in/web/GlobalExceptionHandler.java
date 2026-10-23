@@ -13,6 +13,9 @@ import mx.com.fredkorlabs.registration.application.port.in.RegistrationNotFoundE
 import mx.com.fredkorlabs.registration.application.port.in.RegistrationSessionUnavailableException;
 import mx.com.fredkorlabs.registration.application.port.in.SignatureVerificationFailedException;
 import mx.com.fredkorlabs.registration.domain.exception.ApplicantRfcMismatchException;
+import mx.com.fredkorlabs.registration.domain.exception.DocumentFormatNotSupportedException;
+import mx.com.fredkorlabs.registration.domain.exception.DocumentTooLargeException;
+import mx.com.fredkorlabs.registration.domain.exception.FiscalDocumentAlreadyExistsException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidCertificateIdentityException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidNoticeVersionException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationStateException;
@@ -125,6 +128,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleInvalidState(InvalidRegistrationStateException ex,
                                                             HttpServletRequest request) {
         return ProblemResponses.response(ErrorCode.INVALID_STATE_TRANSITION, ex.getMessage(), List.of(),
+            request.getRequestURI());
+    }
+
+    @ExceptionHandler(FiscalDocumentAlreadyExistsException.class)
+    public ResponseEntity<ProblemDetail> handleFiscalDocumentExists(FiscalDocumentAlreadyExistsException ex,
+                                                                    HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.FISCAL_DOCUMENT_ALREADY_EXISTS, ex.getMessage(), List.of(),
+            request.getRequestURI());
+    }
+
+    @ExceptionHandler(DocumentTooLargeException.class)
+    public ResponseEntity<ProblemDetail> handleDocumentTooLarge(DocumentTooLargeException ex,
+                                                                HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.DOCUMENT_TOO_LARGE, ex.getMessage(), List.of(),
+            request.getRequestURI());
+    }
+
+    @ExceptionHandler(DocumentFormatNotSupportedException.class)
+    public ResponseEntity<ProblemDetail> handleDocumentFormat(DocumentFormatNotSupportedException ex,
+                                                              HttpServletRequest request) {
+        return ProblemResponses.response(ErrorCode.DOCUMENT_FORMAT_NOT_SUPPORTED, ex.getMessage(), List.of(),
             request.getRequestURI());
     }
 

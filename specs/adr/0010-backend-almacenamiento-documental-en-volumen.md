@@ -41,6 +41,10 @@ El contenido se almacena en un volumen persistente bajo:
   El nombre original se conserva como metadato y no construye directorios ni nombres físicos.
 - El adaptador resuelve la ubicación desde su referencia registrada, sin aceptar rutas del cliente.
 - El contenido no se almacena en disco efímero. Varias instancias deben compartir volumen.
+- La raíz del volumen se configura con la propiedad `registration.documents.root-location`, leída de
+  la variable de entorno `REGISTRATION_DOCUMENTS_ROOT`; su valor por defecto es `/repository`. Las
+  pruebas usan un directorio temporal (decisión del 2026-10-23). La ruta relativa guardada en
+  metadatos no incluye la raíz.
 
 ### Metadatos
 
@@ -121,6 +125,8 @@ El servicio no impone PDF, un tamaño único ni una cantidad de documentos para 
 Cada tipo documental debe definir formatos, tamaño máximo, cantidad, obligatoriedad y condiciones
 de asociación antes de habilitar su carga. La validación se realiza en servidor sobre extensión
 y contenido; el nombre o MIME declarado por el cliente no bastan.
+Para PDF, el contenido se comprueba por su firma: los primeros bytes deben ser `%PDF-`
+(decisión del 2026-10-23). No se añade una biblioteca de lectura de PDF.
 
 Los límites se aplican a bytes del archivo; el límite del multipart debe permitir encabezados y
 separadores adicionales. Las respuestas de error se rigen por el contrato aplicable.

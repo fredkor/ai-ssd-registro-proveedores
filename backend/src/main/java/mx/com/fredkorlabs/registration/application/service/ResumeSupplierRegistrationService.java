@@ -1,8 +1,5 @@
 package mx.com.fredkorlabs.registration.application.service;
 
-import mx.com.fredkorlabs.registration.application.port.in.RegistrationAccessDeniedException;
-import mx.com.fredkorlabs.registration.application.port.in.RegistrationNotFoundException;
-import mx.com.fredkorlabs.registration.application.port.in.RegistrationSessionUnavailableException;
 import mx.com.fredkorlabs.registration.application.port.in.ResumeSupplierRegistrationCommand;
 import mx.com.fredkorlabs.registration.application.port.in.ResumeSupplierRegistrationUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.SupplierRegistrationResult;
@@ -11,7 +8,6 @@ import mx.com.fredkorlabs.registration.application.port.out.RegistrationSession;
 import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
 import mx.com.fredkorlabs.registration.domain.model.SupplierRegistration;
-import mx.com.fredkorlabs.registration.domain.model.SupplierRegistrationId;
 
 public class ResumeSupplierRegistrationService implements ResumeSupplierRegistrationUseCase {
 
@@ -26,29 +22,24 @@ public class ResumeSupplierRegistrationService implements ResumeSupplierRegistra
 
     @Override
     public SupplierRegistrationResult execute(ResumeSupplierRegistrationCommand command) {
-        // Identity, evidence and acceptance come only from the token's context (ADR-0015).
-        RegistrationSession session = registrationContext.resolve(command.registrationSessionId())
-            .orElseThrow(() -> new RegistrationSessionUnavailableException("Registration token has no context"));
-        StoredRegistration stored = supplierRegistrationPersistence
-            .findForUpdate(new SupplierRegistrationId(command.registrationId()))
-            .orElseThrow(() -> new RegistrationNotFoundException("Registration does not exist"));
+        // Identity, evidence and acceptance come only from the token's context (ADR-0015); INV-12 owner check.
+        OwnedRegistration owned = OwnedRegistration.lock(registrationContext, supplierRegistrationPersistence,
+            command.registrationSessionId(), command.registrationId());
+        RegistrationSession session = owned.session();
+        StoredRegistration stored = owned.stored();
         SupplierRegistration registration = stored.registration();
 
-        // INV-12: only the registration of the identified RFC.
-        if (!registration.applicant().rfc().equals(session.identity().rfc())) {
-            throw new RegistrationAccessDeniedException("Registration belongs to another applicant");
-        }
         // INV-13: a REGISTERED registration cannot be resumed as a draft.
         registration.ensureResumable();
 
         // An identification is applied once: its evidence already in the history means nothing to change.
         if (stored.evidenceReferences().contains(session.evidenceReference())) {
-            return SupplierRegistrationResults.of(registration, stored.acceptanceReference());
+            return SupplierRegistrationResults.of(registration, stored.acceptanceReference(), stored.fiscalDocument());
         }
 
         registration.resume(session.identity().legalName(), session.acceptance(), session.evidence());
         supplierRegistrationPersistence.saveResume(registration, session.evidenceReference(),
             session.acceptanceReference());
-        return SupplierRegistrationResults.of(registration, session.acceptanceReference());
+        return SupplierRegistrationResults.of(registration, session.acceptanceReference(), stored.fiscalDocument());
     }
 }

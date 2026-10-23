@@ -3,6 +3,7 @@ package mx.com.fredkorlabs.registration.adapter.in.web;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.SupplierRegistrationsApi;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.ApplicantIdentityResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CucopParticipationRequest;
+import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.FiscalDocumentResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.GeneralDataRequest;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.NoticeAcceptanceResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.RegistrationExistenceResponse;
@@ -82,7 +83,7 @@ public class SupplierRegistrationsController implements SupplierRegistrationsApi
     }
 
     private static SupplierRegistrationResponse toResponse(SupplierRegistrationResult result) {
-        return new SupplierRegistrationResponse(
+        SupplierRegistrationResponse response = new SupplierRegistrationResponse(
             result.id(),
             RegistrationStatus.fromValue(result.status()),
             new ApplicantIdentityResponse(result.rfc(), result.legalName(), TaxRegime.fromValue(result.taxRegime()),
@@ -93,5 +94,12 @@ public class SupplierRegistrationsController implements SupplierRegistrationsApi
                 .map(item -> new SectionProgressResponse(RegistrationSection.fromValue(item.section()),
                     SectionStatus.fromValue(item.status())))
                 .toList());
+        SupplierRegistrationResult.FiscalDocumentItem document = result.fiscalDocument();
+        if (document != null) {
+            response.fiscalDocument(new FiscalDocumentResponse(document.id(), document.originalName(),
+                FiscalDocumentResponse.ExtensionEnum.fromValue(document.extension()), document.sizeBytes(),
+                document.uploadedAt().atOffset(ZoneOffset.UTC)));
+        }
+        return response;
     }
 }

@@ -1,5 +1,6 @@
 package mx.com.fredkorlabs.registration.domain;
 
+import mx.com.fredkorlabs.registration.domain.exception.FiscalDocumentAlreadyExistsException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidGeneralDataException;
 import mx.com.fredkorlabs.registration.domain.exception.InvalidRegistrationStateException;
 import mx.com.fredkorlabs.registration.domain.model.*;
@@ -176,8 +177,7 @@ class SupplierRegistrationTest {
         reg.saveGeneralData(legalEntityGeneralData(), allValidContext(), true);
         reg.saveCucopParticipation(validParticipation());
 
-        // Save GeneralData again
-        reg.associateFiscalDocument(createDocument(reg.id()));
+        // Save GeneralData again; the fiscal document stays associated
         reg.saveGeneralData(legalEntityGeneralData(), allValidContext(), true);
 
         // CUCOP must still be COMPLETED
@@ -288,5 +288,33 @@ class SupplierRegistrationTest {
         assertThrows(InvalidRegistrationStateException.class, () -> reg.resume("Otro",
             new NoticeAcceptance("1.0", Instant.now()), new ApplicantSignatureEvidence("{}")));
         assertEquals("Corp SA de CV", reg.applicant().legalName());
+    }
+
+    @Test
+    void US10_CA004_secondFiscalDocument_isRejected() {
+        SupplierRegistration reg = createLegalEntityRegistration();
+        reg.associateFiscalDocument(createDocument(reg.id()));
+
+        assertThrows(FiscalDocumentAlreadyExistsException.class, reg::ensureFiscalDocumentCanBeAssociated);
+        assertThrows(FiscalDocumentAlreadyExistsException.class,
+            () -> reg.associateFiscalDocument(createDocument(reg.id())));
+    }
+
+    @Test
+    void US10_CA001_fiscalDocument_isAssociatedWithoutCompletingGeneralData() {
+        SupplierRegistration reg = createLegalEntityRegistration();
+        FiscalIdentificationDocument document = createDocument(reg.id());
+
+        reg.associateFiscalDocument(document);
+
+        assertSame(document, reg.associatedDocument());
+        assertEquals(SectionStatus.PENDING, reg.sectionStatus(RegistrationSection.GENERAL_DATA));
+    }
+
+    @Test
+    void US10_registeredRegistration_cannotTakeAFiscalDocument() {
+        SupplierRegistration reg = reconstituted(RegistrationStatus.REGISTERED, progressWithCucopCompleted());
+
+        assertThrows(InvalidRegistrationStateException.class, reg::ensureFiscalDocumentCanBeAssociated);
     }
 }
