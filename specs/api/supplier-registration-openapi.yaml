@@ -161,13 +161,10 @@ paths:
                 $ref: '#/components/schemas/SupplierRegistrationResponse'
           headers:
             Location:
-              description: URL del expediente creado.
+              description: Ruta relativa del expediente creado (/api/v1/supplier-registrations/{id}). Identifica
+                el expediente de las rutas hijas; en esta etapa no existe una operación GET sobre ella.
               schema:
                 type: string
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '403':
-          $ref: '#/components/responses/AccessDenied'
         '409':
           $ref: '#/components/responses/DuplicateRfc'
         '500':

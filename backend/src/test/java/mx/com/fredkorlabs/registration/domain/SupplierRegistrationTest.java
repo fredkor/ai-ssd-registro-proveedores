@@ -192,4 +192,28 @@ class SupplierRegistrationTest {
                 "Section " + section + " should be PENDING");
         }
     }
+
+    @Test
+    void US04_CA002_start_listsProgressInWizardOrderStartingWithGeneralData() {
+        SupplierRegistration reg = createLegalEntityRegistration();
+
+        assertEquals(List.of(RegistrationSection.values()),
+            reg.progress().stream().map(SectionProgress::section).toList());
+        assertEquals(RegistrationSection.GENERAL_DATA, reg.progress().getFirst().section());
+        assertTrue(reg.progress().stream().allMatch(p -> p.status() == SectionStatus.PENDING));
+    }
+
+    @Test
+    void US03_CA005_start_keepsAcceptanceAndInitialEvidence() {
+        NoticeAcceptance acceptance = new NoticeAcceptance("1.0", Instant.parse("2026-10-21T15:30:00Z"));
+        ApplicantSignatureEvidence evidence = new ApplicantSignatureEvidence("{\"rfc\":\"XAXX01010100\"}");
+
+        SupplierRegistration reg = SupplierRegistration.start(new SupplierRegistrationId(UUID.randomUUID()),
+            new ApplicantIdentity(new Rfc("XAXX01010100"), "Corp SA de CV"), acceptance, evidence);
+
+        assertEquals(acceptance, reg.latestAcceptance());
+        assertEquals(List.of(evidence), reg.acceptedEvidence());
+        assertNull(reg.generalData());
+        assertNull(reg.cucopParticipation());
+    }
 }
