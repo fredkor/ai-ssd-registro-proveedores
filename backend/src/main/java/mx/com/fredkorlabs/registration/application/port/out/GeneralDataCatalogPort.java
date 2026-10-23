@@ -15,4 +15,7 @@ public interface GeneralDataCatalogPort {
 
     /** Legal ownership options of the country plus NOT_DEF, in no particular order. */
     List<LegalOwnershipOption> findLegalOwnershipCandidates(String countryCode);
+
+    /** Every sector, ordered by id. */
+    List<CatalogRecord> findSectors();
 }

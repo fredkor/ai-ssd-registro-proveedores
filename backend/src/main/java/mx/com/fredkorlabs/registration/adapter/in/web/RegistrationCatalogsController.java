@@ -2,6 +2,7 @@ package mx.com.fredkorlabs.registration.adapter.in.web;
 
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.RegistrationCatalogsApi;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CatalogOptionListResponse;
+import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CatalogOptionResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CountryOptionListResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CountryOptionResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.CucopCatalogResponse;
@@ -9,9 +10,11 @@ import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.LegalOwner
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.LegalOwnershipOptionResponse;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.Origin;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.TaxRegime;
+import mx.com.fredkorlabs.registration.application.port.in.CatalogOptionsResult;
 import mx.com.fredkorlabs.registration.application.port.in.GetCountriesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsQuery;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetSectorsUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,11 +27,14 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
 
     private final GetCountriesUseCase getCountries;
     private final GetLegalOwnershipsUseCase getLegalOwnerships;
+    private final GetSectorsUseCase getSectors;
 
     public RegistrationCatalogsController(GetCountriesUseCase getCountries,
-                                          GetLegalOwnershipsUseCase getLegalOwnerships) {
+                                          GetLegalOwnershipsUseCase getLegalOwnerships,
+                                          GetSectorsUseCase getSectors) {
         this.getCountries = getCountries;
         this.getLegalOwnerships = getLegalOwnerships;
+        this.getSectors = getSectors;
     }
 
     @Override
@@ -56,7 +62,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
 
     @Override
     public ResponseEntity<CatalogOptionListResponse> getSectors() {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        return ResponseEntity.ok(toCatalogOptions(getSectors.execute()));
     }
 
     @Override
@@ -92,5 +98,11 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
     @Override
     public ResponseEntity<CucopCatalogResponse> getCucopCatalog() {
         throw new UnsupportedOperationException("Not implemented in this iteration");
+    }
+
+    private static CatalogOptionListResponse toCatalogOptions(CatalogOptionsResult result) {
+        return new CatalogOptionListResponse(result.items().stream()
+            .map(option -> new CatalogOptionResponse(option.id(), option.description()))
+            .toList());
     }
 }

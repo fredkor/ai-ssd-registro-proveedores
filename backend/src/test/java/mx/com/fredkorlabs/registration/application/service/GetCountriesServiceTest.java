@@ -2,6 +2,7 @@ package mx.com.fredkorlabs.registration.application.service;
 
 import mx.com.fredkorlabs.registration.application.port.in.GetCountriesResult;
 import mx.com.fredkorlabs.registration.application.port.in.GetCountriesResult.CountryItem;
+import mx.com.fredkorlabs.registration.application.port.out.CatalogRecord;
 import mx.com.fredkorlabs.registration.application.port.out.CountryRecord;
 import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPort;
 import mx.com.fredkorlabs.registration.domain.model.LegalOwnershipOption;
@@ -48,6 +49,11 @@ class GetCountriesServiceTest {
 
             @Override
             public List<LegalOwnershipOption> findLegalOwnershipCandidates(String countryCode) {
+                throw new UnsupportedOperationException("Not used by this use case");
+            }
+
+            @Override
+            public List<CatalogRecord> findSectors() {
                 throw new UnsupportedOperationException("Not used by this use case");
             }
         };
