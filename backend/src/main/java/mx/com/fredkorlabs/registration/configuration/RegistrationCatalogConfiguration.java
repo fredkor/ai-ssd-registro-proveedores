@@ -3,6 +3,7 @@ package mx.com.fredkorlabs.registration.configuration;
 import mx.com.fredkorlabs.registration.application.port.in.GetBusinessActivitiesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetCountriesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetPrimaryActivitiesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetSectorsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetStratificationsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsUseCase;
@@ -10,6 +11,7 @@ import mx.com.fredkorlabs.registration.application.port.out.GeneralDataCatalogPo
 import mx.com.fredkorlabs.registration.application.service.GetBusinessActivitiesService;
 import mx.com.fredkorlabs.registration.application.service.GetCountriesService;
 import mx.com.fredkorlabs.registration.application.service.GetLegalOwnershipsService;
+import mx.com.fredkorlabs.registration.application.service.GetPrimaryActivitiesService;
 import mx.com.fredkorlabs.registration.application.service.GetSectorsService;
 import mx.com.fredkorlabs.registration.application.service.GetStratificationsService;
 import mx.com.fredkorlabs.registration.application.service.GetSubsectorsService;
@@ -48,5 +50,10 @@ public class RegistrationCatalogConfiguration {
     @Bean
     public GetStratificationsUseCase getStratificationsUseCase(GeneralDataCatalogPort generalDataCatalog) {
         return new GetStratificationsService(generalDataCatalog);
+    }
+
+    @Bean
+    public GetPrimaryActivitiesUseCase getPrimaryActivitiesUseCase(GeneralDataCatalogPort generalDataCatalog) {
+        return new GetPrimaryActivitiesService(generalDataCatalog);
     }
 }

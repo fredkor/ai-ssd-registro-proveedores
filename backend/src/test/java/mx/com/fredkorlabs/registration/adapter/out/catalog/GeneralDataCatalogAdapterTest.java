@@ -213,6 +213,22 @@ class GeneralDataCatalogAdapterTest {
         assertEquals("boolean", columnType("stratification", "active"));
     }
 
+    @Test
+    void US08_CA022_primaryActivities_loadTheWholeCatalogOrderedById() {
+        List<CatalogRecord> found = adapter.findPrimaryActivities();
+
+        assertEquals(8, found.size());
+        assertEquals(new CatalogRecord(1, "RECURSOS NATURALES"), found.getFirst());
+        assertEquals(new CatalogRecord(3, "FABRICACIÓN PRODUCCIÓN O ELABORACIÓN"), found.get(2));
+        assertEquals(new CatalogRecord(8, "COMERCIO AL POR MENOR"), found.getLast());
+    }
+
+    @Test
+    void ADR0017_primaryActivitySchema_usesApprovedSqlTypes() {
+        assertEquals("integer", columnType("primary_activity", "id"));
+        assertEquals("character varying(500)", columnType("primary_activity", "description"));
+    }
+
     private String columnType(String column) {
         return columnType("country", column);
     }
