@@ -65,6 +65,7 @@ classDiagram
         <<enumeration>>
         LEGAL_ENTITY
         INDIVIDUAL
+        +catalogId() int
     }
     class NoticeAcceptance {
         <<ValueObject>>
@@ -289,7 +290,7 @@ de campos sin CA individual, se indica expresamente.
 
 | ID | Regla | Dónde se garantiza | Fuente | Criterios o detalle funcional |
 | :--- | :--- | :--- | :--- | :--- |
-| INV-14 | El régimen se calcula con la longitud del RFC: 12 para PERSONA MORAL y 13 para PERSONA FÍSICA. Es de solo lectura. | Dominio: cálculo; interfaz: solo lectura. | RF-REG-05 | US08 CA-011, CA-012 |
+| INV-14 | El régimen se calcula con la longitud del RFC: 12 para PERSONA MORAL y 13 para PERSONA FÍSICA. Es de solo lectura. Se persiste en `supplier_registration.tax_regime_id` para reportes, con un check que lo ata a la longitud del RFC. | Dominio: cálculo; interfaz: solo lectura; persistencia: copia para reportes. | RF-REG-05 | US08 CA-011, CA-012 |
 | INV-15 | Usuario es el RFC convertido a minúsculas, de solo lectura, y se muestra desde la primera identificación exitosa. | Dominio: valor derivado; aplicación e interfaz: presentación. | RF-REG-05 | US08 CA-019 |
 | INV-16 | Origen es obligatorio y lo selecciona el proveedor entre Nacional y Extranjero. | Dominio: catálogo fijo y obligatoriedad; interfaz: selección. | RF-REG-05 | US08 CA-017 |
 | INV-17 | País es obligatorio. Para Nacional debe ser México y de solo lectura; para Extranjero se selecciona del catálogo. | Dominio: coherencia de país y origen; aplicación: catálogo; interfaz. | RF-REG-05 | US08 CA-009, CA-010 |
