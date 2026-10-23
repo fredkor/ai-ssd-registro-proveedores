@@ -11,6 +11,7 @@ import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.LegalOwner
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.Origin;
 import mx.com.fredkorlabs.registration.adapter.in.web.generated.model.TaxRegime;
 import mx.com.fredkorlabs.registration.application.port.in.CatalogOptionsResult;
+import mx.com.fredkorlabs.registration.application.port.in.GetAnnualSalesRangesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetBusinessActivitiesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetCountriesUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetLegalOwnershipsQuery;
@@ -39,6 +40,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
     private final GetStratificationsUseCase getStratifications;
     private final GetPrimaryActivitiesUseCase getPrimaryActivities;
     private final GetWorkerCountRangesUseCase getWorkerCountRanges;
+    private final GetAnnualSalesRangesUseCase getAnnualSalesRanges;
 
     public RegistrationCatalogsController(GetCountriesUseCase getCountries,
                                           GetLegalOwnershipsUseCase getLegalOwnerships,
@@ -47,7 +49,8 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
                                           GetBusinessActivitiesUseCase getBusinessActivities,
                                           GetStratificationsUseCase getStratifications,
                                           GetPrimaryActivitiesUseCase getPrimaryActivities,
-                                          GetWorkerCountRangesUseCase getWorkerCountRanges) {
+                                          GetWorkerCountRangesUseCase getWorkerCountRanges,
+                                          GetAnnualSalesRangesUseCase getAnnualSalesRanges) {
         this.getCountries = getCountries;
         this.getLegalOwnerships = getLegalOwnerships;
         this.getSectors = getSectors;
@@ -56,6 +59,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
         this.getStratifications = getStratifications;
         this.getPrimaryActivities = getPrimaryActivities;
         this.getWorkerCountRanges = getWorkerCountRanges;
+        this.getAnnualSalesRanges = getAnnualSalesRanges;
     }
 
     @Override
@@ -113,7 +117,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
 
     @Override
     public ResponseEntity<CatalogOptionListResponse> getAnnualSalesRanges() {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        return ResponseEntity.ok(toCatalogOptions(getAnnualSalesRanges.execute()));
     }
 
     @Override

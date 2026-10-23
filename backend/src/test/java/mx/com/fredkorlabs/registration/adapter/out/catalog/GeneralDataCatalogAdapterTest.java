@@ -243,6 +243,19 @@ class GeneralDataCatalogAdapterTest {
         assertEquals("character varying(500)", columnType("worker_count_range", "description"));
     }
 
+    @Test
+    void US08_CA022_annualSalesRanges_loadTheWholeCatalogOrderedById() {
+        assertEquals(List.of(new CatalogRecord(1, "$0 - $4 MILLONES"), new CatalogRecord(2, "$4 - $100 MILLONES"),
+                new CatalogRecord(3, "$100 - $250 MILLONES"), new CatalogRecord(4, "MÁS DE $250 MILLONES")),
+            adapter.findAnnualSalesRanges());
+    }
+
+    @Test
+    void ADR0017_annualSalesRangeSchema_usesApprovedSqlTypes() {
+        assertEquals("integer", columnType("annual_sales_range", "id"));
+        assertEquals("character varying(500)", columnType("annual_sales_range", "description"));
+    }
+
     private String columnType(String column) {
         return columnType("country", column);
     }

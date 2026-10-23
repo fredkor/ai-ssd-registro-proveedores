@@ -33,4 +33,7 @@ public interface GeneralDataCatalogPort {
 
     /** Every worker count range (Número de trabajadores), ordered by id. */
     List<CatalogRecord> findWorkerCountRanges();
+
+    /** Every annual sales range (Ventas anuales), ordered by id. */
+    List<CatalogRecord> findAnnualSalesRanges();
 }
