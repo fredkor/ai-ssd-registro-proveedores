@@ -19,6 +19,7 @@ Jurídica se entregaba completa y el frontend la filtraba.
 
 | Catálogo | Operación | Ruta (`/api/v1/registration-catalogs/...`) | Caso de uso |
 | :--- | :--- | :--- | :--- |
+| Régimen | `getTaxRegimes` | `tax-regimes` | `GetTaxRegimesUseCase` |
 | País | `getCountries` | `countries` | `GetCountriesUseCase` |
 | Titularidad jurídica | `getLegalOwnerships` | `legal-ownerships?origin=&countryCode=&taxRegime=` | `GetLegalOwnershipsUseCase` |
 | Sector | `getSectors` | `sectors` | `GetSectorsUseCase` |
@@ -32,6 +33,9 @@ Jurídica se entregaba completa y el frontend la filtraba.
 - Cada respuesta es un objeto `{ "items": [...] }`, sin paginación, ordenado de forma ascendente
   por `id`, salvo Titularidad Jurídica, que se ordena por `key` (`domain/catalogs.md`). Los catálogos
   con campo `active` (hoy Estratificación) devuelven solo los registros activos.
+- **Régimen** (decisión del 2026-10-23): el frontend muestra la descripción del régimen del
+  solicitante. El catálogo devuelve `id` y `description`, como los demás, y la identidad del
+  solicitante trae `taxRegimeId` con el ID del catálogo (`domain/catalogs.md`).
 - **Subsector:** el sector forma parte de la ruta. Un sector inexistente responde 200 con lista
   vacía; un `sectorId` que no es entero responde VALIDATION_ERROR con `parameter` (ADR-0019).
 - **Titularidad Jurídica se filtra en el backend** con el algoritmo de `domain/catalogs.md`:

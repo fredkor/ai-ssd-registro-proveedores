@@ -22,6 +22,7 @@ Cubre la primera etapa, sin captura de Contactos ni finalización.
 | Cargar cédula | POST `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `uploadFiscalDocument` |
 | Eliminar cédula | DELETE `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `deleteFiscalDocument` |
 | Descargar cédula | GET `/api/v1/supplier-registrations/{registrationId}/fiscal-document` | `downloadFiscalDocument` |
+| Consultar catálogo: Régimen | GET `/api/v1/registration-catalogs/tax-regimes` | `getTaxRegimes` |
 | Consultar catálogo: País | GET `/api/v1/registration-catalogs/countries` | `getCountries` |
 | Consultar catálogo: Titularidad jurídica | GET `/api/v1/registration-catalogs/legal-ownerships` | `getLegalOwnerships` |
 | Consultar catálogo: Sector | GET `/api/v1/registration-catalogs/sectors` | `getSectors` |

@@ -79,6 +79,7 @@ class IdentifyApplicantServiceTest {
         assertEquals("AAA010101AAA", result.rfc());
         assertEquals("EMPRESA CERTIFICADO SA", result.legalName());
         assertEquals("LEGAL_ENTITY", result.taxRegime());
+        assertEquals(1, result.taxRegimeId());
         assertEquals("aaa010101aaa", result.username());
     }
 

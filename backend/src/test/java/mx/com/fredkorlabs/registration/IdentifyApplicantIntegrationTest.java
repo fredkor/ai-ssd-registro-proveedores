@@ -72,6 +72,7 @@ class IdentifyApplicantIntegrationTest {
             .andExpect(jsonPath("$.identity.rfc").value("AAA010101AAA"))
             .andExpect(jsonPath("$.identity.legalName").value("EMPRESA EJEMPLO SA DE CV"))
             .andExpect(jsonPath("$.identity.taxRegime").value("LEGAL_ENTITY"))
+            .andExpect(jsonPath("$.identity.taxRegimeId").value(1))
             .andExpect(jsonPath("$.identity.username").value("aaa010101aaa"))
             .andReturn().getResponse().getContentAsString();
 

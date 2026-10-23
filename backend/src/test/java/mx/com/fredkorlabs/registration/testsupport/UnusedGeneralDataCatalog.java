@@ -13,6 +13,11 @@ import java.util.List;
 public class UnusedGeneralDataCatalog implements GeneralDataCatalogPort {
 
     @Override
+    public List<CatalogRecord> findTaxRegimes() {
+        throw unused();
+    }
+
+    @Override
     public List<CountryRecord> findCountries() {
         throw unused();
     }

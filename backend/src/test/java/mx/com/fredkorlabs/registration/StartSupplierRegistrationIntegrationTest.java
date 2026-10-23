@@ -174,7 +174,21 @@ class StartSupplierRegistrationIntegrationTest {
             .andExpect(jsonPath("$.identity.rfc").value("HEGT7610034S2"))
             .andExpect(jsonPath("$.identity.legalName").value("JOSÉ PÉREZ NÚÑEZ"))
             .andExpect(jsonPath("$.identity.taxRegime").value("INDIVIDUAL"))
+            .andExpect(jsonPath("$.identity.taxRegimeId").value(2))
             .andExpect(jsonPath("$.identity.username").value("hegt7610034s2"));
+    }
+
+    @Test
+    void INV14_newRegistration_storesTheTaxRegimeForReports() throws Exception {
+        String legalEntity = body(startWith(identify("legal-entity", "AAA010101AAA").token())
+            .andExpect(status().isCreated()).andReturn()).get("id").asString();
+        String individual = body(startWith(identify("individual", "HEGT7610034S2").token())
+            .andExpect(status().isCreated()).andReturn()).get("id").asString();
+
+        String sql = "SELECT d.description FROM supplier_registration r JOIN tax_regime d ON d.id = r.tax_regime_id"
+            + " WHERE r.id = ?";
+        assertEquals("PERSONA MORAL", jdbc.queryForObject(sql, String.class, UUID.fromString(legalEntity)));
+        assertEquals("PERSONA FÍSICA", jdbc.queryForObject(sql, String.class, UUID.fromString(individual)));
     }
 
     @Test

@@ -34,7 +34,9 @@ estado del expediente ni al catálogo de tipo de proveedor.
 
 ## 1. Catálogo Régimen
 
-[Valores del catálogo](catalog-values.md#catalog-1).
+[Valores del catálogo](catalog-values.md#catalog-1). Se consulta con `getTaxRegimes`. Los IDs se corresponden
+con los códigos técnicos: 1 `LEGAL_ENTITY` (PERSONA MORAL) y 2 `INDIVIDUAL` (PERSONA FÍSICA). La
+identidad del solicitante trae ese ID en `taxRegimeId` para mostrar la descripción del catálogo.
 
 ## 2. Catálogo Origen
 

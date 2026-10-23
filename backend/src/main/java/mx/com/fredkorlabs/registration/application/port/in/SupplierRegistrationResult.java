@@ -14,6 +14,7 @@ public record SupplierRegistrationResult(
     String rfc,
     String legalName,
     String taxRegime,
+    int taxRegimeId,
     String username,
     String noticeVersion,
     Instant noticeAcceptedAt,

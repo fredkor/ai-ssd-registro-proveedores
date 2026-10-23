@@ -107,7 +107,7 @@ public class SupplierRegistrationsController implements SupplierRegistrationsApi
             result.id(),
             RegistrationStatus.fromValue(result.status()),
             new ApplicantIdentityResponse(result.rfc(), result.legalName(), TaxRegime.fromValue(result.taxRegime()),
-                result.username()),
+                result.taxRegimeId(), result.username()),
             new NoticeAcceptanceResponse(NoticeAcceptanceResponse.VersionEnum.fromValue(result.noticeVersion()),
                 result.noticeAcceptedAt().atOffset(ZoneOffset.UTC), result.noticeAcceptanceId()),
             result.progress().stream()

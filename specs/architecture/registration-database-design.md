@@ -20,6 +20,7 @@ erDiagram
     supplierRegistration["supplier_registration"] {
         uuid id PK
         string rfc UK "12 o 13 caracteres; inmutable"
+        int tax_regime_id FK "Regimen derivado del RFC; inmutable"
         string legal_name "Extraido del certificado vigente al reanudar"
         string status "IN_PROGRESS o REGISTERED"
         uuid notice_acceptance_id FK,UK "Ultima aceptacion confirmada"
@@ -38,7 +39,11 @@ erDiagram
 ```
 
 - Un único expediente por RFC, respaldado por constraint. El RFC no se normaliza adicionalmente.
-  Régimen y Usuario se derivan de él; no se duplican como columnas editables.
+  Régimen y Usuario se derivan de él y no son editables. Usuario no se guarda.
+- `tax_regime_id` guarda el régimen para reportes (decisión del 2026-10-23): referencia
+  `tax_regime(id)` (1 PERSONA MORAL, 2 PERSONA FÍSICA), se asigna al crear el expediente y no
+  cambia, igual que el RFC. Un check impide que contradiga la longitud del RFC (12 → 1, 13 → 2), así
+  que INV-14 sigue siendo la fuente; la aplicación no lee la columna para decidir reglas.
 - La fila de `general_data` aparece al primer guardado válido. La captura incompleta del frontend
   no se persiste en esa tabla. Iniciar o reanudar abre Datos Generales sin guardar sección visible.
 - `section_progress` contiene exactamente una fila por cada una de las seis secciones del
@@ -298,7 +303,7 @@ adaptador de persistencia las reflejan; Hibernate solo valida (ADR-0017, ADR-001
 | `string` sin máximo de negocio | `text` | `legal_name`, `verified_legal_name`, `original_name`, `media_type`. No crea un límite de negocio. |
 | `string` técnico | `varchar(255)` | `relative_path`; `extension` usa `varchar(10)`. |
 | `text` | `text` | `complete_result`: JSON original sin pérdida. |
-| `int` | `integer` | FK a catálogos (IDs enteros; alinear con los tipos de catálogo al implementarlos). |
+| `int` | `integer` | FK a catálogos (IDs enteros; alinear con los tipos de catálogo al implementarlos), incluido `tax_regime_id`. |
 | `bigint` | `bigint` | `size_bytes`. |
 | `boolean` | `boolean` | `associated`. |
 | `datetime` | `timestamptz(6)`, en UTC | `accepted_at`, `issued_at`, `expires_at`, `uploaded_at`. |

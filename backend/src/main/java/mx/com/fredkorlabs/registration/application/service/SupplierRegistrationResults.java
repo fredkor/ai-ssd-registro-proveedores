@@ -28,6 +28,7 @@ final class SupplierRegistrationResults {
             identity.rfc().value(),
             identity.legalName(),
             identity.taxRegime().name(),
+            identity.taxRegime().catalogId(),
             identity.username().value(),
             registration.latestAcceptance().version(),
             registration.latestAcceptance().acceptedAt(),

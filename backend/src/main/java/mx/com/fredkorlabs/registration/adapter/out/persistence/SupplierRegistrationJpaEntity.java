@@ -14,8 +14,10 @@ import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationSection;
 import mx.com.fredkorlabs.registration.domain.model.RegistrationStatus;
+import mx.com.fredkorlabs.registration.domain.model.Rfc;
 import mx.com.fredkorlabs.registration.domain.model.SectionStatus;
 import org.springframework.data.domain.Persistable;
 
@@ -36,6 +38,10 @@ public class SupplierRegistrationJpaEntity implements Persistable<UUID> {
 
     @Column(name = "rfc", nullable = false, updatable = false, length = 13)
     private String rfc;
+
+    // Copy of the regime derived from the RFC, for reports (design §1); a check ties it to the RFC length.
+    @Column(name = "tax_regime_id", nullable = false, updatable = false)
+    private Integer taxRegimeId;
 
     @Column(name = "legal_name", nullable = false, columnDefinition = "text")
     private String legalName;
@@ -74,6 +80,7 @@ public class SupplierRegistrationJpaEntity implements Persistable<UUID> {
                                          UUID noticeAcceptanceId, UUID initialEvidenceId) {
         this.id = id;
         this.rfc = rfc;
+        this.taxRegimeId = new ApplicantIdentity(new Rfc(rfc), legalName).taxRegime().catalogId();
         this.legalName = legalName;
         this.status = status;
         this.noticeAcceptanceId = noticeAcceptanceId;
@@ -92,6 +99,8 @@ public class SupplierRegistrationJpaEntity implements Persistable<UUID> {
     void markPersisted() { persisted = true; }
 
     public String getRfc() { return rfc; }
+
+    public Integer getTaxRegimeId() { return taxRegimeId; }
 
     public String getLegalName() { return legalName; }
 
