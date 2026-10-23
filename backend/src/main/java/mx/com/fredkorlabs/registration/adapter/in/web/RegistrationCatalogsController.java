@@ -20,6 +20,7 @@ import mx.com.fredkorlabs.registration.application.port.in.GetSectorsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetStratificationsUseCase;
 import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsQuery;
 import mx.com.fredkorlabs.registration.application.port.in.GetSubsectorsUseCase;
+import mx.com.fredkorlabs.registration.application.port.in.GetWorkerCountRangesUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -37,6 +38,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
     private final GetBusinessActivitiesUseCase getBusinessActivities;
     private final GetStratificationsUseCase getStratifications;
     private final GetPrimaryActivitiesUseCase getPrimaryActivities;
+    private final GetWorkerCountRangesUseCase getWorkerCountRanges;
 
     public RegistrationCatalogsController(GetCountriesUseCase getCountries,
                                           GetLegalOwnershipsUseCase getLegalOwnerships,
@@ -44,7 +46,8 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
                                           GetSubsectorsUseCase getSubsectors,
                                           GetBusinessActivitiesUseCase getBusinessActivities,
                                           GetStratificationsUseCase getStratifications,
-                                          GetPrimaryActivitiesUseCase getPrimaryActivities) {
+                                          GetPrimaryActivitiesUseCase getPrimaryActivities,
+                                          GetWorkerCountRangesUseCase getWorkerCountRanges) {
         this.getCountries = getCountries;
         this.getLegalOwnerships = getLegalOwnerships;
         this.getSectors = getSectors;
@@ -52,6 +55,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
         this.getBusinessActivities = getBusinessActivities;
         this.getStratifications = getStratifications;
         this.getPrimaryActivities = getPrimaryActivities;
+        this.getWorkerCountRanges = getWorkerCountRanges;
     }
 
     @Override
@@ -104,7 +108,7 @@ public class RegistrationCatalogsController implements RegistrationCatalogsApi {
 
     @Override
     public ResponseEntity<CatalogOptionListResponse> getWorkerCountRanges() {
-        throw new UnsupportedOperationException("Not implemented in this iteration");
+        return ResponseEntity.ok(toCatalogOptions(getWorkerCountRanges.execute()));
     }
 
     @Override

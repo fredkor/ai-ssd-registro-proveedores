@@ -229,6 +229,20 @@ class GeneralDataCatalogAdapterTest {
         assertEquals("character varying(500)", columnType("primary_activity", "description"));
     }
 
+    @Test
+    void US08_CA022_workerCountRanges_loadTheWholeCatalogOrderedById() {
+        assertEquals(List.of(new CatalogRecord(1, "0"), new CatalogRecord(2, "1-10"), new CatalogRecord(3, "11-30"),
+                new CatalogRecord(4, "31-50"), new CatalogRecord(5, "51-100"), new CatalogRecord(6, "101-251"),
+                new CatalogRecord(7, "MÁS DE 251")),
+            adapter.findWorkerCountRanges());
+    }
+
+    @Test
+    void ADR0017_workerCountRangeSchema_usesApprovedSqlTypes() {
+        assertEquals("integer", columnType("worker_count_range", "id"));
+        assertEquals("character varying(500)", columnType("worker_count_range", "description"));
+    }
+
     private String columnType(String column) {
         return columnType("country", column);
     }
