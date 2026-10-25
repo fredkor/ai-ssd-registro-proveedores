@@ -7,7 +7,8 @@ Verifica que specs/, código, pruebas y documentación digan lo mismo, siguiendo
 ## Paso 1 — Verificación automática (determinista)
 Ejecuta y reporta la salida completa:
 1. `python3 tools/spec_lint.py --require-ready` — coherencia de specs y contrato.
-2. `python3 tools/spec_sync.py --md docs/sync-report.md` — informe automático (se regenera siempre; no lo edites):
+2. `python3 tools/spec_sync.py --md docs/sync-report.md` — informe automático (se regenera siempre, no se edita y se
+   versiona junto con la revisión de `docs/revisiones/`):
    operaciones implementadas, traceability, criterios de aceptación con prueba, invariantes, índice de ADR,
    tipos de architecture.md, stack y regla de dependencia (reglas en `tools/README.md`).
 3. `./mvnw test` desde `backend/`, con Docker (en Windows `.\mvnw.cmd test`) — número de pruebas, fallos y omitidas.

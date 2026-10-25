@@ -29,7 +29,7 @@ public record CucopParticipation(
 
     /**
      * Validates a whole submission (INV-31) and reports every broken rule. {@code catalogItems} holds the specific
-     * items of the catalog among the submitted ids; an id missing from it is not a specific item (INV-32).
+     * items of the catalog among the submitted ids; an id missing from it is not a specific item (INV-31).
      */
     public static CucopParticipation validate(List<ParticipationType> participationTypes,
                                               List<Integer> specificItemIds,

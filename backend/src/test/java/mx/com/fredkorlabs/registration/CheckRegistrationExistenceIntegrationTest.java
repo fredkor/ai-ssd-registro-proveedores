@@ -122,7 +122,7 @@ class CheckRegistrationExistenceIntegrationTest {
     }
 
     @Test
-    void US02_CA004_withoutToken_returns401() throws Exception {
+    void ADR0015_withoutToken_returns401() throws Exception {
         mockMvc.perform(get(PATH))
             .andExpect(status().isUnauthorized())
             .andExpect(jsonPath("$.code").value("REGISTRATION_TOKEN_INVALID"));

@@ -30,7 +30,7 @@ Usa `/clear` entre pasos: cada paso empieza leyendo las specs, no el historial.
 | 4 | `/diagramas` | Diagramas de `architecture.md`, `domain-model.md` y diseño de BD contrastados con el código. Commit `design:` si alguno quedó atrás. |
 | 5 | `/documentar` | `docs/tecnica/` completa, con fuente citada en cada sección. Commit `docs:`. |
 | 6 | Demostrar la gestión de un cambio de negocio, por ejemplo: `/cambio-spec Agregar un rango al catálogo de Número de trabajadores` | Impacto completo: `catalogs.md` y `catalog-values.md` → migración Flyway → pruebas de catálogo → docs → Postman. Ejecuta luego `/implementar` o el `fix:` que indique, `/sincronizar` y `/documentar`. |
-| 7 | `/documentacion-final` | `docs/entrega/` con la evidencia de `spec_lint`, `spec_sync` y las pruebas. Commit `docs:` y tag propuesto `v1.0.0`. |
+| 7 | `/documentacion-final` | `docs/entrega/` con la evidencia de `spec_lint`, `spec_sync` y las pruebas. Commit `docs:` y etiqueta de fase propuesta `etapa-1`. |
 
 ## Criterio de éxito del caso práctico
 - `python tools/spec_lint.py` y `python tools/spec_sync.py` dan **OK**.

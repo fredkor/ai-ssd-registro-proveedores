@@ -308,7 +308,7 @@ de campos sin CA individual, se indica expresamente.
 | ID | Regla | Dónde se garantiza | Fuente | Criterios o detalle funcional |
 | :--- | :--- | :--- | :--- | :--- |
 | INV-26 | Solo persona moral captura teléfonos y requiere al menos uno para avanzar. Cada fila debe tener número de 10 dígitos; extensión opcional de hasta 5 caracteres. Filas incompletas o inválidas impiden avanzar. | Dominio: colección y valores telefónicos; aplicación: validar guardado. | RF-REG-05 | US09 CA-001, CA-003, CA-004, CA-005 |
-| INV-27 | La cédula fiscal es obligatoria para Nacional y Extranjero al completar Datos Generales; se admite un solo PDF de máximo 5 MiB (5,242,880 bytes). | Dominio: obligatoriedad y cantidad; aplicación y adaptador de archivos: formato y tamaño. | RF-REG-05 | US10 CA-002, CA-003, CA-004 |
+| INV-27 | La cédula fiscal es obligatoria para Nacional y Extranjero al completar Datos Generales; se admite un solo PDF de máximo 5 MiB (5,242,880 bytes). | Dominio: obligatoriedad, cantidad, formato y tamaño (`FiscalDocumentFormat`); aplicación: validar antes de conservar; adaptador de archivos: guardar el contenido. | RF-REG-05 | US10 CA-002, CA-003, CA-004 |
 | INV-28 | La carga exitosa conserva y asocia inmediatamente el archivo, incluso sin Siguiente; volver o reanudar lo recupera. Cargar no completa Datos Generales. | Aplicación, almacenamiento y persistencia de la carga. | RF-REG-05 | US10 CA-005 a CA-007, CA-010 |
 | INV-29 | Eliminar exige confirmación; desasociación, marca de metadatos y progreso se confirman en una transacción de BD, sin borrar contenido físico. Fallo conserva estado previo; éxito deja Datos Generales PENDING y CUCoP intacto. | Interfaz, aplicación y persistencia; limpieza física por ADR-0010. | RF-REG-05 | US10 CA-006, CA-007, CA-011 |
 
@@ -458,7 +458,7 @@ Deshacer selección. La aplicación resuelve las específicas seleccionadas cont
 una casilla de la interfaz no sustituye la referencia al registro del catálogo. El modelo
 no exige guardar la estructura visual, filtros de búsqueda, paginación ni estados de expansión.
 Del mismo modo que en Datos Generales, `CucopParticipationViolation` registra cada regla incumplida con
-su campo (p. ej. `specificItemIds/2`) y su motivo (INV-31, INV-32).
+su campo (p. ej. `specificItemIds/2`) y su motivo (INV-31).
 
 ### 5.5. Catálogos de referencia
 

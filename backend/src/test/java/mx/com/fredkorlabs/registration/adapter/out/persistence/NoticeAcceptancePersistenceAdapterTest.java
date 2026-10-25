@@ -59,7 +59,7 @@ class NoticeAcceptancePersistenceAdapterTest {
     }
 
     @Test
-    void US03_CA003_schema_usesApprovedSqlTypes() {
+    void ADR0017_noticeAcceptanceSchema_usesApprovedSqlTypes() {
         assertEquals("uuid", columnType("id"));
         assertEquals("character varying(3)", columnType("version"));
         assertEquals("timestamp(6) with time zone", columnType("accepted_at"));

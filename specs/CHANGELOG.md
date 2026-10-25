@@ -103,3 +103,14 @@ compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spe
   `specs/traceability.md` §5, `specs/architecture/tech-stack.md`.
 - **Contrato:** sin cambios.
 - **Commits:** `design:` (este cambio); después `docs:` con las colecciones y el PDF de ejemplo.
+
+## 2026-10-25 — Dónde se garantiza INV-27 e invariante de la selección CUCoP
+
+- **Descripción:** INV-27 se garantiza en el dominio también para formato y tamaño
+  (`FiscalDocumentFormat`); la aplicación lo invoca antes de conservar y el adaptador guarda el
+  contenido, como ya describía §4. Las violaciones de CUCoP citan solo INV-31: que cada ID sea una
+  partida específica es parte de INV-31 y §5.4; INV-32 es la jerarquía del catálogo.
+- **Motivo:** sincronización del 2026-10-25, SYNC-20261025-01 y -04 (opción a).
+- **Archivos:** `specs/architecture/domain-model.md` §3 (INV-27) y §5.4.
+- **Contrato:** sin cambios.
+- **Commits:** `design:` (este cambio) y `test:` (nombre de la prueba y comentario de `CucopParticipation`).

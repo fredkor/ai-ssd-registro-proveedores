@@ -110,7 +110,7 @@ class SupplierRegistrationPersistenceAdapterTest {
     }
 
     @Test
-    void US02_CA003_database_rejectsUnknownStatus() {
+    void ADR0017_database_rejectsUnknownStatus() {
         SupplierRegistrationJpaEntity saved = registration("FFF010101FFF", RegistrationStatus.IN_PROGRESS);
 
         assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
@@ -173,7 +173,7 @@ class SupplierRegistrationPersistenceAdapterTest {
     }
 
     @Test
-    void US04_CA002_database_rejectsUnknownSection() {
+    void ADR0017_database_rejectsUnknownSection() {
         Inserted inserted = insert("LLL010101LLL");
 
         assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
@@ -182,7 +182,7 @@ class SupplierRegistrationPersistenceAdapterTest {
     }
 
     @Test
-    void US04_CA001_schema_usesApprovedSqlTypes() {
+    void ADR0017_registrationSchema_usesApprovedSqlTypes() {
         assertEquals("character varying(32)", columnType("section_progress", "section"));
         assertEquals("character varying(32)", columnType("section_progress", "status"));
         assertEquals("uuid", columnType("registration_signature_evidence", "signature_evidence_id"));
@@ -479,7 +479,7 @@ class SupplierRegistrationPersistenceAdapterTest {
     }
 
     @Test
-    void INV32_database_rejectsSelectionsThatAreNotSpecificItems() {
+    void INV31_database_rejectsSelectionsThatAreNotSpecificItems() {
         SupplierRegistrationId id = insert("CUE010101CUE").registration().id();
         withCucop(id, new CucopParticipation(Set.of(ParticipationType.GOODS_AND_SERVICES_SUPPLIER), Set.of(OFFICE)));
 
