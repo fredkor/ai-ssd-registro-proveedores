@@ -1,0 +1,575 @@
+{
+  "info": {
+    "_postman_id": "8e6f6a85-b211-5304-bd8c-67eb26370c82",
+    "name": "Registro de proveedores — flujo",
+    "description": "Recorre el ciclo de vida de specs/domain/supplier-registration-lifecycle.md contra la aplicación en ejecución (ADR-0021). Complementa ./mvnw test; no lo reemplaza. Mantenida a mano.\n\nEjecutar en orden con el Collection Runner o con newman desde la raíz del repositorio, para que la cédula se resuelva en postman/fixtures/cedula-ejemplo.pdf.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{registrationToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "01 Consultar Política de Aviso",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 con la versión 1.0 del aviso', () => {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().version).to.eql('1.0');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/registration-notices/current",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "registration-notices",
+            "current"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      }
+    },
+    {
+      "name": "02 Aceptar el aviso",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 con la referencia de aceptación', () => {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().acceptanceId).to.be.a('string');",
+              "});",
+              "// Variable local de la ejecución: solo la usa la identificación siguiente.",
+              "pm.variables.set('noticeAcceptanceId', pm.response.json().acceptanceId);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/registration-notice-acceptances",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "registration-notice-acceptances"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"version\": \"1.0\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "03 Identificar con el fixture legal-entity",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Certificado y sello de prueba de backend/src/test/resources/signature/fixtures.json (ADR-0016).",
+              "pm.test('200 con token e identidad del certificado', () => {",
+              "    pm.response.to.have.status(200);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.identity.rfc).to.eql('AAA010101AAA');",
+              "    pm.expect(body.identity.taxRegime).to.eql('LEGAL_ENTITY');",
+              "    pm.collectionVariables.set('registrationToken', body.registrationToken);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/applicant-identifications",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "applicant-identifications"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"noticeAcceptanceId\": \"{{noticeAcceptanceId}}\",\n  \"signatureResult\": {\n    \"resultado\": true,\n    \"fechaVigencia\": \"2030-01-01T00:00:00Z\",\n    \"mensaje\": \"OK\",\n    \"cadenaOriginal\": \"Temporal\",\n    \"certificado\": \"MIIDJTCCAg2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMRwwGgYDVQQDDBNBVVRPUklEQUQgREUgUFJVRUJBMB4XDTI2MDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowgY0xITAfBgNVBAMMGEVNUFJFU0EgRUpFTVBMTyBTQSBERSBDVjEhMB8GA1UEKQwYRU1QUkVTQSBFSkVNUExPIFNBIERFIENWMSEwHwYDVQQKDBhFTVBSRVNBIEVKRU1QTE8gU0EgREUgQ1YxCzAJBgNVBAYMAk1YMRUwEwYDVQQtDAxBQUEwMTAxMDFBQUEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC+GFx6x6dup/z5b/Fg/EmrkOLpO3ERfbhDYGamBML7c+sfyRCKjxtJnGx+C3UhVkB92XqgAtGzSf5EkQCH0NCKMsvDSFBUk1PUAl/MX6QrLGnMzlemricivG7A9OOAGWwGSsugytAaFrbAtbKGRPKAyHoLTQmYsKDyc4HbX51OwEMwa77HvkRBDylIPD0hHCN+V+3lT7/Biu3LCc1utMbxyIa49NrIBs3a6LCtvuGCaA+6uyDVba2dfsHqA+vgTDgV+E+1bPmb9j7A3/mFeCBAHYOLjaHLAQa2TKvbpUD3hOcdP3Qnn8xPjUp9CvVIntZLSy+CPv9mmhksDL2drBtTAgMBAAEwDQYJKoZIhvcNAQELBQADggEBACRV7742zVVFYN1uCksMsQU3Xq9Lyw3OF1zg92IxmxqwogBNbuQmakt8ppL8sEnlqJL/XrUgRFyH/HlI/7XUAIT3uW/pXRqmoUoVgNclOpvyqUh5XHdGI80ulQBBmCjR+lIiwx4oC0Oyx1aW+ppoDmEex5pslmlkuJ7Gi+X//nrMtI2PYvadC8p+2f5y8zQnjPi84DoX/bmJr8yfwmi0B0q6pMOl7mvUtOsnlHg/G2iu2QtmuwRN60N0z8UfnOWUIOHIk90/9QV3XvCFeOBaQ7/g4MTWTqeIhlVA6DgHqZRZvWDn9bkkEoju+hhsCO4y/MnCO2wxLIQZEC6jq/iTsSM=\",\n    \"cadenaFirma\": \"a7OmRR4Wpx2PIP3P0yVakjNMGUps33lTjfGzXznoA5AjmDGfk/SYqHXK3MT9JYkFphxjghbon1Cs2D6qr6UBSurxHW1qnMix5GpAU9Ijwwa18wtcNuqsCmIgoUssq4WUHRS/0TMag8WA+FN98Df5/YtGM7Xm8x0ttaXElVqyGFF7kdIJZfBQc155h5wZ/Yd9U+Fk1olGYhbwxIRCjxmsAdJMgw6Rj3/TkWlvLloJQwFzWLZ9++yzpewZ0btf2AlnMNfhZyPz6DdpTw6NU4PI/hOeTHY4A5kdCKsMUJsmchy0CMj1KEoNrgVrZ86o5fMFsr6Q5srrEKPL0O+NpqMRGQ==\",\n    \"rfc\": \"AAA010101AAA\",\n    \"curp\": null,\n    \"razonSocial\": \"RAZON SOCIAL PKI\",\n    \"numeroSerie\": 30001000000500003416,\n    \"tipoCertificado\": 1,\n    \"certificadoPem\": \"-----BEGIN CERTIFICATE-----\\r\\nMIIDJTCCAg2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMRwwGgYDVQQDDBNBVVRP\\r\\nUklEQUQgREUgUFJVRUJBMB4XDTI2MDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFow\\r\\ngY0xITAfBgNVBAMMGEVNUFJFU0EgRUpFTVBMTyBTQSBERSBDVjEhMB8GA1UEKQwY\\r\\nRU1QUkVTQSBFSkVNUExPIFNBIERFIENWMSEwHwYDVQQKDBhFTVBSRVNBIEVKRU1Q\\r\\nTE8gU0EgREUgQ1YxCzAJBgNVBAYMAk1YMRUwEwYDVQQtDAxBQUEwMTAxMDFBQUEw\\r\\nggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC+GFx6x6dup/z5b/Fg/Emr\\r\\nkOLpO3ERfbhDYGamBML7c+sfyRCKjxtJnGx+C3UhVkB92XqgAtGzSf5EkQCH0NCK\\r\\nMsvDSFBUk1PUAl/MX6QrLGnMzlemricivG7A9OOAGWwGSsugytAaFrbAtbKGRPKA\\r\\nyHoLTQmYsKDyc4HbX51OwEMwa77HvkRBDylIPD0hHCN+V+3lT7/Biu3LCc1utMbx\\r\\nyIa49NrIBs3a6LCtvuGCaA+6uyDVba2dfsHqA+vgTDgV+E+1bPmb9j7A3/mFeCBA\\r\\nHYOLjaHLAQa2TKvbpUD3hOcdP3Qnn8xPjUp9CvVIntZLSy+CPv9mmhksDL2drBtT\\r\\nAgMBAAEwDQYJKoZIhvcNAQELBQADggEBACRV7742zVVFYN1uCksMsQU3Xq9Lyw3O\\r\\nF1zg92IxmxqwogBNbuQmakt8ppL8sEnlqJL/XrUgRFyH/HlI/7XUAIT3uW/pXRqm\\r\\noUoVgNclOpvyqUh5XHdGI80ulQBBmCjR+lIiwx4oC0Oyx1aW+ppoDmEex5pslmlk\\r\\nuJ7Gi+X//nrMtI2PYvadC8p+2f5y8zQnjPi84DoX/bmJr8yfwmi0B0q6pMOl7mvU\\r\\ntOsnlHg/G2iu2QtmuwRN60N0z8UfnOWUIOHIk90/9QV3XvCFeOBaQ7/g4MTWTqeI\\r\\nhlVA6DgHqZRZvWDn9bkkEoju+hhsCO4y/MnCO2wxLIQZEC6jq/iTsSM=\\r\\n-----END CERTIFICATE-----\\r\\n\",\n    \"isVigente\": true,\n    \"origen\": \"COMPONENTE\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "04 Consultar existencia del expediente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// pm.execution.setNextRequest solo existe en versiones recientes; postman.setNextRequest, en todas.",
+              "const goTo = name => pm.execution && typeof pm.execution.setNextRequest === 'function'",
+              "    ? pm.execution.setNextRequest(name) : postman.setNextRequest(name);",
+              "pm.test('200 con la existencia del expediente', () => pm.response.to.have.status(200));",
+              "const existence = pm.response.json();",
+              "if (existence.exists && existence.status === 'IN_PROGRESS') {",
+              "    // La base de desarrollo es duradera: el RFC del fixture ya tiene expediente y se reanuda.",
+              "    pm.collectionVariables.set('registrationId', existence.registrationId);",
+              "    goTo('05b Reanudar expediente existente');",
+              "} else if (existence.exists) {",
+              "    pm.test('El expediente no está REGISTERED', () => pm.expect(existence.status).to.eql('IN_PROGRESS'));",
+              "    goTo(null);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/supplier-registrations/existence",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "supplier-registrations",
+            "existence"
+          ]
+        }
+      }
+    },
+    {
+      "name": "05a Crear expediente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// pm.execution.setNextRequest solo existe en versiones recientes; postman.setNextRequest, en todas.",
+              "const goTo = name => pm.execution && typeof pm.execution.setNextRequest === 'function'",
+              "    ? pm.execution.setNextRequest(name) : postman.setNextRequest(name);",
+              "pm.test('201 con el expediente IN_PROGRESS', () => {",
+              "    pm.response.to.have.status(201);",
+              "    pm.expect(pm.response.json().status).to.eql('IN_PROGRESS');",
+              "});",
+              "pm.collectionVariables.set('registrationId', pm.response.json().id);",
+              "goTo('06 Cargar cédula fiscal');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/supplier-registrations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "supplier-registrations"
+          ]
+        }
+      }
+    },
+    {
+      "name": "05b Reanudar expediente existente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 con el mismo expediente', () => {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('registrationId'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/supplier-registrations/{{registrationId}}/resume",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "supplier-registrations",
+            "{{registrationId}}",
+            "resume"
+          ]
+        }
+      }
+    },
+    {
+      "name": "06 Cargar cédula fiscal",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 con la cédula asociada', () => {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().originalName).to.eql('cedula-ejemplo.pdf');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/supplier-registrations/{{registrationId}}/fiscal-document",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "supplier-registrations",
+            "{{registrationId}}",
+            "fiscal-document"
+          ]
+        },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "postman/fixtures/cedula-ejemplo.pdf"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "07 Guardar Datos Generales",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200: GENERAL_DATA COMPLETED y continúa a CUCOP', () => {",
+              "    pm.response.to.have.status(200);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.status).to.eql('COMPLETED');",
+              "    pm.expect(body.nextSection).to.eql('CUCOP');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/supplier-registrations/{{registrationId}}/general-data",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "supplier-registrations",
+            "{{registrationId}}",
+            "general-data"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"origin\": \"NATIONAL\",\n  \"countryId\": 151,\n  \"nationality\": \"Mexicana\",\n  \"foreignFiscalCode\": null,\n  \"legalOwnershipId\": 1,\n  \"sectorId\": 5,\n  \"subsectorId\": 21,\n  \"businessActivityId\": 1,\n  \"stratificationId\": 2,\n  \"primaryActivityId\": 3,\n  \"workerCountRangeId\": 4,\n  \"annualSalesRangeId\": 2,\n  \"website\": \"https://empresa.com\",\n  \"phones\": [\n    {\n      \"number\": \"5512345678\",\n      \"extension\": \"12\"\n    },\n    {\n      \"number\": \"0012345678\",\n      \"extension\": null\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "08 Guardar CUCoP",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200: CUCOP COMPLETED y continúa a CONTACTS', () => {",
+              "    pm.response.to.have.status(200);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.status).to.eql('COMPLETED');",
+              "    pm.expect(body.nextSection).to.eql('CONTACTS');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/supplier-registrations/{{registrationId}}/cucop",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "supplier-registrations",
+            "{{registrationId}}",
+            "cucop"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"participationTypes\": [\n    \"GOODS_AND_SERVICES_SUPPLIER\",\n    \"PUBLIC_WORKS_CONTRACTOR\"\n  ],\n  \"specificItemIds\": [\n    1,\n    2\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "09 Reanudar con las secciones guardadas",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const progress = s => pm.response.json().progress.find(p => p.section === s).status;",
+              "pm.test('200 con Datos Generales, cédula y CUCoP', () => {",
+              "    pm.response.to.have.status(200);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.generalData.countryId).to.eql(151);",
+              "    pm.expect(body.fiscalDocument.originalName).to.eql('cedula-ejemplo.pdf');",
+              "    pm.expect(body.cucopParticipation.specificItems.map(i => i.id)).to.eql([1, 2]);",
+              "    pm.expect(progress('GENERAL_DATA')).to.eql('COMPLETED');",
+              "    pm.expect(progress('CUCOP')).to.eql('COMPLETED');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/supplier-registrations/{{registrationId}}/resume",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "supplier-registrations",
+            "{{registrationId}}",
+            "resume"
+          ]
+        }
+      }
+    },
+    {
+      "name": "10 Descargar cédula fiscal",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 con el PDF', () => {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/supplier-registrations/{{registrationId}}/fiscal-document",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "supplier-registrations",
+            "{{registrationId}}",
+            "fiscal-document"
+          ]
+        }
+      }
+    },
+    {
+      "name": "11 Eliminar cédula fiscal",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('204 sin contenido', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/supplier-registrations/{{registrationId}}/fiscal-document",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "supplier-registrations",
+            "{{registrationId}}",
+            "fiscal-document"
+          ]
+        }
+      }
+    },
+    {
+      "name": "12 Reanudar tras eliminar la cédula",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const progress = s => pm.response.json().progress.find(p => p.section === s).status;",
+              "pm.test('Datos Generales PENDING; CUCoP sin cambios (INV-37)', () => {",
+              "    pm.response.to.have.status(200);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.fiscalDocument).to.be.undefined;",
+              "    pm.expect(progress('GENERAL_DATA')).to.eql('PENDING');",
+              "    pm.expect(progress('CUCOP')).to.eql('COMPLETED');",
+              "    pm.expect(body.cucopParticipation.specificItems.map(i => i.id)).to.eql([1, 2]);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/supplier-registrations/{{registrationId}}/resume",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "supplier-registrations",
+            "{{registrationId}}",
+            "resume"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "registrationToken",
+      "value": ""
+    },
+    {
+      "key": "registrationId",
+      "value": ""
+    }
+  ]
+}
