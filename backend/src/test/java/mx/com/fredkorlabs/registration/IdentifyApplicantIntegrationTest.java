@@ -19,6 +19,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 import static mx.com.fredkorlabs.registration.testsupport.SignatureFixtures.identifyRequest;
 import static mx.com.fredkorlabs.registration.testsupport.SignatureFixtures.signatureBase64;
@@ -138,32 +139,32 @@ class IdentifyApplicantIntegrationTest {
 
     @Test
     void US01_CA020_representativeRfc_isRejected() throws Exception {
-        assertRejectedWithoutPersisting(identify(acceptNotice(), "legal-entity-with-representative", "HEGT7610034S2"),
+        assertRejectedWithoutPersisting(() -> identify(acceptNotice(), "legal-entity-with-representative", "HEGT7610034S2"),
             422, "SIGNATURE_VERIFICATION_FAILED");
     }
 
     @Test
     void US01_CA021_missingRfcAttribute_returns400() throws Exception {
-        assertRejectedWithoutPersisting(identify(acceptNotice(), "missing-rfc", "AAA010101AAA"), 400, "VALIDATION_ERROR");
+        assertRejectedWithoutPersisting(() -> identify(acceptNotice(), "missing-rfc", "AAA010101AAA"), 400, "VALIDATION_ERROR");
     }
 
     @Test
     void US01_CA021_emptyOrShortFirstSegment_returns400() throws Exception {
-        assertRejectedWithoutPersisting(identify(acceptNotice(), "empty-first-rfc-segment", "AAA010101AAA"),
+        assertRejectedWithoutPersisting(() -> identify(acceptNotice(), "empty-first-rfc-segment", "AAA010101AAA"),
             400, "VALIDATION_ERROR");
-        assertRejectedWithoutPersisting(identify(acceptNotice(), "short-rfc", "AAA010101AAA"), 400, "VALIDATION_ERROR");
+        assertRejectedWithoutPersisting(() -> identify(acceptNotice(), "short-rfc", "AAA010101AAA"), 400, "VALIDATION_ERROR");
     }
 
     @Test
     void US01_CA022_rfcNotMatchingHolder_returns422() throws Exception {
-        assertRejectedWithoutPersisting(identify(acceptNotice(), "legal-entity", "BBB010101BBB"),
+        assertRejectedWithoutPersisting(() -> identify(acceptNotice(), "legal-entity", "BBB010101BBB"),
             422, "SIGNATURE_VERIFICATION_FAILED");
     }
 
     @Test
     void US01_CA025_missingOrEmptyName_returns400() throws Exception {
-        assertRejectedWithoutPersisting(identify(acceptNotice(), "missing-name", "AAA010101AAA"), 400, "VALIDATION_ERROR");
-        assertRejectedWithoutPersisting(identify(acceptNotice(), "empty-first-name", "AAA010101AAA"),
+        assertRejectedWithoutPersisting(() -> identify(acceptNotice(), "missing-name", "AAA010101AAA"), 400, "VALIDATION_ERROR");
+        assertRejectedWithoutPersisting(() -> identify(acceptNotice(), "empty-first-name", "AAA010101AAA"),
             400, "VALIDATION_ERROR");
     }
 
@@ -173,15 +174,16 @@ class IdentifyApplicantIntegrationTest {
             .replace(signatureBase64("legal-entity"),
                 signatureBase64("individual"));
 
-        assertRejectedWithoutPersisting(mockMvc.perform(post(PATH).contentType(MediaType.APPLICATION_JSON).content(request)),
+        assertRejectedWithoutPersisting(
+            () -> mockMvc.perform(post(PATH).contentType(MediaType.APPLICATION_JSON).content(request)),
             422, "SIGNATURE_VERIFICATION_FAILED");
     }
 
     @Test
     void US03_CA004_unknownAcceptance_returns400() throws Exception {
-        assertRejectedWithoutPersisting(identify(UUID.randomUUID().toString(), "legal-entity", "AAA010101AAA"),
+        assertRejectedWithoutPersisting(() -> identify(UUID.randomUUID().toString(), "legal-entity", "AAA010101AAA"),
             400, "VALIDATION_ERROR");
-        assertRejectedWithoutPersisting(identify("not-a-uuid", "legal-entity", "AAA010101AAA"), 400, "VALIDATION_ERROR");
+        assertRejectedWithoutPersisting(() -> identify("not-a-uuid", "legal-entity", "AAA010101AAA"), 400, "VALIDATION_ERROR");
     }
 
     @Test
@@ -205,10 +207,12 @@ class IdentifyApplicantIntegrationTest {
         assertEquals("HEGT7610034S2", jwtDecoder.decode(second).getSubject());
     }
 
-    private void assertRejectedWithoutPersisting(ResultActions result, int status, String code) throws Exception {
+    /** Counts before sending the request, so a rejected request that stored anything is detected. */
+    private void assertRejectedWithoutPersisting(Callable<ResultActions> request, int status, String code)
+            throws Exception {
         long evidenceCount = evidences.count();
         long contextCount = contexts.count();
-        result.andExpect(status().is(status))
+        request.call().andExpect(status().is(status))
             .andExpect(jsonPath("$.code").value(code))
             .andExpect(jsonPath("$.registrationToken").doesNotExist());
         assertEquals(evidenceCount, evidences.count());
