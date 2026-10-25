@@ -150,3 +150,24 @@ python3 tools/spec_sync.py                   # specs contra código y pruebas
 
 Para regenerar las interfaces y DTO desde el contrato: `./mvnw clean generate-sources` (desde
 `backend/`). No edites `backend/target/generated-sources`.
+
+### 6. Colecciones Postman (opcional)
+
+Verificación complementaria contra la aplicación en ejecución; no reemplaza `./mvnw test`
+([ADR-0021](specs/adr/0021-backend-colecciones-postman.md)).
+
+| Colección | Uso |
+| :--- | :--- |
+| `postman/registro-proveedores-contrato.postman_collection.json` | Las 22 operaciones, generada en Postman desde el contrato; no se edita a mano. Define `baseUrl` en un entorno (p. ej. `http://localhost:8080`). |
+| `postman/registro-proveedores-flujo.postman_collection.json` | Recorre el ciclo de vida completo con aserciones: aviso, identificación con el fixture de firma `legal-entity`, inicio o reanudación, cédula, Datos Generales, CUCoP, reanudación y eliminación de la cédula. |
+
+Con la aplicación levantada (sección 3), ejecuta el flujo en orden desde la raíz del repositorio,
+para que la cédula se resuelva en `postman/fixtures/cedula-ejemplo.pdf`:
+
+```bash
+npx newman run postman/registro-proveedores-flujo.postman_collection.json \
+  --env-var baseUrl=http://localhost:8080 --working-dir .
+```
+
+En Postman, usa el Collection Runner con el directorio de trabajo apuntando a la raíz del
+repositorio. Si el RFC del fixture ya tiene expediente, el flujo lo reanuda en lugar de crearlo.
