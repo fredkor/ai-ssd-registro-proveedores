@@ -57,6 +57,15 @@ public class VolumeFileStorageAdapter implements FileStoragePort {
         }
     }
 
+    @Override
+    public boolean delete(String relativePath) {
+        try {
+            return Files.deleteIfExists(resolve(relativePath));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Document content could not be deleted", e);
+        }
+    }
+
     private static void discard(String relativePath, Path target) {
         try {
             Files.deleteIfExists(target);

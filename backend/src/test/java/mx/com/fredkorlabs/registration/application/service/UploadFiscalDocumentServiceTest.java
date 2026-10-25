@@ -64,6 +64,9 @@ class UploadFiscalDocumentServiceTest {
 
         @Override
         public byte[] read(String relativePath) { throw new UnsupportedOperationException("Not used by this use case"); }
+
+        @Override
+        public boolean delete(String relativePath) { throw new UnsupportedOperationException("Not used by this use case"); }
     };
     private final FileMetadataPort metadata = new FileMetadataPort() {
         @Override
@@ -78,6 +81,17 @@ class UploadFiscalDocumentServiceTest {
         public void markNotAssociated(UUID fileId) {
             throw new UnsupportedOperationException("Not used by this use case");
         }
+
+        @Override
+        public List<StoredFileMetadata> lockNotAssociatedUploadedBefore(Instant instant) {
+            throw new UnsupportedOperationException("Not used by this use case");
+        }
+
+        @Override
+        public boolean isReferenced(UUID fileId) { throw new UnsupportedOperationException("Not used by this use case"); }
+
+        @Override
+        public void delete(UUID fileId) { throw new UnsupportedOperationException("Not used by this use case"); }
     };
     private final RegistrationContextPort contexts = new RegistrationContextPort() {
         @Override

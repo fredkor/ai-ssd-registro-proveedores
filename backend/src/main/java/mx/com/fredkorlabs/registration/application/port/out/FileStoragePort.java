@@ -11,4 +11,7 @@ public interface FileStoragePort {
 
     /** Reads stored content; a missing file is a technical inconsistency, never an absent document. */
     byte[] read(String relativePath);
+
+    /** Deletes the content; false when it no longer existed, e.g. after an interrupted cleanup (ADR-0010). */
+    boolean delete(String relativePath);
 }
