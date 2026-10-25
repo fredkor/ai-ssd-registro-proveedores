@@ -479,7 +479,7 @@ class SupplierRegistrationPersistenceAdapterTest {
     }
 
     @Test
-    void INV32_database_rejectsSelectionsThatAreNotSpecificItems() {
+    void INV31_database_rejectsSelectionsThatAreNotSpecificItems() {
         SupplierRegistrationId id = insert("CUE010101CUE").registration().id();
         withCucop(id, new CucopParticipation(Set.of(ParticipationType.GOODS_AND_SERVICES_SUPPLIER), Set.of(OFFICE)));
 
