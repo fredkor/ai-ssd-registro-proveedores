@@ -1,5 +1,6 @@
 package mx.com.fredkorlabs.registration.domain.model;
 
+import java.util.Locale;
 import java.util.Objects;
 
 public record ApplicantIdentity(Rfc rfc, String legalName) {
@@ -13,6 +14,7 @@ public record ApplicantIdentity(Rfc rfc, String legalName) {
     }
 
     public Username username() {
-        return new Username(rfc.value().toLowerCase());
+        // INV-15: independent of the JVM default locale (e.g. Turkish turns I into a dotless ı).
+        return new Username(rfc.value().toLowerCase(Locale.ROOT));
     }
 }
