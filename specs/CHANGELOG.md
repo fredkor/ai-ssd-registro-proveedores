@@ -60,3 +60,12 @@ compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spe
 - **Archivos:** `specs/architecture/domain-model.md` §3.
 - **Contrato:** sin cambios.
 - **Commits:** `design:` (este cambio).
+
+## 2026-10-25 — Ejemplos de códigos en las convenciones
+
+- **Descripción:** `conventions.md` usa como ejemplos `IN_PROGRESS` y `GOODS_AND_SERVICES_SUPPLIER`,
+  definidos en `specs/domain/`, en lugar de `DRAFT` y `ELECTRONICS`, que eran de otro proyecto.
+- **Motivo:** revisión de consistencia SDD-20261024-10.
+- **Archivos:** `specs/conventions.md`.
+- **Contrato:** sin cambios.
+- **Commits:** `spec:` (este cambio).
