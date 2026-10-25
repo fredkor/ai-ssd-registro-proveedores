@@ -353,6 +353,9 @@ expediente; el agregado conoce su disponibilidad, no bytes ni rutas.
 La gestión general del archivo pertenece a [ADR-0010](../adr/0010-backend-almacenamiento-documental-en-volumen.md).
 Eliminar la cédula exitosamente retira su asociación y deja Datos Generales PENDING.
 Una nueva carga conserva el documento, pero completar la sección requiere Siguiente; CUCoP no cambia.
+`FiscalDocumentFormat` valida la cédula antes de conservarla: primero el tamaño (máximo 5,242,880 bytes;
+si lo excede, 413) y después la extensión `.pdf` sin distinguir mayúsculas y que el contenido empiece
+con `%PDF-` (si falla, 415). El MIME declarado no basta (INV-27, ADR-0010).
 
 `ApplicantSignatureEvidence` conserva íntegro cada resultado aceptado, sin llave privada ni
 contraseña. El expediente referencia la evidencia inicial y las vinculadas al reanudar,
@@ -372,6 +375,8 @@ se conserva en [integración de firma](../api/signature-integration.md).
 | `TaxRegime` | Catálogo fijo. Se deriva de la longitud del RFC: 12 → LEGAL_ENTITY; 13 → INDIVIDUAL. | INV-14 |
 | `Username` | Valor derivado del RFC en minúsculas. No se recibe como dato editable independiente. | INV-15 |
 | `NoticeAcceptance` | Versión del aviso y fecha/hora (`Instant`) de aceptación. No contiene un rechazo como aceptación válida. | INV-07, INV-08 |
+| `CertificateSubjectAttribute` | Un atributo del sujeto del certificado: OID y valor, en el orden en que aparece en el certificado. Lo entrega el adaptador de firma. | ADR-0016 |
+| `CertificateIdentity` | Identidad leída del sujeto; puente entre el certificado y `ApplicantIdentity`. RFC titular: primer segmento, separado por `/`, del atributo `2.5.4.45`, sin recortes ni cambios de mayúsculas, de 12 o 13 caracteres; los segmentos siguientes (p. ej. el RFC del representante) nunca son alternativas. Nombre: el primer atributo, en el orden del certificado, con OID `2.5.4.3`, `2.5.4.41` o `2.5.4.10`, no vacío. `matching(rfc)` exige que el RFC recibido coincida con el titular y produce `ApplicantIdentity`. | INV-04; ADR-0016 |
 
 El origen no se deduce del RFC ni del certificado: el proveedor lo selecciona. El régimen
 no es un campo editable ni se deduce del país. No se introducen límites de nombre completo
@@ -409,6 +414,15 @@ necesarios para comprobar vigencia cuando aplique y compatibilidad de titularida
 sector/subsector. Este contexto de validación es información de dominio, no una conexión
 al catálogo ni un repositorio dentro del dominio.
 
+Ese contexto es `GeneralDataCatalogContext`: código del país, titularidad seleccionada
+(`LegalOwnershipOption`), sector del subsector, existencia del sector, giro, actividad preponderante y
+rangos, y vigencia de la estratificación; un ID que no está en su catálogo deja su dato en null o false.
+La captura llega como `GeneralDataInput`, ya recortada (ADR-0009) y sin validar: `phones` es null si la
+petición envía null y vacía si envía una colección vacía. Solo `GeneralData` representa datos válidos.
+Cada regla incumplida es un `GeneralDataViolation` con el campo, con los nombres de la petición
+(p. ej. `phones/0/number`), y su motivo; la validación las reúne todas para responder un único
+VALIDATION_ERROR con un pointer por campo (ADR-0019).
+
 La validación completa recibe la identidad y la disponibilidad de la cédula del expediente.
 Construir `GeneralData` no crea ni carga un documento. La raíz solo admite completar esta
 sección cuando datos, teléfonos aplicables y cédula fiscal satisfacen sus reglas.
@@ -443,6 +457,8 @@ La interfaz expande una selección genérica a sus específicas y aplica deselec
 Deshacer selección. La aplicación resuelve las específicas seleccionadas contra el catálogo;
 una casilla de la interfaz no sustituye la referencia al registro del catálogo. El modelo
 no exige guardar la estructura visual, filtros de búsqueda, paginación ni estados de expansión.
+Del mismo modo que en Datos Generales, `CucopParticipationViolation` registra cada regla incumplida con
+su campo (p. ej. `specificItemIds/2`) y su motivo (INV-31, INV-32).
 
 ### 5.5. Catálogos de referencia
 
@@ -452,6 +468,7 @@ no exige guardar la estructura visual, filtros de búsqueda, paginación ni esta
 | `CucopConcept` | `id`, `key`, `description`, `level = 2`, referencia al padre | Padre `CucopChapter`. |
 | `CucopGenericItem` | `id`, `key`, `description`, `level = 3`, referencia al padre | Padre `CucopConcept`. Tiene específicas. |
 | `CucopSpecificItem` | `id`, `key`, `description`, `level = 4`, referencia al padre | Padre `CucopGenericItem`. |
+| `LegalOwnershipOption` | `id`, `key`, `description`, `countryCode` y `regime`; los dos últimos son null en opciones generales como `NOT_DEF` | Aplica el algoritmo de [catalogs.md](../domain/catalogs.md) §4 (INV-20): `appliesTo` decide si una opción aplica y `applicable` devuelve las aplicables ordenadas por `key`. |
 
 Estos nombres de dominio se corresponden con `capitulo`, `concepto`, `partida_generica` y
 `partida_especifica` de [catalogs.md](../domain/catalogs.md). No renombran las tablas
