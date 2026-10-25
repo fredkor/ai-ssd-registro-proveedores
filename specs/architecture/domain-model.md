@@ -40,6 +40,7 @@ classDiagram
         SupplierRegistrationId id
         RegistrationStatus status
         +start() SupplierRegistration
+        +resume()
         +saveGeneralData()
         +saveCucopParticipation()
     }

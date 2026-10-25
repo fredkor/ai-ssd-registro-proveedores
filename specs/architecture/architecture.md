@@ -44,8 +44,10 @@ reglas de navegación, guardado, firma o selección ya especificadas.
 ```mermaid
 flowchart TB
     CLIENT["Cliente HTTP"]
-    subgraph IN["adapter.in.web"]
-        WEB["Controlador y mapeador"]
+    subgraph IN["adapter.in"]
+        WEB["web: controlador y mapeador"]
+        TX["transaction: decoradores transaccionales"]
+        SCHED["scheduling: limpieza diaria"]
     end
     subgraph APP["application"]
         INPUT["port.in: UseCase y modelos de entrada/salida"]
@@ -53,7 +55,8 @@ flowchart TB
         OUTPUT["port.out: capacidades externas"]
     end
     subgraph DOMAIN["domain: Java puro"]
-        MODEL["SupplierRegistration, valores y reglas"]
+        MODEL["model: SupplierRegistration, valores y reglas"]
+        EXCEPTION["exception: reglas incumplidas"]
     end
     subgraph OUT["adapter.out"]
         ADAPTER["Persistencia, catalogos, firma y archivos"]
@@ -62,6 +65,10 @@ flowchart TB
 
     CLIENT -. HTTP .-> WEB
     WEB -->|usa| INPUT
+    WEB -->|traduce| EXCEPTION
+    SCHED -->|usa| INPUT
+    INPUT -. implementada por .-> TX
+    TX -->|delega en| SERVICE
     INPUT -. implementada por .-> SERVICE
     SERVICE -->|usa| MODEL
     SERVICE -->|usa| OUTPUT
@@ -71,7 +78,9 @@ flowchart TB
 
 Las flechas `implementada por` e `implementados por` indican realización, no dependencias
 hacia los adaptadores. El grupo de salida resume varios adaptadores independientes, detallados
-en la tabla. El controlador usa `port.in`; los servicios usan dominio y `port.out`.
+en la tabla. El controlador y el disparador programado usan `port.in`; el decorador transaccional
+implementa el mismo puerto y delega en el servicio (§7). El controlador solo usa excepciones de
+dominio para traducirlas a errores. Los servicios usan dominio y `port.out`.
 El dominio solo conoce el JDK y sus propios tipos. Dominio y aplicación no dependen de
 frameworks: no importan Spring, JPA, Jackson ni tipos HTTP. Las dependencias tecnológicas
 permanecen en los adaptadores y en la configuración de arranque.
@@ -233,71 +242,97 @@ sequenceDiagram
     autonumber
     participant Frontend
     participant Web
+    participant Tx as TransactionalSaveGeneralDataUseCase
     participant Service as SaveGeneralDataService
     participant Context as RegistrationContextPort
     participant Persistence as SupplierRegistrationPersistencePort
     participant Catalogs as GeneralDataCatalogPort
-    participant Files as FileMetadataPort
     participant Registration as SupplierRegistration
+    participant Data as GeneralData
 
     Frontend->>Web: PUT /api/v1/supplier-registrations/{registrationId}/general-data con JWT
-    Web->>Web: Normalizar textos y validar contrato
-    Web->>Service: Ejecutar SaveGeneralDataUseCase con comando y contexto
-    Service->>Context: Verificar JWT y resolver sesion vigente
-    Context-->>Service: Identidad aceptada o rechazo
+    Web->>Context: Validar firma, claims y contexto vigente del jti
+    Context-->>Web: Contexto vigente o ausente
     alt JWT invalido, vencido o sin contexto
-        Service-->>Web: REGISTRATION_TOKEN_INVALID
-        Web-->>Frontend: 401 ProblemResponse
-    else Sesion vigente
-        Service->>Persistence: Recuperar expediente por registrationId
-        Persistence-->>Service: Expediente o ausencia
-        alt Expediente inexistente
-            Service-->>Web: REGISTRATION_NOT_FOUND
+        Web-->>Frontend: 401 ProblemResponse REGISTRATION_TOKEN_INVALID
+    else Token valido
+        Web->>Web: Normalizar textos y validar contrato
+        Web->>Tx: Ejecutar SaveGeneralDataUseCase con comando y jti
+        Tx->>Tx: Iniciar transaccion
+        Tx->>Service: Delegar comando
+        Service->>Context: Resolver sesion del jti
+        Context-->>Service: Identidad aceptada o ausencia
+        Service->>Persistence: Recuperar y bloquear expediente (FOR UPDATE)
+        Persistence-->>Service: Expediente con cedula asociada o ausencia
+        alt Sesion ya no disponible
+            Service-->>Tx: REGISTRATION_TOKEN_INVALID
+            Tx-->>Web: Rollback y error
+            Web-->>Frontend: 401 ProblemResponse
+        else Expediente inexistente
+            Service-->>Tx: REGISTRATION_NOT_FOUND
+            Tx-->>Web: Rollback y error
             Web-->>Frontend: 404 ProblemResponse
         else Expediente de otro RFC
-            Service-->>Web: REGISTRATION_ACCESS_DENIED
+            Service-->>Tx: REGISTRATION_ACCESS_DENIED
+            Tx-->>Web: Rollback y error
             Web-->>Frontend: 403 ProblemResponse
         else Expediente propio
-            Service->>Service: Iniciar unidad transaccional de guardado
-            Service->>Catalogs: Resolver selecciones y relaciones
-            Catalogs-->>Service: Contexto de catalogos
-            Service->>Files: Consultar cedula asociada al expediente
-            Files-->>Service: Referencia vigente o ausencia
-            Service->>Registration: saveGeneralData con datos y contexto validable
+            Service->>Registration: Comprobar estado IN_PROGRESS
             alt Estado incompatible
                 Registration-->>Service: Transicion rechazada
-                Service-->>Web: INVALID_STATE_TRANSITION
+                Service-->>Tx: INVALID_STATE_TRANSITION
+                Tx-->>Web: Rollback y error
                 Web-->>Frontend: 409 ProblemResponse
-            else Campos, telefonos o cedula invalidos
-                Registration-->>Service: Reglas incumplidas
-                Service-->>Web: VALIDATION_ERROR
-                Web-->>Frontend: 400 ProblemResponse
-            else Seccion valida
-                Registration->>Registration: Sustituir GeneralData y marcar COMPLETED
-                Service->>Persistence: Guardar datos y progreso conjuntamente
-                alt Fallo de persistencia o commit
-                    Persistence-->>Service: Fallo y rollback
-                    Service-->>Web: INTERNAL_ERROR
-                    Web-->>Frontend: 500 ProblemResponse
-                else Commit exitoso
-                    Persistence-->>Service: Guardado confirmado
-                    Service-->>Web: Resultado de aplicacion
-                    Web->>Web: Mapear a SectionSaveResponse
-                    Web-->>Frontend: 200 con GENERAL_DATA COMPLETED y nextSection CUCOP
+            else IN_PROGRESS
+                Service->>Catalogs: Resolver selecciones y relaciones
+                Catalogs-->>Service: Contexto de catalogos
+                Service->>Data: Validar datos con regimen y contexto de catalogos
+                alt Campos o telefonos invalidos
+                    Data-->>Service: Reglas incumplidas
+                    Service-->>Tx: VALIDATION_ERROR
+                    Tx-->>Web: Rollback y error
+                    Web-->>Frontend: 400 ProblemResponse
+                else Datos validos
+                    Data-->>Service: GeneralData validado
+                    Service->>Registration: saveGeneralData con GeneralData
+                    alt Sin cedula asociada
+                        Registration-->>Service: Cedula requerida
+                        Service-->>Tx: VALIDATION_ERROR
+                        Tx-->>Web: Rollback y error
+                        Web-->>Frontend: 400 ProblemResponse
+                    else Cedula asociada
+                        Registration->>Registration: Sustituir GeneralData y marcar COMPLETED
+                        Service->>Persistence: Guardar datos y progreso conjuntamente
+                        Service-->>Tx: Resultado de aplicacion
+                        Tx->>Tx: Confirmar transaccion
+                        alt Fallo de persistencia o commit
+                            Tx-->>Web: Rollback e INTERNAL_ERROR
+                            Web-->>Frontend: 500 ProblemResponse
+                        else Commit exitoso
+                            Tx-->>Web: Resultado de aplicacion
+                            Web->>Web: Mapear a SectionSaveResponse
+                            Web-->>Frontend: 200 con GENERAL_DATA COMPLETED y nextSection CUCOP
+                        end
+                    end
                 end
             end
         end
     end
 ```
 
-- Web traduce HTTP y normaliza los textos editables antes de validar el contrato, según ADR-0009.
-  Una entrada inválida se rechaza antes de invocar el caso de uso.
-- El contexto verifica firma, claims y `jti` vigente en la misma BD conforme a ADR-0015.
-  La comprobación del RFC propietario corresponde a aplicación.
+- Web autentica el token antes de traducir HTTP: firma, claims y `jti` vigente en la misma BD
+  conforme a ADR-0015; un rechazo responde 401 sin invocar el caso de uso. Después normaliza los
+  textos editables y valida el contrato, según ADR-0009. Una entrada inválida se rechaza antes
+  de invocar el caso de uso.
+- El servicio resuelve la sesión del `jti`; la comprobación del RFC propietario corresponde a aplicación.
+- El decorador `TransactionalSaveGeneralDataUseCase` abre la transacción antes del servicio
+  y la confirma o revierte al terminar (§7); el servicio no conoce la transacción.
 - El dominio recibe datos y relaciones resueltos; no llama a puertos ni conoce HTTP o JPA.
-- Datos, progreso y comprobación de la asociación documental deben coordinarse con la
-  eliminación lógica concurrente para impedir completar la sección con una cédula ya desasociada.
-  Se usa bloqueo pesimista de la fila del expediente conforme al [diseño de persistencia](registration-database-design.md).
+  `GeneralData` valida campos, teléfonos y catálogos; `SupplierRegistration` exige la cédula asociada.
+- La cédula se obtiene de su asociación persistida al reconstituir el expediente, nunca de la
+  petición. Datos, progreso y esa comprobación se coordinan con la eliminación lógica concurrente
+  mediante bloqueo pesimista de la fila del expediente, adquirido al recuperarlo, conforme al
+  [diseño de persistencia](registration-database-design.md).
 - El éxito HTTP se devuelve después del commit. Todo fallo de la unidad de guardado revierte
   sus cambios; CUCoP y la cédula cargada en una operación previa permanecen intactos.
 - Cargar o eliminar lógicamente un archivo son operaciones propias. Este guardado solo consulta
@@ -320,11 +355,11 @@ application/port/in/        UseCase, Commands, Queries y Results
 application/port/out/       Capacidades externas y modelos de intercambio
 application/service/        Coordinación por caso de uso y lógica de limpieza sin frameworks
 configuration/              Ensamblaje Spring mediante @Bean y selección de decoradores
-adapter/in/transaction/    Decoradores transaccionales de puertos de entrada
-adapter/in/scheduling/     Activación programada de la limpieza (`DailyFileCleanupScheduler`)
+adapter/in/transaction/     Decoradores transaccionales de puertos de entrada
+adapter/in/scheduling/      Activación programada de la limpieza (`DailyFileCleanupScheduler`)
 adapter/in/web/             Controladores, mapeadores y errores
 adapter/in/web/generated/   Interfaces y DTO de OpenAPI
-adapter/out/persistence/    Expediente, aviso, evidencia y metadatos de archivos
+adapter/out/persistence/    Expediente, aviso, evidencia, contexto JWT y metadatos de archivos
 adapter/out/catalog/        Consultas JPA a catálogos compartidos
 adapter/out/signature/      Verificación y extracción desde certificado
 adapter/out/document/       Contenido físico en volumen
