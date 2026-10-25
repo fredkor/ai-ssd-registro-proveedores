@@ -52,7 +52,7 @@ class NoticeAcceptancePersistenceAdapterTest {
     }
 
     @Test
-    void US03_CA007_database_rejectsVersionOtherThanFixedNotice() {
+    void ADR0017_database_rejectsVersionOtherThanFixedNotice() {
         assertThrows(PersistenceException.class, () -> entityManager.createNativeQuery(
                 "INSERT INTO notice_acceptance (id, version, accepted_at) VALUES (gen_random_uuid(), '2.0', CURRENT_TIMESTAMP)")
             .executeUpdate());
