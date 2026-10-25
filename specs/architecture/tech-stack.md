@@ -41,7 +41,8 @@ Los contratos autoritativos permanecen en `specs/api/` y se referencian desde ca
 | Documentación API | springdoc-openapi-starter-webmvc-ui 3.1.1 | Swagger UI cargando el mismo YAML que genera interfaces y DTO. | ADR-0008. |
 | Pruebas backend | JUnit y starters de prueba de Spring Boot declarados en Maven | Dominio sin Spring; aplicación con dobles de puertos; adaptadores con infraestructura correspondiente. Las versiones efectivas proceden de Maven. | ADR-0001, ADR-0006. |
 | Fuente de tiempo | `java.time.Clock`, UTC | Hora controlable en aplicación y pruebas; instantes recibidos por el dominio. | ADR-0001; arquitectura. |
-| Validación documental | Python 3 y PyYAML | `tools/spec_lint.py`, adaptado al registro; alcance y pruebas en tools/README.md. | Convenciones y flujo de verificación del proyecto. |
+| Validación documental | Python 3 y PyYAML | `tools/spec_lint.py` y `tools/spec_sync.py`, adaptados al registro; alcance y pruebas en tools/README.md. | Convenciones y flujo de verificación del proyecto. |
+| Verificación E2E manual | Postman, colecciones en `postman/` | Contra `./mvnw spring-boot:run`; fuera del build y no requerida para commit. | [ADR-0021](../adr/0021-backend-colecciones-postman.md). |
 
 La configuración `openApiNullable=false` existente no define por sí misma la semántica de
 campos omitidos o null: se aplicará ADR-0009 y el contrato de cada esquema. No se configura
@@ -112,3 +113,4 @@ compensación de cargas fallidas en ADR-0010.
 - [ADR-0006: stack backend](../adr/0006-backend-spring-boot-4.md).
 - [ADR-0008: contrato y Swagger UI](../adr/0008-backend-swagger-ui-con-contrato.md).
 - [ADR-0010: volumen documental](../adr/0010-backend-almacenamiento-documental-en-volumen.md).
+- [ADR-0021: colecciones Postman](../adr/0021-backend-colecciones-postman.md).

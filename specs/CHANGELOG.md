@@ -91,3 +91,15 @@ compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spe
 - **Archivos:** `specs/architecture/domain-model.md` §4 y §5.
 - **Contrato:** sin cambios.
 - **Commits:** `design:` (este cambio).
+
+## 2026-10-25 — ADR-0021: colecciones Postman
+
+- **Descripción:** Postman es una verificación complementaria contra la aplicación en ejecución:
+  una colección generada desde el contrato y otra de flujo, hecha a mano, que recorre el ciclo de vida
+  con los fixtures de firma de prueba y un PDF ficticio. No reemplaza `./mvnw test`.
+- **Motivo:** ejercitar de extremo a extremo la aplicación con su base duradera, su volumen y sus
+  tokens reales, algo que las pruebas automatizadas no cubren.
+- **Archivos:** `specs/adr/0021-backend-colecciones-postman.md`, `specs/adr/README.md`,
+  `specs/traceability.md` §5, `specs/architecture/tech-stack.md`.
+- **Contrato:** sin cambios.
+- **Commits:** `design:` (este cambio); después `docs:` con las colecciones y el PDF de ejemplo.
