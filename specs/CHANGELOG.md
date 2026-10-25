@@ -26,3 +26,15 @@ compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spe
 - **Archivos:** `specs/architecture/architecture.md` §5, §6, §7 y §9; `specs/traceability.md` §5.
 - **Contrato:** sin cambios. ADR-0010 sin cambios: la decisión es la misma.
 - **Commits:** `design:` (este cambio) y `feat:` (implementación y pruebas).
+
+## 2026-10-25 — Estado declarado de ADR y arquitectura
+
+- **Descripción:** el índice de ADR registra PostgreSQL, las migraciones y la limpieza diaria como
+  incorporados y remite a `tools/spec_sync.py` para el estado de implementación. ADR-0008 deja de
+  llamar borrador al contrato (decisión sin cambios). Arquitectura §10 ya no presenta como
+  pendientes los tipos SQL de catálogos ni el contexto JWT.
+- **Motivo:** revisión de consistencia SDD-20261024-06.
+- **Archivos:** `specs/adr/README.md`, `specs/adr/0008-backend-swagger-ui-con-contrato.md`,
+  `specs/architecture/architecture.md` §10.
+- **Contrato:** sin cambios.
+- **Commits:** `design:` (este cambio).
