@@ -170,6 +170,27 @@ class SaveCucopParticipationIntegrationTest {
     }
 
     @Test
+    void US05_CA002_resume_returnsEverySavedSectionWithItsValues() throws Exception {
+        Session session = registration(true);
+        save(session, BOTH_TYPES_TWO_ITEMS).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/supplier-registrations/" + session.registrationId() + "/resume")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + identify("legal-entity", "AAA010101AAA")))
+            .andExpect(status().isOk())
+            .andExpect(content().json("""
+                {"id":"%s","status":"IN_PROGRESS",
+                 "generalData":{"origin":"NATIONAL","countryId":151,"nationality":"Mexicana","sectorId":5,
+                   "subsectorId":21,"phones":[{"number":"5512345678"}]},
+                 "fiscalDocument":{"originalName":"cedula.pdf","extension":"pdf","sizeBytes":%d},
+                 "cucopParticipation":{"participationTypes":["GOODS_AND_SERVICES_SUPPLIER","PUBLIC_WORKS_CONTRACTOR"],
+                   "specificItems":[{"id":1},{"id":2}]}}"""
+                .formatted(session.registrationId(), PDF.length), JsonCompareMode.LENIENT))
+            .andExpect(jsonPath("$.progress[?(@.section == 'GENERAL_DATA')].status").value("COMPLETED"))
+            .andExpect(jsonPath("$.progress[?(@.section == 'CUCOP')].status").value("COMPLETED"))
+            .andExpect(jsonPath("$.progress[?(@.section == 'CONTACTS')].status").value("PENDING"));
+    }
+
+    @Test
     void US11_CA010_resume_returnsThePersistedSelection() throws Exception {
         Session session = registration(true);
         save(session, BOTH_TYPES_TWO_ITEMS).andExpect(status().isOk());

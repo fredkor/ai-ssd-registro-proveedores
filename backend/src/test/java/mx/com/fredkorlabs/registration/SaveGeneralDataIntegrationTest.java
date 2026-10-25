@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 import java.nio.charset.StandardCharsets;
@@ -29,6 +30,7 @@ import java.util.UUID;
 import static mx.com.fredkorlabs.registration.testsupport.SignatureFixtures.identifyRequest;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -128,6 +130,11 @@ class SaveGeneralDataIntegrationTest {
     private String progress(UUID registrationId, String section) {
         return jdbc.queryForObject("SELECT status FROM section_progress WHERE registration_id = ? AND section = ?",
             String.class, registrationId, section);
+    }
+
+    private List<String> storedPhones(UUID registrationId) {
+        return jdbc.queryForList("SELECT number FROM registration_phone WHERE registration_id = ? ORDER BY position",
+            String.class, registrationId);
     }
 
     private static void assertValidationError(ResultActions result, String... pointers) throws Exception {
@@ -332,6 +339,78 @@ class SaveGeneralDataIntegrationTest {
         body.putNull("phones");
 
         assertValidationError(save(session, body), "/phones");
+    }
+
+    @Test
+    void US09_CA008_removingTheLastPhoneOfASavedSection_isRejectedKeepingTheStoredPhones() throws Exception {
+        Session session = legalEntity();
+        save(session, nationalLegalEntity()).andExpect(status().isOk());
+        ObjectNode withoutPhones = nationalLegalEntity();
+        withoutPhones.putArray("phones");
+
+        assertValidationError(save(session, withoutPhones), "/phones");
+
+        assertEquals(List.of("5512345678", "0012345678"), storedPhones(session.registrationId()));
+        assertEquals("COMPLETED", progress(session.registrationId(), "GENERAL_DATA"));
+    }
+
+    @Test
+    void US09_CA009_failedSaveAfterRemovingARow_resumesWithThePersistedPhones() throws Exception {
+        Session session = legalEntity();
+        save(session, nationalLegalEntity()).andExpect(status().isOk());
+        ObjectNode removedRowAndInvalid = nationalLegalEntity();
+        ((ArrayNode) removedRowAndInvalid.get("phones")).remove(1);
+        removedRowAndInvalid.put("website", "empresa.com");
+
+        assertValidationError(save(session, removedRowAndInvalid), "/website");
+
+        resume(session, "legal-entity", "AAA010101AAA")
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.generalData.phones.length()").value(2))
+            .andExpect(jsonPath("$.generalData.phones[0].number").value("5512345678"))
+            .andExpect(jsonPath("$.generalData.phones[1].number").value("0012345678"));
+    }
+
+    @Test
+    void US06_CA010_completedSection_staysCompletedOnValidSavesAndKeepsItsDataOnFailure() throws Exception {
+        Session session = legalEntity();
+        save(session, nationalLegalEntity()).andExpect(status().isOk());
+        ObjectNode edited = nationalLegalEntity();
+        edited.put("website", "https://empresa.mx");
+
+        save(session, edited)
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("COMPLETED"));
+        assertEquals("COMPLETED", progress(session.registrationId(), "GENERAL_DATA"));
+
+        ObjectNode invalid = nationalLegalEntity();
+        invalid.put("website", "empresa.com");
+        assertValidationError(save(session, invalid), "/website");
+
+        assertEquals("https://empresa.mx", jdbc.queryForObject(
+            "SELECT website FROM general_data WHERE registration_id = ?", String.class, session.registrationId()));
+        assertEquals("COMPLETED", progress(session.registrationId(), "GENERAL_DATA"));
+    }
+
+    @Test
+    void US10_CA010_save_usesTheAssociatedDocumentWithoutAnEditableId_andAFailureKeepsIt() throws Exception {
+        Session session = legalEntity();
+        ObjectNode withDocumentId = nationalLegalEntity();
+        withDocumentId.put("fiscalDocumentId", UUID.randomUUID().toString());
+        ObjectNode invalid = nationalLegalEntity();
+        invalid.put("website", "empresa.com");
+
+        assertValidationError(save(session, withDocumentId), "/fiscalDocumentId");
+        assertValidationError(save(session, invalid), "/website");
+        mockMvc.perform(get("/api/v1/supplier-registrations/" + session.registrationId() + "/fiscal-document")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + session.token()))
+            .andExpect(status().isOk())
+            .andExpect(content().bytes(PDF));
+        assertEquals("PENDING", progress(session.registrationId(), "GENERAL_DATA"));
+
+        save(session, nationalLegalEntity())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("COMPLETED"));
     }
 
     @Test

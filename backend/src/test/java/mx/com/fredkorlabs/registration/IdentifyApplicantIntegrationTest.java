@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.util.Set;
 import java.util.UUID;
 
 import static mx.com.fredkorlabs.registration.testsupport.SignatureFixtures.identifyRequest;
@@ -43,6 +45,9 @@ class IdentifyApplicantIntegrationTest {
 
     @Autowired
     private RegistrationContextJpaRepository contexts;
+
+    @Autowired
+    private JdbcTemplate jdbc;
 
     String acceptNotice() throws Exception {
         String body = mockMvc.perform(post("/api/v1/registration-notice-acceptances")
@@ -102,6 +107,26 @@ class IdentifyApplicantIntegrationTest {
         assertTrue(stored.getCompleteResult().contains("\"razonSocial\":\"RAZON SOCIAL PKI\""));
         assertTrue(stored.getCompleteResult().contains("\"numeroSerie\":30001000000500003416"));
         assertEquals("NOMBRE DEL OID 41", stored.getVerifiedLegalName());
+    }
+
+    @Test
+    void US01_CA006_privateKeyOrItsPassword_isNeitherAcceptedNorStored() throws Exception {
+        String request = identifyRequest(acceptNotice(), "legal-entity", "AAA010101AAA")
+            .replace("\"origen\":\"COMPONENTE\"",
+                "\"origen\":\"COMPONENTE\",\"llavePrivada\":\"MIIEvQIBADANBg\",\"contrasena\":\"secreta\"");
+        long evidenceCount = evidences.count();
+        long contextCount = contexts.count();
+
+        mockMvc.perform(post(PATH).contentType(MediaType.APPLICATION_JSON).content(request))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+            .andExpect(jsonPath("$.registrationToken").doesNotExist());
+
+        assertEquals(evidenceCount, evidences.count());
+        assertEquals(contextCount, contexts.count());
+        assertEquals(Set.of("id", "rfc", "verified_legal_name", "complete_result"), Set.copyOf(jdbc.queryForList(
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'applicant_signature_evidence'",
+            String.class)));
     }
 
     @Test

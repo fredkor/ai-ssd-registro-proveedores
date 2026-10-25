@@ -90,7 +90,7 @@ pruebas frontend; no se sustituyen con pruebas de controladores.
 
 | CA | Operación principal | Reglas o fuente | Verificación prevista |
 | :--- | :--- | :--- | :--- |
-| CA-001 | `getRegistrationNotice` | INV-07 | Interfaz y web. |
+| CA-001 | `getRegistrationNotice` | INV-07 | Interfaz: mostrar el aviso antes de solicitar la firma; el backend lo sirve sin token (US03 CA-006). |
 | CA-002 | Sin petición propia | INV-07 | Interfaz. |
 | CA-003 | `acceptRegistrationNotice` | INV-07, INV-08 | Aplicación y persistencia. |
 | CA-004 | `acceptRegistrationNotice` | INV-07 | Aplicación y web. |
@@ -120,7 +120,7 @@ pruebas frontend; no se sustituyen con pruebas de controladores.
 | CA-004 | `resumeSupplierRegistration` | INV-12 | Aplicación, persistencia y web. |
 | CA-005 | `resumeSupplierRegistration` | INV-12 | Aplicación, persistencia y web. |
 | CA-006 | `resumeSupplierRegistration` | INV-13 | Aplicación, persistencia y web. |
-| CA-007 | `resumeSupplierRegistration` | INV-36 | Aplicación, persistencia y web. |
+| CA-007 | `resumeSupplierRegistration` | INV-36 | Interfaz: abrir siempre Datos Generales; la respuesta no indica sección y el backend conserva datos y progreso (US05 CA-003). |
 | CA-008 | `resumeSupplierRegistration` | INV-12 | Aplicación, persistencia y web. |
 | CA-009 | `resumeSupplierRegistration` | INV-11, INV-12; US05 CA-009 | Aplicación, persistencia y web: actualizar nombre del certificado sin cambiar UUID, datos ni progreso. |
 | CA-010 | `resumeSupplierRegistration` | INV-06; US05 CA-010 | Aplicación y persistencia: historial de evidencias sin sobrescritura. |
