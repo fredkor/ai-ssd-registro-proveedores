@@ -4,7 +4,8 @@
 
 Esta matriz vincula la primera etapa de registro con el contrato OpenAPI, los casos de uso,
 las invariantes y la verificación prevista. No declara implementación, pruebas existentes
-ni resultados de ejecución. El contrato está habilitado para implementación (READY) y su
+ni resultados de ejecución: ese estado lo genera `python3 tools/spec_sync.py --md docs/sync-report.md`,
+un informe regenerable que no se edita a mano (decisión del 2026-10-25). El contrato está habilitado para implementación (READY) y su
 generación con Maven está verificada; ver [estado del contrato](api/README.md).
 
 Los prefijos US01 a US11 de los archivos corresponden a HU-REG-001 a HU-REG-011 en los

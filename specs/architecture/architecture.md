@@ -341,6 +341,7 @@ se mantienen separados; no se instala Nx por inferencia.
 - Adaptadores: persistencia, unicidad concurrente, firma interoperable, archivos y limpieza.
 - Web e interfaz: contrato, errores, captura y navegación conforme a los CA.
 - La cobertura prevista está en [trazabilidad](../traceability.md); no representa pruebas ejecutadas.
+  El estado real lo genera `python3 tools/spec_sync.py --md docs/sync-report.md`.
 - Los tipos SQL del [esquema de catálogos aprobado](catalog-database-proposal.md) y los pendientes de
   ADR-0015 se concretaron al implementarlos; consultar el [estado de API](../api/README.md).
 - Versiones y comandos: [stack](tech-stack.md). Reglas funcionales: [requerimientos](../requirements/functional.md).

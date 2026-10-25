@@ -69,3 +69,13 @@ compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spe
 - **Archivos:** `specs/conventions.md`.
 - **Contrato:** sin cambios.
 - **Commits:** `spec:` (este cambio).
+
+## 2026-10-25 — Dónde vive el estado de implementación
+
+- **Descripción:** las specs declaran la verificación prevista; el estado real de implementación y
+  cobertura lo genera `python3 tools/spec_sync.py --md docs/sync-report.md`, que no se edita a mano.
+  `traceability.md` §1 y arquitectura §10 remiten a ese informe.
+- **Motivo:** revisión de consistencia SDD-20261024-13.
+- **Archivos:** `specs/traceability.md` §1, `specs/architecture/architecture.md` §10.
+- **Contrato:** sin cambios.
+- **Commits:** `design:` (este cambio).
