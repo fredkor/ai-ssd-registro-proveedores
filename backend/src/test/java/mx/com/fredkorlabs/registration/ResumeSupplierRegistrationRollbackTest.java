@@ -29,7 +29,7 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** A failure after the resume was written rolls back name, acceptance and evidence link (US05 CA-011). */
+/** A failure after the resume was written rolls back name, acceptance and evidence link (US05 CA-011, US03 CA-008). */
 @Import(PostgresTestcontainersConfiguration.class)
 @SpringBootTest(classes = SupplierRegistrationApplication.class, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -66,14 +66,17 @@ class ResumeSupplierRegistrationRollbackTest {
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("registrationToken").asString();
     }
 
-    @Test
-    void US05_CA011_failureAfterWriting_rollsBackAndKeepsPreviousState() throws Exception {
+    private record FailedResume(UUID id, SupplierRegistrationJpaEntity before, long evidencesBefore) {}
+
+    /** Creates a registration with CUCoP completed and resumes it with a failure after writing. */
+    private FailedResume resumeFailingAfterWriting() throws Exception {
         JsonNode created = JsonMapper.shared().readTree(mockMvc.perform(post(PATH)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token("legal-entity")))
             .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
         UUID id = UUID.fromString(created.get("id").asString());
         jdbc.update("UPDATE section_progress SET status = 'COMPLETED' WHERE registration_id = ? AND section = 'CUCOP'", id);
         SupplierRegistrationJpaEntity before = registrations.findById(id).orElseThrow();
+        String resumeToken = token("name-41-before-3");
         long evidencesBefore = evidences.count();
         willAnswer(invocation -> {
             invocation.callRealMethod();
@@ -81,19 +84,34 @@ class ResumeSupplierRegistrationRollbackTest {
         }).given(persistence).saveResume(any(), any(), any());
 
         mockMvc.perform(post(PATH + "/" + id + "/resume")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token("name-41-before-3")))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + resumeToken))
             .andExpect(status().isInternalServerError())
             .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
             .andExpect(jsonPath("$.id").doesNotExist());
+        return new FailedResume(id, before, evidencesBefore);
+    }
 
-        SupplierRegistrationJpaEntity after = registrations.findById(id).orElseThrow();
+    @Test
+    void US05_CA011_failureAfterWriting_rollsBackAndKeepsPreviousState() throws Exception {
+        FailedResume failed = resumeFailingAfterWriting();
+
+        SupplierRegistrationJpaEntity after = registrations.findById(failed.id()).orElseThrow();
         assertEquals("EMPRESA EJEMPLO SA DE CV", after.getLegalName());
-        assertEquals(before.getNoticeAcceptanceId(), after.getNoticeAcceptanceId());
-        assertEquals(List.of(before.getInitialEvidenceId()), jdbc.queryForList(
-            "SELECT signature_evidence_id FROM registration_signature_evidence WHERE registration_id = ?", UUID.class, id));
+        assertEquals(List.of(failed.before().getInitialEvidenceId()), jdbc.queryForList(
+            "SELECT signature_evidence_id FROM registration_signature_evidence WHERE registration_id = ?", UUID.class,
+            failed.id()));
         assertEquals("COMPLETED", jdbc.queryForObject(
-            "SELECT status FROM section_progress WHERE registration_id = ? AND section = 'CUCOP'", String.class, id));
-        // US03 CA-008: the evidence kept when identifying is not deleted by the failed resumption.
-        assertEquals(evidencesBefore + 1, evidences.count());
+            "SELECT status FROM section_progress WHERE registration_id = ? AND section = 'CUCOP'", String.class,
+            failed.id()));
+    }
+
+    @Test
+    void US03_CA008_failedResume_keepsThePreviousAcceptanceAndEvidence() throws Exception {
+        FailedResume failed = resumeFailingAfterWriting();
+
+        SupplierRegistrationJpaEntity after = registrations.findById(failed.id()).orElseThrow();
+        assertEquals(failed.before().getNoticeAcceptanceId(), after.getNoticeAcceptanceId());
+        // The evidence kept when identifying for the resume is not deleted by the failed resumption.
+        assertEquals(failed.evidencesBefore(), evidences.count());
     }
 }
