@@ -51,3 +51,12 @@ compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spe
   (`info.version`), `specs/api/README.md`.
 - **Contrato:** versión 0.2.0; sin cambios de operaciones ni esquemas en este commit.
 - **Commits:** `contract:` (este cambio).
+
+## 2026-10-25 — Dónde se garantiza INV-30
+
+- **Descripción:** INV-30 se garantiza en el dominio (`SupplierRegistration.saveCucopParticipation`),
+  como ya indicaba la tabla de operaciones del agregado (§7) y como lo implementa el código.
+- **Motivo:** revisión de consistencia SDD-20261024-09: §3 decía "Aplicación: precondición del flujo".
+- **Archivos:** `specs/architecture/domain-model.md` §3.
+- **Contrato:** sin cambios.
+- **Commits:** `design:` (este cambio).
