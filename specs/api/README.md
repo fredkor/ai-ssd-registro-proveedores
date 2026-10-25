@@ -3,7 +3,7 @@
 ## Estado y alcance
 
 [supplier-registration-openapi.yaml](supplier-registration-openapi.yaml) es el contrato
-OpenAPI 3.0.3, versión 0.1.0: 21 operaciones y 38 esquemas. Declara
+OpenAPI 3.0.3, versión 0.1.0: 22 operaciones y 39 esquemas. Declara
 `x-implementation-ready: true`: está habilitado para generación e implementación.
 Cubre la primera etapa, sin captura de Contactos ni finalización.
 
