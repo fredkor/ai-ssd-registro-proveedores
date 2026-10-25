@@ -4,7 +4,7 @@ Generado por `python3 tools/spec_sync.py --md`. No editar a mano.
 
 **Resultado:** OK — errores: 0, advertencias: 0
 
-Operaciones: 22 | Criterios: 136 (91 verificables en backend) | Pruebas USxx_CAyyy: 405
+Operaciones: 22 | Criterios: 136 (91 verificables en backend) | Pruebas USxx_CAyyy: 403
 
 ## Cobertura de criterios de aceptación
 
