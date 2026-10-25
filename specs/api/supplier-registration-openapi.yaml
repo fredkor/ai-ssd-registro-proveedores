@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Registro de proveedores de Fredkor Labs API
-  version: 0.1.0
+  version: 0.2.0
   description: 'Primera etapa: aviso, Firma Electrónica, token de registro, expediente, Datos
     Generales, cédula fiscal y CUCoP. IDs de catálogos enteros y resultado del componente conforme a ResultadoFirma.
     Habilitado para generación e implementación.'

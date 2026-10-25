@@ -54,7 +54,11 @@ Leer los documentos aplicables antes de modificar o implementar una funcionalida
 8. **Idioma (`specs/conventions.md`):** código en inglés; documentación en castellano.
 9. **Antes de cada commit:** `python3 tools/spec_lint.py --require-ready` debe dar OK y
    `./mvnw test` (desde `backend/`) debe pasar.
-10. **Commits:** prefijos `spec:`, `design:`, `contract:`, `tooling:`, `feat:`, `test:`, `fix:`.
+10. **Commits:** prefijos `spec:`, `design:`, `contract:`, `tooling:`, `feat:`, `test:`, `fix:`,
+    `refactor:` (cambia estructura sin cambiar comportamiento; `prompts/02-refactorizar-desde-diseno.md`)
+    y `docs:` (documentación derivada: `README.md`, `docs/` y colecciones Postman).
+    Todo cambio del contrato OpenAPI va en un commit `contract:`. Solo si ese commit por sí solo no
+    pasa `./mvnw test`, el contrato va dentro del `feat:` o `fix:` que lo implementa, y el mensaje lo dice.
 
 ## Stack y comandos
 Stack: `specs/architecture/tech-stack.md`. No agregues dependencias sin un ADR.

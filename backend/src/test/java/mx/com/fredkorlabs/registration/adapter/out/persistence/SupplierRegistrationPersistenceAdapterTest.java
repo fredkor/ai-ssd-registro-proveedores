@@ -2,6 +2,7 @@ package mx.com.fredkorlabs.registration.adapter.out.persistence;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
+import mx.com.fredkorlabs.registration.adapter.out.catalog.CucopCatalogAdapter;
 import mx.com.fredkorlabs.registration.application.port.out.DuplicateRegistrationException;
 import mx.com.fredkorlabs.registration.application.port.out.FiscalDocumentView;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
@@ -44,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @Import({SupplierRegistrationPersistenceAdapter.class, FileMetadataPersistenceAdapter.class,
-    PostgresTestcontainersConfiguration.class})
+    CucopCatalogAdapter.class, PostgresTestcontainersConfiguration.class})
 class SupplierRegistrationPersistenceAdapterTest {
 
     @Autowired

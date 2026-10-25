@@ -3,7 +3,7 @@
 ## Operaciones y recursos
 
 - Se mantiene el prefijo versionado `/api/v1/`, con recursos en plural y kebab-case.
-  Las rutas y operationId están declarados en el borrador OpenAPI; no se cambian desde los controladores.
+  Las rutas y operationId están declarados en el contrato OpenAPI; no se cambian desde los controladores.
 - Crear un expediente utiliza POST a su colección y responde 201 con Location.
 - Consultar utiliza GET; las acciones de negocio se expresan según ADR-0002, sin campos
   editables de estado o progreso. Los contratos de guardado se cierran por sección.
@@ -13,6 +13,22 @@
   conforme a ADR-0003. No se agrega administración o listado de proveedores fuera de alcance.
 - Atrás es navegación sin guardado; no debe provocar peticiones implícitas de persistencia.
 - La cédula tiene carga con asociación inmediata, descarga y DELETE para desasociar y marcar metadatos en BD; no esperan Siguiente. Atrás no revierte sus efectos. El DELETE no toca disco y la limpieza diaria realiza el borrado físico desde metadatos no asociados según ADR-0010.
+
+## Versionado del contrato
+
+`info.version` sigue SemVer (`MAJOR.MINOR.PATCH`) y cambia en el mismo commit que el contrato
+(decisión del 2026-10-25):
+
+| Cambio | Ejemplos | Versión |
+| :--- | :--- | :--- |
+| Sin efecto en clientes | Descripciones, ejemplos, `x-spec-refs`. | PATCH |
+| Compatible | Operación nueva; propiedad opcional en un request; propiedad nueva en una respuesta; valor nuevo de un enum de respuesta documentado como extensible. | MINOR |
+| Incompatible | Propiedad obligatoria nueva en un request; validación más estricta (p. ej. `uniqueItems`, límites menores); quitar o renombrar ruta, operationId, propiedad o valor de enum; cambiar HTTP o `code` de un error. | MINOR mientras sea `0.x`; MAJOR desde `1.0.0` |
+
+- Mientras la versión sea `0.x` (primera etapa sin clientes en producción), un cambio incompatible
+  sube MINOR y su entrada de `specs/CHANGELOG.md` lo marca como incompatible.
+- Desde `1.0.0`, un cambio incompatible sube MAJOR y requiere un ADR sobre la convivencia con
+  `/api/v1/` antes de aplicarse.
 
 ## Modelos, campos y trazabilidad
 

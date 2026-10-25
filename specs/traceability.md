@@ -4,7 +4,8 @@
 
 Esta matriz vincula la primera etapa de registro con el contrato OpenAPI, los casos de uso,
 las invariantes y la verificación prevista. No declara implementación, pruebas existentes
-ni resultados de ejecución. El contrato está habilitado para implementación (READY) y su
+ni resultados de ejecución: ese estado lo genera `python3 tools/spec_sync.py --md docs/sync-report.md`,
+un informe regenerable que no se edita a mano (decisión del 2026-10-25). El contrato está habilitado para implementación (READY) y su
 generación con Maven está verificada; ver [estado del contrato](api/README.md).
 
 Los prefijos US01 a US11 de los archivos corresponden a HU-REG-001 a HU-REG-011 en los
@@ -264,7 +265,7 @@ solo demuestra toda la cobertura:
 | Firma interoperable | node-forge RSA/SHA-256/PKCS#1 v1.5 y Java SHA256withRSA; UTF-8 y Base64; rechazar alteraciones. | ADR-0016. |
 | Null | Admitir ausencia explícita en opcionales y rechazar null donde aplique obligatoriedad. | ADR-0009; US08 CA-021; US09 CA-006. |
 
-La verificación técnica general de ADR-0010 incluye limpieza diaria con reloj fijo y coordinación con cargas y asociaciones: temporales de menos de 24 horas y exactamente 24 horas se conservan; los no asociados con más de 24 horas se eliminan; archivos asociados y archivos sin metadatos tras reiniciar se excluyen. Verificar también fallos y reintentos. No requiere una HU ni un endpoint de limpieza del usuario.
+La verificación técnica general de ADR-0010 incluye la limpieza diaria (`CleanUpUnassociatedFilesUseCase` / `CleanUpUnassociatedFilesService`, activada por `DailyFileCleanupScheduler`) con reloj fijo y coordinación con cargas y asociaciones: temporales de menos de 24 horas y exactamente 24 horas se conservan; los no asociados con más de 24 horas se eliminan; archivos asociados y archivos sin metadatos tras reiniciar se excluyen. Verificar también fallos y reintentos. No requiere una HU ni un endpoint de limpieza del usuario.
 
 ## 6. Etapa posterior y decisiones pendientes
 

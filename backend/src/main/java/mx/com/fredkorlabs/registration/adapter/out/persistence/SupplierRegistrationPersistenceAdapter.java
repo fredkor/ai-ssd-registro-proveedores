@@ -1,6 +1,6 @@
 package mx.com.fredkorlabs.registration.adapter.out.persistence;
 
-import mx.com.fredkorlabs.registration.adapter.out.catalog.CucopSpecificItemJpaRepository;
+import mx.com.fredkorlabs.registration.application.port.out.CucopCatalogPort;
 import mx.com.fredkorlabs.registration.application.port.out.DuplicateRegistrationException;
 import mx.com.fredkorlabs.registration.application.port.out.FiscalDocumentView;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
@@ -56,7 +56,7 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
     private final FileMetadataJpaRepository files;
     private final GeneralDataJpaRepository generalData;
     private final CucopParticipationJpaRepository cucopParticipations;
-    private final CucopSpecificItemJpaRepository cucopSpecificItems;
+    private final CucopCatalogPort cucopCatalog;
 
     public SupplierRegistrationPersistenceAdapter(SupplierRegistrationJpaRepository repository,
                                                   NoticeAcceptanceJpaRepository acceptances,
@@ -65,7 +65,7 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
                                                   FileMetadataJpaRepository files,
                                                   GeneralDataJpaRepository generalData,
                                                   CucopParticipationJpaRepository cucopParticipations,
-                                                  CucopSpecificItemJpaRepository cucopSpecificItems) {
+                                                  CucopCatalogPort cucopCatalog) {
         this.repository = repository;
         this.acceptances = acceptances;
         this.evidences = evidences;
@@ -73,7 +73,7 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
         this.files = files;
         this.generalData = generalData;
         this.cucopParticipations = cucopParticipations;
-        this.cucopSpecificItems = cucopSpecificItems;
+        this.cucopCatalog = cucopCatalog;
     }
 
     @Override
@@ -174,10 +174,8 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
     // Stored selections were valid when saved; the FK guarantees each one is still a specific item.
     private CucopParticipation toCucopParticipation(CucopParticipationJpaEntity entity) {
         return new CucopParticipation(Set.copyOf(entity.getParticipationTypes()),
-            cucopSpecificItems.findAllById(entity.getSpecificItemIds()).stream()
-                .map(item -> new CucopSpecificItem(item.getId(), item.getGenericItemId(), item.getKey(),
-                    item.getDescription(), item.getLevel()))
-                .collect(Collectors.toSet()));
+            // The catalog belongs to its own adapter; it is read through its port (architecture §3).
+            Set.copyOf(cucopCatalog.findSpecificItems(entity.getSpecificItemIds())));
     }
 
     // Stored data was valid when saved: it is rebuilt without re-running the save rules (domain model §8).

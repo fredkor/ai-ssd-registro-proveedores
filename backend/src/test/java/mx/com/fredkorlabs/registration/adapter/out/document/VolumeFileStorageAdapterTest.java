@@ -93,4 +93,19 @@ class VolumeFileStorageAdapterTest {
     void ADR0010_readOutsideTheRoot_isRejected() {
         assertThrows(IllegalArgumentException.class, () -> new VolumeFileStorageAdapter(root).read("../secret.pdf"));
     }
+
+    @Test
+    void ADR0010_delete_removesExistingContentAndReportsMissingContent() throws Exception {
+        VolumeFileStorageAdapter storage = new VolumeFileStorageAdapter(root);
+        storage.store(PATH, CONTENT);
+
+        assertTrue(storage.delete(PATH));
+        assertFalse(Files.exists(root.resolve(PATH)));
+        assertFalse(storage.delete(PATH));
+    }
+
+    @Test
+    void ADR0010_deleteOutsideTheRoot_isRejected() {
+        assertThrows(IllegalArgumentException.class, () -> new VolumeFileStorageAdapter(root).delete("../outside.pdf"));
+    }
 }
