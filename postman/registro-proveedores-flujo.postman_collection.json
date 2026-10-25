@@ -164,15 +164,18 @@
           "script": {
             "type": "text/javascript",
             "exec": [
+              "// pm.execution.setNextRequest solo existe en versiones recientes; postman.setNextRequest, en todas.",
+              "const goTo = name => pm.execution && typeof pm.execution.setNextRequest === 'function'",
+              "    ? pm.execution.setNextRequest(name) : postman.setNextRequest(name);",
               "pm.test('200 con la existencia del expediente', () => pm.response.to.have.status(200));",
               "const existence = pm.response.json();",
               "if (existence.exists && existence.status === 'IN_PROGRESS') {",
               "    // La base de desarrollo es duradera: el RFC del fixture ya tiene expediente y se reanuda.",
               "    pm.collectionVariables.set('registrationId', existence.registrationId);",
-              "    pm.execution.setNextRequest('05b Reanudar expediente existente');",
+              "    goTo('05b Reanudar expediente existente');",
               "} else if (existence.exists) {",
               "    pm.test('El expediente no está REGISTERED', () => pm.expect(existence.status).to.eql('IN_PROGRESS'));",
-              "    pm.execution.setNextRequest(null);",
+              "    goTo(null);",
               "}"
             ]
           }
@@ -203,12 +206,15 @@
           "script": {
             "type": "text/javascript",
             "exec": [
+              "// pm.execution.setNextRequest solo existe en versiones recientes; postman.setNextRequest, en todas.",
+              "const goTo = name => pm.execution && typeof pm.execution.setNextRequest === 'function'",
+              "    ? pm.execution.setNextRequest(name) : postman.setNextRequest(name);",
               "pm.test('201 con el expediente IN_PROGRESS', () => {",
               "    pm.response.to.have.status(201);",
               "    pm.expect(pm.response.json().status).to.eql('IN_PROGRESS');",
               "});",
               "pm.collectionVariables.set('registrationId', pm.response.json().id);",
-              "pm.execution.setNextRequest('06 Cargar cédula fiscal');"
+              "goTo('06 Cargar cédula fiscal');"
             ]
           }
         }
