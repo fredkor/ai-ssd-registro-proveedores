@@ -32,4 +32,6 @@ Prepara la documentación final del Registro de proveedores para entregar, sigui
 - No inventes métricas ni estados: cada número sale de un comando ejecutado en este momento.
 - Enlaza las specs; no las dupliques.
 - Verifica que todos los enlaces relativos funcionan.
-- Propón el commit `docs: documentación final de la solución` y la etiqueta `v1.0.0`. No hagas commit ni tag.
+- Propón el commit `docs: documentación final de la solución` y la etiqueta de fase `etapa-N` (p. ej. `etapa-1`).
+  No uses `vX.Y.Z`: esa numeración es la de `info.version` del contrato (`specs/api/API-GUIDELINES.md`).
+  No hagas commit ni tag.
