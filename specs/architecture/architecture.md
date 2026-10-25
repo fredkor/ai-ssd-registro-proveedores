@@ -148,6 +148,7 @@ corresponden a los archivos de historias, cuyos encabezados conservan HU-REG.
 | `GetAnnualSalesRangesUseCase` | Consulta → rangos de ventas anuales. | `GetAnnualSalesRangesService` | RF-REG-05; US08; ADR-0020. |
 | `GetCucopCatalogUseCase` | Consulta única → todos los registros CUCoP y sus relaciones. | `GetCucopCatalogService` | RF-REG-08; US11. |
 | `SaveCucopParticipationUseCase` | Tipos de participación y específicas seleccionadas → selección y progreso guardados. | `SaveCucopParticipationService` | RF-REG-08; US11, US06. |
+| `CleanUpUnassociatedFilesUseCase` | Ejecución diaria → archivos no asociados con más de 24 horas eliminados; fallos y anomalías informados. No es un endpoint. | `CleanUpUnassociatedFilesService` | RNF-04; ADR-0010. |
 
 Las acciones locales del formulario (Atrás, Agregar/Eliminar teléfono, selección del árbol) no generan guardados ni endpoints individuales. Los casos de uso de
 sección reciben la captura completa y confirman únicamente conjuntos válidos.
@@ -167,8 +168,8 @@ no dependen de `application.port.in` ni de clases de infraestructura.
 | `GeneralDataCatalogPort` | Una consulta por catálogo (régimen, país, titularidad filtrada, sector, subsector por sector, giro, estratificación activa, actividad preponderante, trabajadores, ventas); resolver referencias para validar. | Titularidad jurídica se filtra en backend con el algoritmo de domain/catalogs.md (ADR-0020) y el guardado valida las mismas condiciones. Cada consulta es independiente para permitir un caché por catálogo en el futuro. Aportar vigencia cuando aplique. |
 | `CucopCatalogPort` | Obtener los cuatro niveles y sus relaciones; resolver específicas para el guardado. | Devuelve el catálogo completo en una consulta de API. Búsqueda y expansión son locales al frontend. No modifica catálogos al seleccionar partidas. |
 | `RegistrationContextPort` | Emitir, resolver y validar token; un RFC puede tener varias sesiones vigentes. | Vincular identidad, evidencia y aceptación; comprobar vencimiento de 60 minutos. Mantener en la misma BD un contexto por jti con RFC, emisión, vencimiento y referencias a evidencia/aceptación; inserción transaccional y consulta en cada petición conforme a ADR-0015. |
-| `FileStoragePort` | Preparar, leer y borrar contenido por referencia opaca; exclusión con confirmación y limpieza. | Gestionar bytes y metadatos en el almacenamiento elegido. No decide si Datos Generales está completo. |
-| `FileMetadataPort` | Consultar metadatos; confirmar o retirar asociaciones; seleccionar temporales elegibles para limpieza. | Asociar durante la carga; marcar como no asociado al eliminar lógicamente y conservar metadatos hasta limpieza; coordinar referencias según las restricciones del tipo documental. El caso de uso de cédula impone máximo una. |
+| `FileStoragePort` | Preparar, leer y borrar contenido por referencia opaca; exclusión con confirmación y limpieza. Borrar informa si el contenido ya no existía; un fallo de E/S es un error. | Gestionar bytes y metadatos en el almacenamiento elegido. No decide si Datos Generales está completo. |
+| `FileMetadataPort` | Consultar metadatos; confirmar o retirar asociaciones; seleccionar temporales elegibles para limpieza: bloquear (`FOR UPDATE`) los no asociados cargados antes de un instante, comprobar si un archivo tiene referencias vigentes (hoy `registration_fiscal_document`; cada sección futura agrega las suyas) y borrar sus metadatos. | Asociar durante la carga; marcar como no asociado al eliminar lógicamente y conservar metadatos hasta limpieza; coordinar referencias según las restricciones del tipo documental. El caso de uso de cédula impone máximo una. |
 
 La consulta de inexistencia previa al alta no reemplaza la garantía de unicidad en persistencia.
 La violación concurrente se traduce en un resultado o error de aplicación que conduzca al
@@ -205,7 +206,7 @@ Los casos de uso que no requieren transacción, como consultar el aviso fijo, se
 | Cargar archivo | Conservar contenido, metadatos y asociación antes de devolver éxito y UUID; disponible sin Siguiente. |
 | Descargar | Autorizar y resolver el archivo asociado sin exponer rutas. |
 | Eliminar archivo | Desasociar, marcar metadatos no asociados y dejar Datos Generales PENDING en una transacción de BD sin tocar disco. Fallo hace rollback; CUCoP intacto. |
-| Limpieza diaria | Coordinarse con asociación; eliminar solo no asociados con más de 24 horas según ADR-0010. No es un endpoint del usuario. |
+| Limpieza diaria | Coordinarse con asociación; eliminar solo no asociados con más de 24 horas según ADR-0010. No es un endpoint del usuario. Una transacción por ejecución (`TransactionalCleanUpUnassociatedFilesUseCase`): bloquea los candidatos y revalida marca, referencias y antigüedad (`uploadedAt` estrictamente anterior a ahora − 24 h). Un archivo con referencias vigentes se excluye como anomalía; los demás borran contenido y después metadatos. Un fallo al borrar contenido conserva sus metadatos y continúa con el siguiente; contenido ya ausente solo retira metadatos. Si el commit falla tras borrar contenido, la siguiente ejecución completa la retirada. Con varias instancias, el bloqueo impide procesar dos veces un archivo. |
 
 Carga y eliminación lógica son operaciones independientes de Siguiente. Eliminar solo modifica
 BD: referencia de negocio, marca en metadatos y progreso comparten transacción. No se invoca
@@ -213,6 +214,11 @@ FileStoragePort para borrar ni mover contenido durante la operación del usuario
 El proceso diario consulta metadatos no asociados y verifica ausencia de referencias y antigüedad
 antes de borrar físicamente; conserva metadatos ante fallos para reintentar según
 [ADR-0010](../adr/0010-backend-almacenamiento-documental-en-volumen.md).
+`DailyFileCleanupScheduler` (`adapter.in.scheduling`) lo activa con
+`@Scheduled(cron = "0 0 2 * * *", zone = "America/Mexico_City")`, habilitado con `@EnableScheduling`
+en `configuration`. El servicio recibe `Clock` (UTC) y devuelve `CleanUpUnassociatedFilesResult`
+(borrados, fallos y anomalías); el disparador lo registra en el log con UUID y ruta relativa de cada
+fallo o anomalía, sin datos sensibles (RNF-09).
 La carga sigue necesitando coordinar volumen y BD; una compensación fallida se registra para
 reconciliación. Catálogos, expediente y metadatos comparten la BD PostgreSQL (ADR-0017, ADR-0018).
 
@@ -315,7 +321,7 @@ application/port/out/       Capacidades externas y modelos de intercambio
 application/service/        Coordinación por caso de uso y lógica de limpieza sin frameworks
 configuration/              Ensamblaje Spring mediante @Bean y selección de decoradores
 adapter/in/transaction/    Decoradores transaccionales de puertos de entrada
-adapter/in/scheduling/     Activación programada de la limpieza
+adapter/in/scheduling/     Activación programada de la limpieza (`DailyFileCleanupScheduler`)
 adapter/in/web/             Controladores, mapeadores y errores
 adapter/in/web/generated/   Interfaces y DTO de OpenAPI
 adapter/out/persistence/    Expediente, aviso, evidencia y metadatos de archivos

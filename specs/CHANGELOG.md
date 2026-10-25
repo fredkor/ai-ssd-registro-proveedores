@@ -14,3 +14,15 @@ compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spe
 - **Archivos:** `specs/traceability.md` §3 (US03 CA-001, US05 CA-007).
 - **Contrato:** sin cambios.
 - **Commits:** `spec:` (este cambio) y `test:` (pruebas de los siete CA restantes de SDD-20261024-03).
+
+## 2026-10-25 — Caso de uso de la limpieza diaria de archivos
+
+- **Descripción:** la arquitectura nombra el caso de uso de la limpieza diaria de ADR-0010
+  (`CleanUpUnassociatedFilesUseCase`, `CleanUpUnassociatedFilesService`, su decorador
+  transaccional y `DailyFileCleanupScheduler`), las operaciones concretas de `FileMetadataPort` y
+  `FileStoragePort` y la coordinación: una transacción por ejecución con bloqueo de candidatos.
+- **Motivo:** revisión de consistencia SDD-20261024-04. ADR-0010 y RNF-04 definían las reglas, pero
+  la arquitectura no nombraba el caso de uso y no estaba implementado.
+- **Archivos:** `specs/architecture/architecture.md` §5, §6, §7 y §9; `specs/traceability.md` §5.
+- **Contrato:** sin cambios. ADR-0010 sin cambios: la decisión es la misma.
+- **Commits:** `design:` (este cambio) y `feat:` (implementación y pruebas).

@@ -79,6 +79,17 @@ class DownloadFiscalDocumentServiceTest {
         public void markNotAssociated(UUID fileId) {
             throw new UnsupportedOperationException("Not used by this use case");
         }
+
+        @Override
+        public List<StoredFileMetadata> lockNotAssociatedUploadedBefore(Instant instant) {
+            throw new UnsupportedOperationException("Not used by this use case");
+        }
+
+        @Override
+        public boolean isReferenced(UUID fileId) { throw new UnsupportedOperationException("Not used by this use case"); }
+
+        @Override
+        public void delete(UUID fileId) { throw new UnsupportedOperationException("Not used by this use case"); }
     };
     private final FileStoragePort storage = new FileStoragePort() {
         @Override
@@ -89,6 +100,9 @@ class DownloadFiscalDocumentServiceTest {
             readPaths.add(relativePath);
             return PDF;
         }
+
+        @Override
+        public boolean delete(String relativePath) { throw new UnsupportedOperationException("Not used by this use case"); }
     };
     private final DownloadFiscalDocumentService service =
         new DownloadFiscalDocumentService(contexts, persistence, metadata, storage);

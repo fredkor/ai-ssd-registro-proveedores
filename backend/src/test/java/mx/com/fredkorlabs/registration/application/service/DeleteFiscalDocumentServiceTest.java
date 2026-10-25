@@ -71,6 +71,17 @@ class DeleteFiscalDocumentServiceTest {
 
         @Override
         public void markNotAssociated(UUID fileId) { markedNotAssociated.add(fileId); }
+
+        @Override
+        public List<StoredFileMetadata> lockNotAssociatedUploadedBefore(Instant instant) {
+            throw new UnsupportedOperationException("Not used by this use case");
+        }
+
+        @Override
+        public boolean isReferenced(UUID fileId) { throw new UnsupportedOperationException("Not used by this use case"); }
+
+        @Override
+        public void delete(UUID fileId) { throw new UnsupportedOperationException("Not used by this use case"); }
     };
     private final DeleteFiscalDocumentService service = new DeleteFiscalDocumentService(contexts, persistence, metadata);
 
