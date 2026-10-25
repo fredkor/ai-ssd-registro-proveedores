@@ -2,13 +2,16 @@ package mx.com.fredkorlabs.registration.application.service;
 
 import mx.com.fredkorlabs.registration.application.port.in.GetCucopCatalogResult.CucopNode;
 import mx.com.fredkorlabs.registration.application.port.out.CucopCatalog;
+import mx.com.fredkorlabs.registration.application.port.out.CucopCatalogPort;
 import mx.com.fredkorlabs.registration.domain.model.CucopChapter;
 import mx.com.fredkorlabs.registration.domain.model.CucopConcept;
 import mx.com.fredkorlabs.registration.domain.model.CucopGenericItem;
 import mx.com.fredkorlabs.registration.domain.model.CucopSpecificItem;
+import mx.com.fredkorlabs.registration.testsupport.UnusedCucopCatalog;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,7 +32,7 @@ class GetCucopCatalogServiceTest {
             new CucopSpecificItem(1, 1, "21101", "MATERIALES Y ÚTILES DE OFICINA", 4),
             new CucopSpecificItem(367, 242, "12201", "REMUNERACIONES AL PERSONAL EVENTUAL", 4)));
 
-    private final GetCucopCatalogService service = new GetCucopCatalogService(() -> CATALOG);
+    private final GetCucopCatalogService service = new GetCucopCatalogService(catalog(() -> CATALOG));
 
     private static CucopNode leaf(int id, String key, String description) {
         return new CucopNode(id, key, description, 4, List.of());
@@ -63,10 +66,19 @@ class GetCucopCatalogServiceTest {
 
     @Test
     void ADR0020_catalogFailure_propagates() {
-        GetCucopCatalogService failing = new GetCucopCatalogService(() -> {
+        GetCucopCatalogService failing = new GetCucopCatalogService(catalog(() -> {
             throw new IllegalStateException("Database unavailable");
-        });
+        }));
 
         assertThrows(IllegalStateException.class, failing::execute);
+    }
+
+    private static CucopCatalogPort catalog(Supplier<CucopCatalog> catalog) {
+        return new UnusedCucopCatalog() {
+            @Override
+            public CucopCatalog findCatalog() {
+                return catalog.get();
+            }
+        };
     }
 }

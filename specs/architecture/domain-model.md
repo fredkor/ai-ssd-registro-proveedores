@@ -316,8 +316,8 @@ de campos sin CA individual, se indica expresamente.
 
 | ID | Regla | Dónde se garantiza | Fuente | Criterios o detalle funcional |
 | :--- | :--- | :--- | :--- | :--- |
-| INV-30 | Acceder a CUCoP requiere Datos Generales guardados correctamente. | Aplicación: precondición del flujo. | RF-REG-08 | US11 CA-001 |
-| INV-31 | Completar CUCoP exige al menos un tipo de participación y una partida específica. Se permite seleccionar ambos tipos de participación y múltiples específicas. | Dominio: validación de la sección. | RF-REG-08 | US11 CA-003, CA-004, CA-005, CA-011 |
+| INV-30 | Acceder a CUCoP requiere Datos Generales guardados correctamente: la sección GENERAL_DATA en COMPLETED. Con PENDING, aunque existan datos guardados (p. ej., tras eliminar la cédula), guardar CUCoP se rechaza con INVALID_STATE_TRANSITION (decisión del 2026-10-23). | Aplicación: precondición del flujo. | RF-REG-08 | US11 CA-001 |
+| INV-31 | Completar CUCoP exige al menos un tipo de participación y una partida específica. Se permite seleccionar ambos tipos de participación y múltiples específicas. Un tipo o una específica repetidos en la petición se rechazan con VALIDATION_ERROR, sin deduplicar (decisión del 2026-10-23). | Dominio: validación de la sección. | RF-REG-08 | US11 CA-003, CA-004, CA-005, CA-011 |
 | INV-32 | La jerarquía es Capítulo → Concepto → Partida genérica → Partida específica; cada hijo referencia el ID de su padre inmediato y todo capítulo, concepto y genérica tiene al menos una específica. | Catálogos y su persistencia; aplicación: consulta jerárquica. | RF-REG-08; domain/catalogs.md | US11: Campos y condiciones; CA-005 |
 | INV-33 | Solo genéricas y específicas tienen selección editable. Seleccionar una genérica selecciona todas sus específicas; deseleccionarla deselecciona todas ellas. Deshacer selección limpia todo el árbol y la tabla. | Interfaz: operaciones de selección; aplicación: recibir la selección para validación y guardado. | RF-REG-08 | US11 CA-007, CA-008, CA-013, CA-014 |
 

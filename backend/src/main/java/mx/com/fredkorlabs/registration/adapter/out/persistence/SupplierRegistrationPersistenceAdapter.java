@@ -1,5 +1,6 @@
 package mx.com.fredkorlabs.registration.adapter.out.persistence;
 
+import mx.com.fredkorlabs.registration.adapter.out.catalog.CucopSpecificItemJpaRepository;
 import mx.com.fredkorlabs.registration.application.port.out.DuplicateRegistrationException;
 import mx.com.fredkorlabs.registration.application.port.out.FiscalDocumentView;
 import mx.com.fredkorlabs.registration.application.port.out.NoticeAcceptanceReference;
@@ -9,6 +10,8 @@ import mx.com.fredkorlabs.registration.application.port.out.StoredRegistration;
 import mx.com.fredkorlabs.registration.application.port.out.SupplierRegistrationPersistencePort;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantIdentity;
 import mx.com.fredkorlabs.registration.domain.model.ApplicantSignatureEvidence;
+import mx.com.fredkorlabs.registration.domain.model.CucopParticipation;
+import mx.com.fredkorlabs.registration.domain.model.CucopSpecificItem;
 import mx.com.fredkorlabs.registration.domain.model.FiscalIdentificationDocument;
 import mx.com.fredkorlabs.registration.domain.model.ForeignFiscalCode;
 import mx.com.fredkorlabs.registration.domain.model.GeneralData;
@@ -52,19 +55,25 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
     private final RegistrationFiscalDocumentJpaRepository fiscalDocuments;
     private final FileMetadataJpaRepository files;
     private final GeneralDataJpaRepository generalData;
+    private final CucopParticipationJpaRepository cucopParticipations;
+    private final CucopSpecificItemJpaRepository cucopSpecificItems;
 
     public SupplierRegistrationPersistenceAdapter(SupplierRegistrationJpaRepository repository,
                                                   NoticeAcceptanceJpaRepository acceptances,
                                                   ApplicantSignatureEvidenceJpaRepository evidences,
                                                   RegistrationFiscalDocumentJpaRepository fiscalDocuments,
                                                   FileMetadataJpaRepository files,
-                                                  GeneralDataJpaRepository generalData) {
+                                                  GeneralDataJpaRepository generalData,
+                                                  CucopParticipationJpaRepository cucopParticipations,
+                                                  CucopSpecificItemJpaRepository cucopSpecificItems) {
         this.repository = repository;
         this.acceptances = acceptances;
         this.evidences = evidences;
         this.fiscalDocuments = fiscalDocuments;
         this.files = files;
         this.generalData = generalData;
+        this.cucopParticipations = cucopParticipations;
+        this.cucopSpecificItems = cucopSpecificItems;
     }
 
     @Override
@@ -148,6 +157,29 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
         repository.flush();
     }
 
+    @Override
+    public void saveCucopParticipation(SupplierRegistration registration) {
+        UUID id = registration.id().value();
+        CucopParticipation participation = registration.cucopParticipation();
+        CucopParticipationJpaEntity entity = cucopParticipations.findById(id)
+            .orElseGet(() -> new CucopParticipationJpaEntity(id));
+        entity.replace(participation.participationTypes(),
+            participation.specificItems().stream().map(CucopSpecificItem::id).toList());
+        cucopParticipations.save(entity);
+        repository.findById(id).orElseThrow().getSectionProgress()
+            .put(RegistrationSection.CUCOP, registration.sectionStatus(RegistrationSection.CUCOP));
+        repository.flush();
+    }
+
+    // Stored selections were valid when saved; the FK guarantees each one is still a specific item.
+    private CucopParticipation toCucopParticipation(CucopParticipationJpaEntity entity) {
+        return new CucopParticipation(Set.copyOf(entity.getParticipationTypes()),
+            cucopSpecificItems.findAllById(entity.getSpecificItemIds()).stream()
+                .map(item -> new CucopSpecificItem(item.getId(), item.getGenericItemId(), item.getKey(),
+                    item.getDescription(), item.getLevel()))
+                .collect(Collectors.toSet()));
+    }
+
     // Stored data was valid when saved: it is rebuilt without re-running the save rules (domain model §8).
     private GeneralData toGeneralData(GeneralDataJpaEntity entity, TaxRegime regime) {
         return new GeneralData(originOf(entity.getOriginId()), entity.getCountryId(),
@@ -174,7 +206,6 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
         };
     }
 
-    // CUCoP is not persisted yet; they are absent until their operations exist.
     private StoredRegistration toStoredRegistration(SupplierRegistrationJpaEntity entity) {
         NoticeAcceptanceJpaEntity acceptance = acceptances.findById(entity.getNoticeAcceptanceId()).orElseThrow();
         Map<UUID, ApplicantSignatureEvidenceJpaEntity> history = evidences.findAllById(entity.getSignatureEvidenceIds())
@@ -198,7 +229,7 @@ public class SupplierRegistrationPersistenceAdapter implements SupplierRegistrat
             generalData.findById(entity.getId()).map(saved -> toGeneralData(saved, applicant.taxRegime())).orElse(null),
             document == null ? null : new FiscalIdentificationDocument(id, document.getOriginalName(),
                 new StoredDocumentReference(document.getId())),
-            null,
+            cucopParticipations.findById(entity.getId()).map(this::toCucopParticipation).orElse(null),
             entity.getSectionProgress());
         return new StoredRegistration(
             registration,
