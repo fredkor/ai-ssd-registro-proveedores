@@ -3,6 +3,18 @@
 Cada entrada registra un cambio aprobado sobre `specs/`: fecha, descripción, motivo, archivos,
 compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spec`.
 
+## 2026-10-25 — Parte de dominio de INV-02, INV-04 e INV-08
+
+- **Descripción:** la columna "Dónde se garantiza" de INV-02, INV-04 e INV-08 incluye el dominio:
+  `CertificateIdentity` extrae nombre y RFC del titular y compara el RFC recibido, y `NoticeAcceptance`
+  exige la versión fija 1.0.
+- **Motivo:** divergencia DOC-20261025-02 de `/documentar`. §5.1 del mismo archivo ya describía ambos
+  objetos de valor en el dominio; la columna de §3 los omitía. Ajuste aprobado por el usuario; el código
+  ya cumplía y ADR-0016 no fija capa.
+- **Archivos:** `specs/architecture/domain-model.md` §3 (INV-02, INV-04, INV-08).
+- **Contrato:** sin cambios.
+- **Commits:** `design:` (este cambio) y `docs:` (documentación técnica regenerada).
+
 ## 2026-10-25 — Specs alineadas con la implementación (segunda sincronización)
 
 - **Descripción:** INV-28 e INV-29 indican la parte que garantiza el dominio. La tabla de dependencias
