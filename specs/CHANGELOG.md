@@ -3,6 +3,20 @@
 Cada entrada registra un cambio aprobado sobre `specs/`: fecha, descripción, motivo, archivos,
 compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spec`.
 
+## 2026-10-25 — Ejemplos en el contrato (versión 0.2.1)
+
+- **Descripción:** el contrato agrega ejemplos de petición, de respuesta, de parámetros y de las 11
+  respuestas de error que no los tenían. Los valores salen de la colección de flujo de Postman, del
+  fixture de firma `legal-entity`, de `catalog-values.md` (con el filtro y el orden de cada operación) y
+  de los mensajes de error reales; el `registrationToken` es ilustrativo. El ejemplo existente de
+  `SupplierRegistrationResponse` usa la misma razón social que el fixture.
+- **Motivo:** divergencia DOC-20261025-01 de `/documentar`: la documentación técnica no podía mostrar un
+  ejemplo por operación tomado del contrato.
+- **Archivos:** `specs/api/supplier-registration-openapi.yaml`, `specs/api/README.md`.
+- **Contrato:** versión 0.2.1 (PATCH, sin efecto en clientes). Sin cambios de rutas, esquemas ni reglas:
+  quitando ejemplos y versión, el contrato es idéntico al anterior.
+- **Commits:** `contract:` (este cambio) y `docs:` (documentación técnica regenerada).
+
 ## 2026-10-25 — Parte de dominio de INV-02, INV-04 e INV-08
 
 - **Descripción:** la columna "Dónde se garantiza" de INV-02, INV-04 e INV-08 incluye el dominio:

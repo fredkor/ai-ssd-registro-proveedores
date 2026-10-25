@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Registro de proveedores de Fredkor Labs API
-  version: 0.2.0
+  version: 0.2.1
   description: 'Primera etapa: aviso, Firma Electrónica, token de registro, expediente, Datos
     Generales, cédula fiscal y CUCoP. IDs de catálogos enteros y resultado del componente conforme a ResultadoFirma.
     Habilitado para generación e implementación.'
@@ -453,6 +453,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogOptionListResponse'
+              example:
+                items:
+                - id: 1
+                  description: PERSONA MORAL
+                - id: 2
+                  description: PERSONA FÍSICA
         '401':
           $ref: '#/components/responses/InvalidRegistrationToken'
         '500':
@@ -505,12 +511,14 @@ paths:
       - name: origin
         in: query
         required: true
+        example: NATIONAL
         schema:
           $ref: '#/components/schemas/Origin'
         description: Origen seleccionado en Datos Generales.
       - name: countryCode
         in: query
         required: true
+        example: MX
         schema:
           type: string
           minLength: 1
@@ -520,6 +528,7 @@ paths:
       - name: taxRegime
         in: query
         required: false
+        example: LEGAL_ENTITY
         schema:
           $ref: '#/components/schemas/TaxRegime'
         description: Obligatorio con origin=NATIONAL; no se permite con origin=FOREIGN.
@@ -558,6 +567,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogOptionListResponse'
+              example:
+                items:
+                - id: 1
+                  description: 11 AGRICULTURA, CRÍA Y EXPLOTACIÓN DE ANIMALES, APROVECHAMIENTO FORESTAL, PESCA Y CAZA
+                - id: 2
+                  description: 21 MINERÍA
+                - id: 3
+                  description: 22 GENERACIÓN, TRANSMISIÓN, DISTRIBUCIÓN Y COMERCIALIZACIÓN DE ENERGÍA ELÉCTRICA, SUMINISTRO DE AGUA Y DE GAS NATURAL POR DUCTOS AL CONSUMIDOR FINAL
+                - id: 4
+                  description: 23 CONSTRUCCIÓN
+                - id: 5
+                  description: 31-33 INDUSTRIAS MANUFACTURERAS
         '401':
           $ref: '#/components/responses/InvalidRegistrationToken'
         '500':
@@ -581,6 +602,7 @@ paths:
       - name: sectorId
         in: path
         required: true
+        example: 5
         schema:
           $ref: '#/components/schemas/CatalogId'
         description: Sector seleccionado.
@@ -591,6 +613,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogOptionListResponse'
+              example:
+                items:
+                - id: 13
+                  description: 311 INDUSTRIA ALIMENTARIA
+                - id: 14
+                  description: 312 INDUSTRIA DE LAS BEBIDAS Y DEL TABACO
+                - id: 15
+                  description: 313 FABRICACIÓN DE INSUMOS TEXTILES Y ACABADO DE TEXTILES
+                - id: 16
+                  description: 314 FABRICACIÓN DE PRODUCTOS TEXTILES, EXCEPTO PRENDAS DE VESTIR
+                - id: 17
+                  description: 315 FABRICACIÓN DE PRENDAS DE VESTIR
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -619,6 +653,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogOptionListResponse'
+              example:
+                items:
+                - id: 1
+                  description: INDUSTRIAL
+                - id: 2
+                  description: COMERCIAL
+                - id: 3
+                  description: DE SERVICIOS
         '401':
           $ref: '#/components/responses/InvalidRegistrationToken'
         '500':
@@ -646,6 +688,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogOptionListResponse'
+              example:
+                items:
+                - id: 1
+                  description: COOPERATIVAS
+                - id: 2
+                  description: GRANDE
+                - id: 3
+                  description: MEDIANA
+                - id: 4
+                  description: MICRO
+                - id: 6
+                  description: PEQUEÑA
         '401':
           $ref: '#/components/responses/InvalidRegistrationToken'
         '500':
@@ -672,6 +726,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogOptionListResponse'
+              example:
+                items:
+                - id: 1
+                  description: RECURSOS NATURALES
+                - id: 2
+                  description: CONSTRUCCIÓN
+                - id: 3
+                  description: FABRICACIÓN PRODUCCIÓN O ELABORACIÓN
+                - id: 4
+                  description: COMERCIO AL POR MAYOR
+                - id: 5
+                  description: TRANSPORTE
+                - id: 6
+                  description: COMUNICACIÓN
+                - id: 7
+                  description: SERVICIOS
+                - id: 8
+                  description: COMERCIO AL POR MENOR
         '401':
           $ref: '#/components/responses/InvalidRegistrationToken'
         '500':
@@ -698,6 +770,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogOptionListResponse'
+              example:
+                items:
+                - id: 1
+                  description: '0'
+                - id: 2
+                  description: 1-10
+                - id: 3
+                  description: 11-30
+                - id: 4
+                  description: 31-50
+                - id: 5
+                  description: 51-100
+                - id: 6
+                  description: 101-251
+                - id: 7
+                  description: MÁS DE 251
         '401':
           $ref: '#/components/responses/InvalidRegistrationToken'
         '500':
@@ -724,6 +812,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogOptionListResponse'
+              example:
+                items:
+                - id: 1
+                  description: $0 - $4 MILLONES
+                - id: 2
+                  description: $4 - $100 MILLONES
+                - id: 3
+                  description: $100 - $250 MILLONES
+                - id: 4
+                  description: MÁS DE $250 MILLONES
         '401':
           $ref: '#/components/responses/InvalidRegistrationToken'
         '500':
@@ -767,6 +865,7 @@ components:
       name: registrationId
       in: path
       required: true
+      example: f42d5ae0-9203-465d-ac1a-f96e205e9529
       schema:
         $ref: '#/components/schemas/RegistrationId'
   schemas:
@@ -896,6 +995,9 @@ components:
       - detail
       additionalProperties: false
     RegistrationNoticeResponse:
+      example:
+        version: '1.0'
+        text: "Al registrarse en el Sistema de Compras de \"Fredkor Labs\" MANIFIESTA SU CONFORMIDAD Y ACEPTACIÓN para:\n\nQue los actos pertinentes al sistema, desde su inicio hasta su conclusión, se realicen a través de medios de comunicación electrónica usando su correo electrónico;\n\nQue se dé por notificado de las actuaciones electrónicas que emita la empresa, en el mismo día en que consulta el Sistema de Compras de Fredkor Labs, y\n\nQue en el supuesto de que por causas imputables a la empresa se encuentre imposibilitado para consultar el sistema, o abrir los documentos electrónicos que contengan la información depositada en dicho sistema, en los días quince y último de cada mes o bien, el día hábil siguiente si alguno de éstos fuera inhábil, lo hará del conocimiento de la empresa a más tardar dentro de los tres días hábiles siguientes a aquél en que ocurra dicho impedimento, por medios de comunicación electrónica."
       type: object
       properties:
         version:
@@ -926,6 +1028,8 @@ components:
       - text
       additionalProperties: false
     AcceptRegistrationNoticeRequest:
+      example:
+        version: '1.0'
       type: object
       properties:
         version:
@@ -937,6 +1041,10 @@ components:
       additionalProperties: false
       description: Invocar solo tras la aceptación expresa. Cancelar no llama a este endpoint.
     NoticeAcceptanceResponse:
+      example:
+        version: '1.0'
+        acceptedAt: '2026-10-19T17:55:00Z'
+        acceptanceId: example-acceptance
       type: object
       properties:
         version:
@@ -1075,6 +1183,15 @@ components:
       - username
       additionalProperties: false
     ApplicantIdentificationResponse:
+      example:
+        identity:
+          rfc: AAA010101AAA
+          legalName: EMPRESA EJEMPLO SA DE CV
+          taxRegime: LEGAL_ENTITY
+          taxRegimeId: 1
+          username: aaa010101aaa
+        registrationToken: eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJBQUEwMTAxMDFBQUEiLCJqdGkiOiIzZjFjMmI5ZS02ZDRhLTRmMGUtOWI4YS0yYzdkNWUxZjBhMzQiLCJpYXQiOjE3OTI0MzI1NjAsImV4cCI6MTc5MjQzNjE2MCwiaXNzIjoic3VwcGxpZXItcmVnaXN0cmF0aW9uIiwiYXVkIjoic3VwcGxpZXItcmVnaXN0cmF0aW9uLWFwaSJ9.firma-RS256-de-ejemplo
+        tokenExpiresAt: '2026-10-19T18:56:00Z'
       type: object
       properties:
         identity:
@@ -1137,6 +1254,25 @@ components:
       description: Toda fila agregada debe tener número válido. Extensión es opcional y admite null como ausencia;
         si se informa, hasta 5 caracteres.
     GeneralDataRequest:
+      example:
+        origin: NATIONAL
+        countryId: 151
+        nationality: Mexicana
+        foreignFiscalCode: null
+        legalOwnershipId: 1
+        sectorId: 5
+        subsectorId: 21
+        businessActivityId: 1
+        stratificationId: 2
+        primaryActivityId: 3
+        workerCountRangeId: 4
+        annualSalesRangeId: 2
+        website: https://empresa.com
+        phones:
+        - number: '5512345678'
+          extension: '12'
+        - number: 0012345678
+          extension: null
       type: object
       properties:
         origin:
@@ -1293,6 +1429,13 @@ components:
       description: Datos guardados. Los campos opcionales admiten null. Los campos obligatorios, incluidos
         los condicionales aplicables, deben cumplir sus reglas.
     CucopParticipationRequest:
+      example:
+        participationTypes:
+        - GOODS_AND_SERVICES_SUPPLIER
+        - PUBLIC_WORKS_CONTRACTOR
+        specificItemIds:
+        - 1
+        - 2
       type: object
       properties:
         participationTypes:
@@ -1374,7 +1517,7 @@ components:
         status: IN_PROGRESS
         identity:
           rfc: AAA010101AAA
-          legalName: Empresa de ejemplo
+          legalName: EMPRESA EJEMPLO SA DE CV
           taxRegime: LEGAL_ENTITY
           taxRegimeId: 1
           username: aaa010101aaa
@@ -1472,6 +1615,20 @@ components:
       additionalProperties: false
       description: Opciones de un catálogo de Datos Generales (ADR-0020).
     CountryOptionListResponse:
+      example:
+        items:
+        - id: 1
+          description: AFGANISTÁN
+          countryCode: AF
+        - id: 2
+          description: ISLAS ÅLAND
+          countryCode: AX
+        - id: 3
+          description: ALBANIA
+          countryCode: AL
+        - id: 151
+          description: MÉXICO
+          countryCode: MX
       type: object
       properties:
         items:
@@ -1483,6 +1640,23 @@ components:
       additionalProperties: false
       description: Catálogo de países (ADR-0020).
     LegalOwnershipOptionListResponse:
+      example:
+        items:
+        - key: MX00001
+          id: 1
+          description: 1.- SOCIEDAD ANÓNIMA (S.A.)
+          countryCode: MX
+          taxRegime: LEGAL_ENTITY
+        - key: MX00002
+          id: 2
+          description: 1.1.- SOCIEDAD ANÓNIMA DE CAPITAL VARIABLE ( S.A. DE C.V.)
+          countryCode: MX
+          taxRegime: LEGAL_ENTITY
+        - key: MX00003
+          id: 3
+          description: 2.- SOCIEDAD DE RESPONSABILIDAD LIMITADA (S. DE R.L.)
+          countryCode: MX
+          taxRegime: LEGAL_ENTITY
       type: object
       properties:
         items:
@@ -1551,6 +1725,38 @@ components:
       description: Nodo del árbol CUCoP. El padre es el nodo que lo contiene. Solo niveles 3 y 4 tienen casillas
         editables. No prescribe estados visuales.
     CucopCatalogResponse:
+      example:
+        items:
+        - id: 1
+          key: '2000'
+          description: MATERIALES Y SUMINISTROS
+          level: 1
+          items:
+          - id: 1
+            key: '2100'
+            description: MATERIALES DE ADMINISTRACION, EMISION DE DOCUMENTOS Y ARTICULOS OFICIALES
+            level: 2
+            items:
+            - id: 1
+              key: '2110'
+              description: MATERIALES, UTILES Y EQUIPOS MENORES DE OFICINA
+              level: 3
+              items:
+              - id: 1
+                key: '21101'
+                description: MATERIALES Y ÚTILES DE OFICINA
+                level: 4
+                items: []
+            - id: 2
+              key: '2120'
+              description: MATERIALES Y UTILES DE IMPRESION Y REPRODUCCION
+              level: 3
+              items:
+              - id: 2
+                key: '21201'
+                description: MATERIALES Y ÚTILES DE IMPRESIÓN Y REPRODUCCIÓN
+                level: 4
+                items: []
       type: object
       properties:
         items:
@@ -1568,6 +1774,23 @@ components:
       minLength: 1
       description: 'JWT firmado por el backend tras verificar la firma del solicitante, válido 60 minutos. Authorization Bearer. ADR-0015 exige firma RS256, claims sub/jti/iat/exp/iss/aud y comprobación del contexto del jti. Un RFC puede tener varios JWT vigentes. No es el UUID del expediente.'
     IdentifyApplicantRequest:
+      example:
+        noticeAcceptanceId: example-acceptance
+        signatureResult:
+          resultado: true
+          fechaVigencia: '2030-01-01T00:00:00Z'
+          mensaje: OK
+          cadenaOriginal: Temporal
+          certificado: MIIDJTCCAg2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMRwwGgYDVQQDDBNBVVRPUklEQUQgREUgUFJVRUJBMB4XDTI2MDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowgY0xITAfBgNVBAMMGEVNUFJFU0EgRUpFTVBMTyBTQSBERSBDVjEhMB8GA1UEKQwYRU1QUkVTQSBFSkVNUExPIFNBIERFIENWMSEwHwYDVQQKDBhFTVBSRVNBIEVKRU1QTE8gU0EgREUgQ1YxCzAJBgNVBAYMAk1YMRUwEwYDVQQtDAxBQUEwMTAxMDFBQUEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC+GFx6x6dup/z5b/Fg/EmrkOLpO3ERfbhDYGamBML7c+sfyRCKjxtJnGx+C3UhVkB92XqgAtGzSf5EkQCH0NCKMsvDSFBUk1PUAl/MX6QrLGnMzlemricivG7A9OOAGWwGSsugytAaFrbAtbKGRPKAyHoLTQmYsKDyc4HbX51OwEMwa77HvkRBDylIPD0hHCN+V+3lT7/Biu3LCc1utMbxyIa49NrIBs3a6LCtvuGCaA+6uyDVba2dfsHqA+vgTDgV+E+1bPmb9j7A3/mFeCBAHYOLjaHLAQa2TKvbpUD3hOcdP3Qnn8xPjUp9CvVIntZLSy+CPv9mmhksDL2drBtTAgMBAAEwDQYJKoZIhvcNAQELBQADggEBACRV7742zVVFYN1uCksMsQU3Xq9Lyw3OF1zg92IxmxqwogBNbuQmakt8ppL8sEnlqJL/XrUgRFyH/HlI/7XUAIT3uW/pXRqmoUoVgNclOpvyqUh5XHdGI80ulQBBmCjR+lIiwx4oC0Oyx1aW+ppoDmEex5pslmlkuJ7Gi+X//nrMtI2PYvadC8p+2f5y8zQnjPi84DoX/bmJr8yfwmi0B0q6pMOl7mvUtOsnlHg/G2iu2QtmuwRN60N0z8UfnOWUIOHIk90/9QV3XvCFeOBaQ7/g4MTWTqeIhlVA6DgHqZRZvWDn9bkkEoju+hhsCO4y/MnCO2wxLIQZEC6jq/iTsSM=
+          cadenaFirma: a7OmRR4Wpx2PIP3P0yVakjNMGUps33lTjfGzXznoA5AjmDGfk/SYqHXK3MT9JYkFphxjghbon1Cs2D6qr6UBSurxHW1qnMix5GpAU9Ijwwa18wtcNuqsCmIgoUssq4WUHRS/0TMag8WA+FN98Df5/YtGM7Xm8x0ttaXElVqyGFF7kdIJZfBQc155h5wZ/Yd9U+Fk1olGYhbwxIRCjxmsAdJMgw6Rj3/TkWlvLloJQwFzWLZ9++yzpewZ0btf2AlnMNfhZyPz6DdpTw6NU4PI/hOeTHY4A5kdCKsMUJsmchy0CMj1KEoNrgVrZ86o5fMFsr6Q5srrEKPL0O+NpqMRGQ==
+          rfc: AAA010101AAA
+          curp: null
+          razonSocial: RAZON SOCIAL PKI
+          numeroSerie: 30001000000500003416
+          tipoCertificado: 1
+          certificadoPem: "-----BEGIN CERTIFICATE-----\r\nMIIDJTCCAg2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMRwwGgYDVQQDDBNBVVRP\r\nUklEQUQgREUgUFJVRUJBMB4XDTI2MDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFow\r\ngY0xITAfBgNVBAMMGEVNUFJFU0EgRUpFTVBMTyBTQSBERSBDVjEhMB8GA1UEKQwY\r\nRU1QUkVTQSBFSkVNUExPIFNBIERFIENWMSEwHwYDVQQKDBhFTVBSRVNBIEVKRU1Q\r\nTE8gU0EgREUgQ1YxCzAJBgNVBAYMAk1YMRUwEwYDVQQtDAxBQUEwMTAxMDFBQUEw\r\nggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC+GFx6x6dup/z5b/Fg/Emr\r\nkOLpO3ERfbhDYGamBML7c+sfyRCKjxtJnGx+C3UhVkB92XqgAtGzSf5EkQCH0NCK\r\nMsvDSFBUk1PUAl/MX6QrLGnMzlemricivG7A9OOAGWwGSsugytAaFrbAtbKGRPKA\r\nyHoLTQmYsKDyc4HbX51OwEMwa77HvkRBDylIPD0hHCN+V+3lT7/Biu3LCc1utMbx\r\nyIa49NrIBs3a6LCtvuGCaA+6uyDVba2dfsHqA+vgTDgV+E+1bPmb9j7A3/mFeCBA\r\nHYOLjaHLAQa2TKvbpUD3hOcdP3Qnn8xPjUp9CvVIntZLSy+CPv9mmhksDL2drBtT\r\nAgMBAAEwDQYJKoZIhvcNAQELBQADggEBACRV7742zVVFYN1uCksMsQU3Xq9Lyw3O\r\nF1zg92IxmxqwogBNbuQmakt8ppL8sEnlqJL/XrUgRFyH/HlI/7XUAIT3uW/pXRqm\r\noUoVgNclOpvyqUh5XHdGI80ulQBBmCjR+lIiwx4oC0Oyx1aW+ppoDmEex5pslmlk\r\nuJ7Gi+X//nrMtI2PYvadC8p+2f5y8zQnjPi84DoX/bmJr8yfwmi0B0q6pMOl7mvU\r\ntOsnlHg/G2iu2QtmuwRN60N0z8UfnOWUIOHIk90/9QV3XvCFeOBaQ7/g4MTWTqeI\r\nhlVA6DgHqZRZvWDn9bkkEoju+hhsCO4y/MnCO2wxLIQZEC6jq/iTsSM=\r\n-----END CERTIFICATE-----\r\n"
+          isVigente: true
+          origen: COMPONENTE
       type: object
       properties:
         noticeAcceptanceId:
@@ -1626,6 +1849,16 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          example:
+            type: urn:fredkorlabs:registration:problem:validation-error
+            title: Invalid request
+            status: 400
+            detail: General Data does not satisfy its rules
+            instance: /api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/general-data
+            code: VALIDATION_ERROR
+            errors:
+            - pointer: /phones
+              detail: must contain at least one phone for legal entities
       x-error-codes:
       - VALIDATION_ERROR
     AccessDenied:
@@ -1634,6 +1867,14 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          example:
+            type: urn:fredkorlabs:registration:problem:registration-access-denied
+            title: Registration access denied
+            status: 403
+            detail: Registration belongs to another applicant
+            instance: /api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/resume
+            code: REGISTRATION_ACCESS_DENIED
+            errors: []
       x-error-codes:
       - REGISTRATION_ACCESS_DENIED
     RegistrationNotFound:
@@ -1642,6 +1883,14 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          example:
+            type: urn:fredkorlabs:registration:problem:registration-not-found
+            title: Registration not found
+            status: 404
+            detail: Registration does not exist
+            instance: /api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/resume
+            code: REGISTRATION_NOT_FOUND
+            errors: []
       x-error-codes:
       - REGISTRATION_NOT_FOUND
     DocumentNotFound:
@@ -1650,6 +1899,27 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          examples:
+            registrationNotFound:
+              summary: Expediente inexistente
+              value:
+                type: urn:fredkorlabs:registration:problem:registration-not-found
+                title: Registration not found
+                status: 404
+                detail: Registration does not exist
+                instance: /api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document
+                code: REGISTRATION_NOT_FOUND
+                errors: []
+            fiscalDocumentNotFound:
+              summary: Expediente sin cédula asociada
+              value:
+                type: urn:fredkorlabs:registration:problem:fiscal-document-not-found
+                title: Fiscal document not found
+                status: 404
+                detail: No fiscal document is associated with the registration
+                instance: /api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document
+                code: FISCAL_DOCUMENT_NOT_FOUND
+                errors: []
       x-error-codes:
       - REGISTRATION_NOT_FOUND
       - FISCAL_DOCUMENT_NOT_FOUND
@@ -1659,6 +1929,14 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          example:
+            type: urn:fredkorlabs:registration:problem:duplicate-rfc
+            title: Duplicate RFC
+            status: 409
+            detail: A registration already exists for this RFC
+            instance: /api/v1/supplier-registrations
+            code: DUPLICATE_RFC
+            errors: []
       x-error-codes:
       - DUPLICATE_RFC
     StateConflict:
@@ -1667,6 +1945,14 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          example:
+            type: urn:fredkorlabs:registration:problem:invalid-state-transition
+            title: Invalid state transition
+            status: 409
+            detail: 'Operation requires registration in IN_PROGRESS status, got: REGISTERED'
+            instance: /api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/resume
+            code: INVALID_STATE_TRANSITION
+            errors: []
       x-error-codes:
       - INVALID_STATE_TRANSITION
     DocumentConflict:
@@ -1675,6 +1961,27 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          examples:
+            invalidStateTransition:
+              summary: Expediente que no está en captura
+              value:
+                type: urn:fredkorlabs:registration:problem:invalid-state-transition
+                title: Invalid state transition
+                status: 409
+                detail: 'Operation requires registration in IN_PROGRESS status, got: REGISTERED'
+                instance: /api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document
+                code: INVALID_STATE_TRANSITION
+                errors: []
+            fiscalDocumentAlreadyExists:
+              summary: Ya hay una cédula asociada
+              value:
+                type: urn:fredkorlabs:registration:problem:fiscal-document-already-exists
+                title: Fiscal document already exists
+                status: 409
+                detail: A fiscal document is already associated
+                instance: /api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document
+                code: FISCAL_DOCUMENT_ALREADY_EXISTS
+                errors: []
       x-error-codes:
       - INVALID_STATE_TRANSITION
       - FISCAL_DOCUMENT_ALREADY_EXISTS
@@ -1684,6 +1991,14 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          example:
+            type: urn:fredkorlabs:registration:problem:document-too-large
+            title: Document too large
+            status: 413
+            detail: Document exceeds the maximum size of 5242880 bytes
+            instance: /api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document
+            code: DOCUMENT_TOO_LARGE
+            errors: []
       x-error-codes:
       - DOCUMENT_TOO_LARGE
     UnsupportedDocument:
@@ -1692,6 +2007,14 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          example:
+            type: urn:fredkorlabs:registration:problem:document-format-not-supported
+            title: Document format not supported
+            status: 415
+            detail: Document content is not a PDF
+            instance: /api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document
+            code: DOCUMENT_FORMAT_NOT_SUPPORTED
+            errors: []
       x-error-codes:
       - DOCUMENT_FORMAT_NOT_SUPPORTED
     SignatureVerificationFailed:
@@ -1700,6 +2023,14 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          example:
+            type: urn:fredkorlabs:registration:problem:signature-verification-failed
+            title: Signature verification failed
+            status: 422
+            detail: Seal does not match the signed content and certificate
+            instance: /api/v1/applicant-identifications
+            code: SIGNATURE_VERIFICATION_FAILED
+            errors: []
       x-error-codes:
       - SIGNATURE_VERIFICATION_FAILED
     InternalError:
@@ -1729,6 +2060,14 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemResponse'
+          example:
+            type: urn:fredkorlabs:registration:problem:registration-token-invalid
+            title: Invalid registration token
+            status: 401
+            detail: Registration token is missing or invalid
+            instance: /api/v1/supplier-registrations/existence
+            code: REGISTRATION_TOKEN_INVALID
+            errors: []
       x-error-codes:
       - REGISTRATION_TOKEN_INVALID
   securitySchemes:
