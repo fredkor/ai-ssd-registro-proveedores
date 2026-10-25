@@ -3,8 +3,8 @@
 **Estado: aprobado por el usuario el 2026-10-20**, con las decisiones físicas de la
 [sección 7](#7-decisiones-de-diseño-físico). Complementa el
 [esquema de catálogos aprobado](catalog-database-proposal.md); no modifica sus IDs ni claves.
-Todos los grupos residen en la misma base de datos. No se crean migraciones con este
-documento; las relaciones representan el diseño físico de la primera etapa.
+Todos los grupos residen en la misma base de datos. Las relaciones representan el
+diseño físico de la primera etapa; las migraciones V1 a V3 y V14 a V17 lo implementan.
 
 Los diagramas se separan para facilitar su lectura. Una tabla repetida conserva la misma
 identidad en todos los grupos; los bloques abreviados solo muestran las claves necesarias.
