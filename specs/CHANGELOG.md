@@ -79,3 +79,15 @@ compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spe
 - **Archivos:** `specs/traceability.md` §1, `specs/architecture/architecture.md` §10.
 - **Contrato:** sin cambios.
 - **Commits:** `design:` (este cambio).
+
+## 2026-10-25 — Tipos de dominio descritos en el modelo
+
+- **Descripción:** `domain-model.md` describe ocho tipos de `domain.model` que el código ya usaba:
+  `CertificateSubjectAttribute` y `CertificateIdentity` (§5.1), `GeneralDataCatalogContext`,
+  `GeneralDataInput` y `GeneralDataViolation` (§5.2), `CucopParticipationViolation` (§5.4),
+  `LegalOwnershipOption` (§5.5) y `FiscalDocumentFormat` (§4). No agrega reglas: cada una ya estaba
+  en ADR-0016, INV-04, INV-20, INV-27, INV-31, INV-32, ADR-0009, ADR-0010 o ADR-0019.
+- **Motivo:** avisos SYNC-09 de `tools/spec_sync.py`, abiertos en la revisión SDD del 2026-10-24.
+- **Archivos:** `specs/architecture/domain-model.md` §4 y §5.
+- **Contrato:** sin cambios.
+- **Commits:** `design:` (este cambio).
