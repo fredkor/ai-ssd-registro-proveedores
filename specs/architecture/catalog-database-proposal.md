@@ -2,8 +2,8 @@
 
 **Estado: estructura Mermaid aprobada por el usuario el 2026-10-19.** Los nombres, campos
 y relaciones de los diagramas constituyen la base del diseño. Los anchos SQL, longitudes
-y verificaciones de datos señalados abajo se concretarán antes de implementar; no se declara
-que las tablas hayan sido inspeccionadas ni que se hayan ejecutado migraciones.
+y verificaciones de datos se fijaron en [Tipos SQL](#tipos-sql); las migraciones V4 a V13, V15 (catálogo
+de origen) y V18 los implementan.
 Fuente funcional: [catálogos](../domain/catalogs.md), RF-REG-05 y RF-REG-08.
 Los catálogos comparten base de datos con el expediente conforme a
 [ADR-0001](../adr/0001-backend-arquitectura-hexagonal.md).
@@ -180,7 +180,7 @@ Tipos de PostgreSQL 17, en todos los entornos ([ADR-0017](../adr/0017-backend-po
 `VARCHAR(500)` corresponde al VARCHAR2(500) de la fuente. Las columnas que hoy admiten null
 (`iso_country` y `regime` en Titularidad Jurídica) se mantienen opcionales; las demás son `NOT NULL`.
 
-## Precisiones físicas antes de implementar
+## Precisiones físicas resueltas
 
 1. Conservar nombres y relaciones aprobados. Tipos SQL fijados el 2026-10-21.
 2. Mapeo país/régimen de Titularidad Jurídica resuelto el 2026-10-21: por código de país y texto

@@ -33,7 +33,8 @@ Leer los documentos aplicables antes de modificar o implementar una funcionalida
    a mano DTO web ni cambies rutas, nombres u operationId.
 3. **Arquitectura hexagonal (ADR-0001):**
     - `domain`: Java puro. Sin Spring, sin JPA, sin puertos. Las reglas INV-xx viven aquí.
-    - `application.port.in`: interfaces `*UseCase` + Commands, Queries y Results (`record`).
+    - `application.port.in`: interfaces `*UseCase` + Commands, Queries y Results (`record`), y las excepciones
+      de aplicación que traduce el adaptador web.
     - `application.port.out`: puertos de salida de la arquitectura §6 (p. ej.
       `SupplierRegistrationPersistencePort`, `NoticeAcceptancePersistencePort`) y sus modelos.
     - `application.service`: un servicio por caso de uso; orquesta, no contiene reglas de negocio.

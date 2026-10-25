@@ -89,14 +89,14 @@ permanecen en los adaptadores y en la configuración de arranque.
 | :--- | :--- | :--- | :--- |
 | `domain.model` | Agregados, entidades, objetos de valor y enums del modelo. | JDK y otros tipos de dominio. | Spring, JPA, HTTP, aplicación, adaptadores, librerías del componente de firma. |
 | `domain.exception` | Incumplimientos de reglas de dominio. | JDK. | Spring, JPA, HTTP, aplicación, adaptadores y clases de infraestructura. |
-| `application.port.in` | Interfaces de casos de uso; Commands, Queries y Results. | JDK y tipos de aplicación; dominio solo si es necesario sin exponerlo al adaptador web. | Spring, JPA, HTTP, servicios concretos y adaptadores. |
+| `application.port.in` | Interfaces de casos de uso; Commands, Queries y Results; excepciones de aplicación que el adaptador web traduce a errores (ADR-0019). | JDK y tipos de aplicación; dominio solo si es necesario sin exponerlo al adaptador web. | Spring, JPA, HTTP, servicios concretos y adaptadores. |
 | `application.port.out` | Capacidades externas y sus modelos de intercambio. | JDK y dominio. | Spring, JPA, HTTP, adaptadores y resultados propios de `port.in`. |
 | `application.service` | Implementar casos de uso, resolver contexto, autorizar acceso, coordinar transacciones y puertos. | JDK, dominio, `port.in` y `port.out`. | Spring, JPA, HTTP e implementaciones concretas de adaptadores. |
 | `adapter.in.web` | Traducir HTTP y archivos a entradas de aplicación; mapear resultados y errores. | JDK, Spring MVC, validación y serialización del contrato; `application.port.in`; excepciones de dominio solo para traducir errores. | Agregados de dominio, servicios concretos, JPA y adaptadores de salida. |
-| `adapter.out.persistence` | Guardar y reconstruir expedientes, aceptaciones, evidencias y asociaciones documentales. | `application.port.out`, dominio y JPA. | Controladores y modelos web. |
+| `adapter.out.persistence` | Guardar y reconstruir expedientes, aceptaciones, evidencias y asociaciones documentales. | `application.port.out`, dominio y JPA; Spring Security OAuth2 (`JwtEncoder`) para emitir el JWT junto con su contexto (ADR-0015). | Controladores y modelos web. |
 | `adapter.out.catalog` | Resolver registros y relaciones de catálogos existentes. | `application.port.out`, dominio y tecnología de consulta elegida. | Interfaz y casos de uso de entrada. |
 | `adapter.out.signature` | Verificar criptográficamente sello, contenido y certificado; traducir el resultado externo. | `application.port.out`, dominio y mecanismo criptográfico elegido. | Interfaz, servicios concretos y acceso directo a sus transacciones. |
-| `adapter.out.document` | Gestionar contenido de archivos de cualquier tipo admitido mediante referencias opacas. | `application.port.out` y tecnología de almacenamiento elegida. | Agregados completos, interfaz y controladores. |
+| `adapter.out.document` | Gestionar contenido de archivos de cualquier tipo admitido mediante referencias opacas. | `application.port.out`, tecnología de almacenamiento elegida y sincronización transaccional de Spring para compensar una carga no confirmada (§7.3 del diseño de persistencia, ADR-0010). | Agregados completos, interfaz y controladores. |
 | `adapter.in.transaction` | Aplicar la transacción de un caso de uso mediante un decorador del puerto de entrada. | JDK, Spring y `application.port.in`. | HTTP, reglas de negocio y adaptadores de salida concretos. |
 | `adapter.in.scheduling` | Activar periódicamente el caso de uso de limpieza. | JDK, Spring y `application.port.in`. | Reglas de negocio y adaptadores de salida concretos. |
 | `configuration` | Ensamblar casos de uso, adaptadores y decoradores transaccionales. | JDK, Spring, puertos, servicios y adaptadores necesarios para el ensamblaje. | Reglas de negocio. |
@@ -120,7 +120,7 @@ se registran mediante métodos `@Bean` que exponen sus puertos de entrada.
 | Catálogos | Referencias y registros con datos y relaciones necesarios para validar. | La aplicación no usa DTO web como modelo de catálogo. |
 
 `SignatureResultInput` representa el resultado completo recibido para identificación,
-con sus proyecciones de contenido, RFC, razón social, sello y certificado. Sus campos están definidos en el borrador OpenAPI. El dominio y los puertos no dependen de Jackson ni de una clase
+con sus proyecciones de contenido, RFC, razón social, sello y certificado. Sus campos están definidos en el contrato OpenAPI. El dominio y los puertos no dependen de Jackson ni de una clase
 externa del componente de firma.
 
 Los resultados de aplicación proyectan estado, identidad, datos guardados y progreso sin
@@ -129,8 +129,8 @@ en cada consulta del expediente.
 
 ## 5. Puertos de entrada y servicios
 
-Los nombres siguientes definen responsabilidades de aplicación. Las firmas concretas y los
-campos de Commands, Queries y Results se cerrarán con el contrato API. Las referencias US
+Los nombres siguientes definen responsabilidades de aplicación. Las firmas y los
+campos de Commands, Queries y Results siguen el contrato API y viven en `application.port.in`. Las referencias US
 corresponden a los archivos de historias, cuyos encabezados conservan HU-REG.
 
 | Puerto de entrada | Entrada / salida conceptual | Servicio | Fuente |
@@ -182,14 +182,14 @@ no dependen de `application.port.in` ni de clases de infraestructura.
 
 La consulta de inexistencia previa al alta no reemplaza la garantía de unicidad en persistencia.
 La violación concurrente se traduce en un resultado o error de aplicación que conduzca al
-flujo correspondiente al expediente existente. La representación HTTP y el código están definidos en ADR-0004 y OpenAPI; las clases concretas se fijarán al implementar.
+flujo correspondiente al expediente existente. La representación HTTP y el código están definidos en ADR-0004 y OpenAPI: la persistencia informa `DuplicateRegistrationException` y el servicio la traduce a `RegistrationAlreadyExistsException` (409 `DUPLICATE_RFC`).
 
 `java.time.Clock` se inyecta en los servicios que requieren la hora; se utiliza UTC y las
 pruebas pueden proporcionar un reloj fijo. El dominio recibe los instantes de negocio, sin
 obtener la hora del sistema internamente.
 
-Las entidades y relaciones de persistencia se derivarán del modelo de dominio y las reglas
-especificadas al implementar el adaptador. Las tablas y columnas no se toman como fuente
+Las entidades y relaciones de persistencia se derivan del modelo de dominio y de las reglas
+especificadas. Las tablas y columnas no se toman como fuente
 de reglas adicionales de negocio.
 
 Los catálogos de Datos Generales y los cuatro niveles CUCoP residen en la misma base de datos que los expedientes. Se consultan mediante Spring Data JPA desde adapter.out.catalog, que implementa GeneralDataCatalogPort y CucopCatalogPort. No se requiere un servicio HTTP externo ni otra conexión de base de datos. Las entidades y repositorios de catálogo permanecen en el adaptador; el dominio y los puertos no dependen de JPA. El registro consulta catálogos, sin habilitar su administración ni modificar sus claves o relaciones.
@@ -342,7 +342,7 @@ sequenceDiagram
 
 El [diseño de persistencia del registro](registration-database-design.md), aprobado el
 2026-10-20, define tablas, tipos SQL de PostgreSQL, concurrencia y compensación, complementando el
-esquema de catálogos aprobado. No representa migraciones ejecutadas.
+esquema de catálogos aprobado. Las migraciones Flyway V1 a V18 de `backend/src/main/resources/db/migration` lo implementan.
 
 ## 9. Estructura prevista
 

@@ -167,7 +167,7 @@ class IdentificationPersistenceAdapterTest {
     }
 
     @Test
-    void US01_CA027_schema_usesApprovedSqlTypesAndUniqueAcceptance() {
+    void ADR0017_identificationSchema_usesApprovedSqlTypesAndUniqueAcceptance() {
         assertEquals("text", columnType("applicant_signature_evidence", "complete_result"));
         assertEquals("text", columnType("applicant_signature_evidence", "verified_legal_name"));
         assertEquals("uuid", columnType("registration_context", "jti"));

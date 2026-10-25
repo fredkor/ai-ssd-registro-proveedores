@@ -71,3 +71,67 @@ Resoluciones elegidas por el usuario (recomendación de este informe):
 | SYNC-20261025-04 | Resuelto (opción a) | `5d6cfba design:` y `89f2527 test:` — la selección cita INV-31. |
 | SYNC-20261025-05 | Resuelto (opción a) | `docs/sync-report.md` se versiona con cada revisión (commit `docs:` de este informe). |
 | SYNC-20261025-06 | Resuelto | `451dd2e docs:` — la entrega propone la etiqueta `etapa-1`. |
+
+## 8. Segunda revisión — 2026-10-25
+
+- **Revisión:** `main` en `8483da9`, después de los PR #31 a #34: diagramas sincronizados, diagramas por
+  operación en `docs/tecnica/diagramas.md`, migración V18 y operaciones de la cédula en el modelo.
+- **Seguimiento:** los seis hallazgos de la primera revisión están resueltos (§7).
+
+### 8.1. Verificación automática
+
+| Comando | Resultado |
+| :--- | :--- |
+| `python3 tools/spec_lint.py --require-ready` | `Errores: 0 \| Advertencias: 0` — `RESULTADO: OK — coherencia documental; no valida ejecución`. |
+| `python3 tools/spec_sync.py --md docs/sync-report.md` | 22 operaciones; 136 criterios (91 verificables en backend); 405 pruebas `USxx_CAyyy`. `Errores: 0 \| Advertencias: 0` — `RESULTADO: OK - specs e implementación sincronizadas`. El informe regenerado no cambia. |
+| `./mvnw test` (Docker) | `BUILD SUCCESS`: 646 pruebas, 0 fallos, 0 errores, 0 omitidas. |
+
+### 8.2. Verificación con criterio
+
+| Revisión | Resultado | Evidencia |
+| :--- | :--- | :--- |
+| Errores (ADR-0004, ADR-0019) | Conforme; sin cambios desde la primera revisión. | `GlobalExceptionHandler.java`. |
+| ADR aceptados | Conforme; el código de producción solo cambió en V18, que sigue los tipos de ADR-0017. | `V18__supplier_status_and_type_catalogs.sql`; `SupplierCatalogsMigrationTest`. |
+| Arquitectura (§3) | Sin imports prohibidos, pero la tabla no documenta dos dependencias reales ni las excepciones de `port.in` (SYNC-20261025-08 y -09). | Ver §8.4. |
+| Invariantes ("Dónde se garantiza") | Revisé además INV-16 a INV-29, INV-31 e INV-34. Las de Datos Generales se garantizan en `GeneralData.validate` como dice la spec. INV-28 e INV-29 omiten el dominio (SYNC-20261025-07). | `GeneralData.java:42-104`; `SupplierRegistration.java:140-166`. |
+| INV-31 y elementos repetidos | Conforme: el web los rechaza porque el contrato declara `uniqueItems: true`, y el dominio valida tipos y específicas. | `supplier-registration-openapi.yaml:1303,1309,1324`; `RawRequestBodyAdvice.java:21-24`; `CucopParticipation.java:31-32`. |
+| Pruebas `USxx_CAyyy` | Busqué de nuevo nombres técnicos. Dos pruebas de esquema o BD llevan el nombre de un CA que no verifican (SYNC-20261025-10). `US04_CA003_database_…` y `US10_CA004_database_…` sí verifican su criterio (unicidad en BD). | Ver §8.4. |
+| Documentación | `docs/tecnica/diagramas.md` coincide con `architecture.md` §8 y con el código. El resto de `docs/tecnica/` no existe: falta correr `/documentar`. | — |
+| Texto de specs | Varias frases anteriores a la implementación ya no son ciertas (SYNC-20261025-11). | Ver §8.4. |
+
+### 8.3. Clasificación
+
+Ningún hallazgo cambia comportamiento ni contrato. Los -07, -08, -09 y -11 son specs incompletas o
+desactualizadas donde el código tiene razón: **ajustar la spec requiere tu aprobación**. El -10 es solo
+un renombre de pruebas.
+
+### 8.4. Hallazgos
+
+| ID | Estado | Tipo | Evidencia | Resolución propuesta | Commit |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| SYNC-20261025-07 | Nuevo | Spec incompleta (el código tiene razón) | `domain-model.md` INV-28 ("Aplicación, almacenamiento y persistencia de la carga") e INV-29 ("Interfaz, aplicación y persistencia") omiten el dominio. Pero `SupplierRegistration.associateFiscalDocument` y `dissociateFiscalDocument` (`SupplierRegistration.java:140-166`) garantizan cantidad, estado y el paso a PENDING. Desde E2 (#34), §7 las lista como operaciones del agregado con esas INV: la spec se contradice. | INV-28: "Dominio: asociación sin completar Datos Generales; aplicación, almacenamiento y persistencia de la carga". INV-29: "Dominio: desasociación y Datos Generales PENDING; interfaz, aplicación y persistencia; limpieza física por ADR-0010". **Requiere tu aprobación.** | `design:` |
+| SYNC-20261025-08 | Nuevo | Spec incompleta (el código tiene razón) | La tabla de `architecture.md:96` permite en `adapter.out.persistence` solo "`application.port.out`, dominio y JPA", pero `RegistrationContextAdapter.java:13-17` usa `JwtEncoder` de Spring Security, que es justo lo que pide ADR-0015. La `:99` permite en `adapter.out.document` solo la tecnología de almacenamiento, pero `VolumeFileStorageAdapter.java:6-7` usa `TransactionSynchronization` para la compensación de `registration-database-design.md` §7.3. | Agregar a la fila de persistencia "y la emisión JWT de ADR-0015 (Spring Security)" y a la de documentos "y sincronización transaccional de Spring para la compensación (§7.3)". **Requiere tu aprobación.** | `design:` |
+| SYNC-20261025-09 | Nuevo | Spec incompleta (el código tiene razón) | `application/port/in/` contiene excepciones de aplicación (`RegistrationNotFoundException`, `RegistrationAccessDeniedException`, `RegistrationSessionUnavailableException`, `FiscalDocumentNotFoundException`, …). La tabla de `architecture.md:92` y CLAUDE.md enumeran solo "Interfaces de casos de uso; Commands, Queries y Results". El web las necesita para traducirlas (ADR-0019) sin depender de `service`. | Agregar a `architecture.md:92` "y excepciones de aplicación que el adaptador web traduce a errores". Alinear CLAUDE.md en el mismo commit. **Requiere tu aprobación.** | `design:` |
+| SYNC-20261025-10 | Nuevo | Prueba con nombre de un CA que no verifica | `IdentificationPersistenceAdapterTest.java:170` `US01_CA027_schema_usesApprovedSqlTypesAndUniqueAcceptance` comprueba tipos SQL y una UK. CA-027 trata de confirmar el contexto antes de devolver el token, y lo verifica `US01_CA027_validSignatureWithoutStoredContext_returns401`, entre otras. `NoticeAcceptancePersistenceAdapterTest.java:55` `US03_CA007_database_rejectsVersionOtherThanFixedNotice` comprueba el check de BD; CA-007 trata de reemplazar la aceptación al reanudar. | Renombrar a `ADR0017_…`, igual que SYNC-20261025-03. `spec_sync` debe seguir en verde. | `test:` |
+| SYNC-20261025-11 | Nuevo | Spec desactualizada (texto previo a la implementación) | `architecture.md:123` ("borrador OpenAPI"), `:133` ("se cerrarán con el contrato API"), `:185` ("las clases concretas se fijarán al implementar"), `:191` ("se derivarán … al implementar") y `:345` ("No representa migraciones ejecutadas"). También `catalog-database-proposal.md:5` ("se concretarán antes de implementar; no se declara … migraciones") y `:183` ("Precisiones físicas antes de implementar"), y `registration-database-design.md:6` ("No se crean migraciones con este documento"). El contrato está `READY` y existen las migraciones V1 a V18. | Reescribir esas frases en tiempo presente, sin cambiar ninguna decisión: contrato vigente, clases y migraciones existentes (citando V1 a V18). **Requiere tu aprobación.** | `design:` |
+
+### 8.5. Lo que no se verificó
+
+- **"Dónde se garantiza":** quedan sin contrastar INV-01 a INV-08, INV-33, INV-35, INV-36, INV-38 e INV-39.
+  Casi todas son de interfaz o de etapas posteriores.
+- **Pruebas `USxx_CAyyy`:** busqué nombres técnicos en las 405 y leí las sospechosas; no leí cada prueba contra su criterio.
+- **Frontend:** sigue sin pantallas del registro.
+
+### 8.6. Seguimiento — 2026-10-25
+
+El usuario revisó y aprobó cada hallazgo por separado.
+
+| ID | Estado | Commit |
+| :--- | :--- | :--- |
+| SYNC-20261025-07 | Resuelto | `9e795dd design:`: INV-28 e INV-29 indican la parte del dominio. |
+| SYNC-20261025-08 | Resuelto | `9e795dd design:`: `JwtEncoder` en persistencia y sincronización transaccional en documentos. |
+| SYNC-20261025-09 | Resuelto | `9e795dd design:`: excepciones de aplicación en `port.in`, también en CLAUDE.md. |
+| SYNC-20261025-10 | Resuelto | `f76a96f test:`: dos pruebas renombradas a `ADR0017_`; `spec_sync` cuenta 403 pruebas `USxx_CAyyy`. |
+| SYNC-20261025-11 | Resuelto | `9e795dd design:`: frases en presente; las migraciones se citan por rango (V1 a V18). |
+
+`docs/sync-report.md` se regeneró después de los cambios y se versiona con este informe.

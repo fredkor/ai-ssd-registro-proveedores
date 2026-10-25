@@ -3,6 +3,22 @@
 Cada entrada registra un cambio aprobado sobre `specs/`: fecha, descripción, motivo, archivos,
 compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spec`.
 
+## 2026-10-25 — Specs alineadas con la implementación (segunda sincronización)
+
+- **Descripción:** INV-28 e INV-29 indican la parte que garantiza el dominio. La tabla de dependencias
+  de la arquitectura admite `JwtEncoder` en persistencia (ADR-0015) y la sincronización transaccional de
+  Spring en documentos (compensación del diseño de persistencia §7.3). `application.port.in` incluye
+  las excepciones de aplicación que traduce el web, y CLAUDE.md lo refleja. Las frases escritas antes
+  de implementar (borrador del contrato, clases y migraciones por crear) pasan a presente.
+- **Motivo:** hallazgos SYNC-20261025-07, -08, -09 y -11 de la segunda revisión de
+  `docs/revisiones/2026-10-25-sincronizar.md`. El código ya cumplía; la spec estaba incompleta o
+  desactualizada. Ajustes aprobados por el usuario uno a uno; ninguna decisión cambia.
+- **Archivos:** `specs/architecture/domain-model.md` (INV-28, INV-29);
+  `specs/architecture/architecture.md` §3, §4, §5, §6 y §8; `specs/architecture/catalog-database-proposal.md`;
+  `specs/architecture/registration-database-design.md`; `CLAUDE.md`.
+- **Contrato:** sin cambios.
+- **Commits:** `design:` (este cambio), `test:` si se aprueba SYNC-20261025-10 y `docs:` (revisión).
+
 ## 2026-10-25 — Operaciones de la cédula en el modelo de dominio
 
 - **Descripción:** el modelo de dominio lista `associateFiscalDocument` y `dissociateFiscalDocument`
