@@ -44,7 +44,7 @@ Todos los ADR se almacenan directamente en `specs/adr/`, con el formato
 - Interoperabilidad de firma (ADR-0016) verificada con certificados y sellos de prueba generados con node-forge (`backend/src/test/resources/signature`).
 - Tipos SQL y vigencia de catálogos fijados el 2026-10-21; claves únicas por tabla y mapeo país/régimen de Titularidad Jurídica por código y texto. El esquema de archivos y la compensación de fallos de carga (ADR-0010) quedaron definidos el 2026-10-20.
 - Contrato, Maven y validador alineados; la generación se comprobó el 2026-10-20.
-- PostgreSQL 17 en todos los entornos (ADR-0017, ADR-0018): driver, Flyway, Testcontainers y migraciones V1 a V17 incorporados.
+- PostgreSQL 17 en todos los entornos (ADR-0017, ADR-0018): driver, Flyway, Testcontainers y migraciones V1 a V18 incorporados.
 - Limpieza diaria de ADR-0010 implementada el 2026-10-25 (`CleanUpUnassociatedFilesUseCase`, `DailyFileCleanupScheduler`).
 - Versiones del frontend fijadas en `frontend/package.json` y `frontend/package-lock.json` (Sakai 21.0.0, Angular 21.0.6, PrimeNG 21.0.2).
 
