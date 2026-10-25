@@ -1,0 +1,4 @@
+Proyecto: /home/fredkor/development/personal/ai-ssd-registro-proveedores
+Contrato: specs/api/supplier-registration-openapi.yaml
+Errores: 0 | Advertencias: 0
+RESULTADO: OK — coherencia documental; no valida ejecución
