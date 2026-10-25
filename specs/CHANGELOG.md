@@ -38,3 +38,16 @@ compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spe
   `specs/architecture/architecture.md` §10.
 - **Contrato:** sin cambios.
 - **Commits:** `design:` (este cambio).
+
+## 2026-10-25 — Regla de versionado del contrato y versión 0.2.0
+
+- **Descripción:** `API-GUIDELINES.md` define el versionado SemVer de `info.version`, con fase `0.x`.
+  El contrato pasa de 0.1.0 a 0.2.0 para reflejar los cambios hechos sin regla:
+  - `getTaxRegimes` (compatible).
+  - `taxRegimeId` obligatorio en `ApplicantIdentityResponse` (compatible: propiedad nueva en respuesta).
+  - `uniqueItems` en `CucopParticipationRequest.specificItemIds` (**incompatible**: validación más estricta).
+- **Motivo:** revisión de consistencia SDD-20261024-08.
+- **Archivos:** `specs/api/API-GUIDELINES.md`, `specs/api/supplier-registration-openapi.yaml`
+  (`info.version`), `specs/api/README.md`.
+- **Contrato:** versión 0.2.0; sin cambios de operaciones ni esquemas en este commit.
+- **Commits:** `contract:` (este cambio).
