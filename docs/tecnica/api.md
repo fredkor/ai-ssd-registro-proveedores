@@ -3,12 +3,12 @@
 
 # API del registro
 
-Resumen navegable del [contrato OpenAPI](../../specs/api/supplier-registration-openapi.yaml), que es la fuente de verdad (`info.version` 0.2.0, estado READY). Los códigos `code` y su HTTP siguen [ADR-0004](../../specs/adr/0004-shared-codigos-de-error.md); el cuerpo de error es Problem Details ([ADR-0019](../../specs/adr/0019-shared-problem-details-rfc-9457.md)), `application/problem+json`. Swagger UI muestra el mismo contrato ([ADR-0008](../../specs/adr/0008-backend-swagger-ui-con-contrato.md)).
+Resumen navegable del [contrato OpenAPI](../../specs/api/supplier-registration-openapi.yaml), que es la fuente de verdad (`info.version` 0.2.1, estado READY). Los códigos `code` y su HTTP siguen [ADR-0004](../../specs/adr/0004-shared-codigos-de-error.md); el cuerpo de error es Problem Details ([ADR-0019](../../specs/adr/0019-shared-problem-details-rfc-9457.md)), `application/problem+json`. Swagger UI muestra el mismo contrato ([ADR-0008](../../specs/adr/0008-backend-swagger-ui-con-contrato.md)).
 
 ## Convenciones
 
 - **Seguridad.** Las operaciones marcadas con *Bearer* exigen `Authorization: Bearer <registrationToken>` (esquema `RegistrationToken`, [ADR-0015](../../specs/adr/0015-shared-token-de-registro.md)). Sin token válido responden 401 `REGISTRATION_TOKEN_INVALID`.
-- **Ejemplos.** Se muestran solo los que define el contrato. Cuando no hay, la tabla de campos es la estructura del esquema (ver DOC-20261025-01 en el [README](README.md#divergencias-detectadas)).
+- **Ejemplos.** Todos salen del contrato. Las peticiones multipart, la descarga del PDF y el 204 no tienen cuerpo JSON. Algunas listas de catálogo muestran solo parte de las filas.
 - **Null y propiedades desconocidas** según [ADR-0009](../../specs/adr/0009-shared-null-explicito-en-requests.md).
 
 ## Error: `ProblemResponse`
@@ -37,7 +37,184 @@ Cada error de campo (`errors[]`) es un `ProblemFieldErrorResponse`:
 No admite propiedades no definidas.
 
 
-Ejemplo del contrato (500 `INTERNAL_ERROR`):
+### Ejemplos de error
+
+Cada operación enlaza estas respuestas por su HTTP; los ejemplos son los del contrato.
+
+**400 `VALIDATION_ERROR` (`ValidationError`)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:validation-error",
+  "title": "Invalid request",
+  "status": 400,
+  "detail": "General Data does not satisfy its rules",
+  "instance": "/api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/general-data",
+  "code": "VALIDATION_ERROR",
+  "errors": [
+    {
+      "pointer": "/phones",
+      "detail": "must contain at least one phone for legal entities"
+    }
+  ]
+}
+```
+
+**403 `REGISTRATION_ACCESS_DENIED` (`AccessDenied`)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:registration-access-denied",
+  "title": "Registration access denied",
+  "status": 403,
+  "detail": "Registration belongs to another applicant",
+  "instance": "/api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/resume",
+  "code": "REGISTRATION_ACCESS_DENIED",
+  "errors": []
+}
+```
+
+**404 `REGISTRATION_NOT_FOUND` (`RegistrationNotFound`)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:registration-not-found",
+  "title": "Registration not found",
+  "status": 404,
+  "detail": "Registration does not exist",
+  "instance": "/api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/resume",
+  "code": "REGISTRATION_NOT_FOUND",
+  "errors": []
+}
+```
+
+**404 `REGISTRATION_NOT_FOUND` (`DocumentNotFound`, expediente inexistente)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:registration-not-found",
+  "title": "Registration not found",
+  "status": 404,
+  "detail": "Registration does not exist",
+  "instance": "/api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document",
+  "code": "REGISTRATION_NOT_FOUND",
+  "errors": []
+}
+```
+
+**404 `FISCAL_DOCUMENT_NOT_FOUND` (`DocumentNotFound`, expediente sin cédula asociada)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:fiscal-document-not-found",
+  "title": "Fiscal document not found",
+  "status": 404,
+  "detail": "No fiscal document is associated with the registration",
+  "instance": "/api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document",
+  "code": "FISCAL_DOCUMENT_NOT_FOUND",
+  "errors": []
+}
+```
+
+**409 `DUPLICATE_RFC` (`DuplicateRfc`)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:duplicate-rfc",
+  "title": "Duplicate RFC",
+  "status": 409,
+  "detail": "A registration already exists for this RFC",
+  "instance": "/api/v1/supplier-registrations",
+  "code": "DUPLICATE_RFC",
+  "errors": []
+}
+```
+
+**409 `INVALID_STATE_TRANSITION` (`StateConflict`)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:invalid-state-transition",
+  "title": "Invalid state transition",
+  "status": 409,
+  "detail": "Operation requires registration in IN_PROGRESS status, got: REGISTERED",
+  "instance": "/api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/resume",
+  "code": "INVALID_STATE_TRANSITION",
+  "errors": []
+}
+```
+
+**409 `INVALID_STATE_TRANSITION` (`DocumentConflict`, expediente que no está en captura)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:invalid-state-transition",
+  "title": "Invalid state transition",
+  "status": 409,
+  "detail": "Operation requires registration in IN_PROGRESS status, got: REGISTERED",
+  "instance": "/api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document",
+  "code": "INVALID_STATE_TRANSITION",
+  "errors": []
+}
+```
+
+**409 `FISCAL_DOCUMENT_ALREADY_EXISTS` (`DocumentConflict`, ya hay una cédula asociada)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:fiscal-document-already-exists",
+  "title": "Fiscal document already exists",
+  "status": 409,
+  "detail": "A fiscal document is already associated",
+  "instance": "/api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document",
+  "code": "FISCAL_DOCUMENT_ALREADY_EXISTS",
+  "errors": []
+}
+```
+
+**413 `DOCUMENT_TOO_LARGE` (`DocumentTooLarge`)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:document-too-large",
+  "title": "Document too large",
+  "status": 413,
+  "detail": "Document exceeds the maximum size of 5242880 bytes",
+  "instance": "/api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document",
+  "code": "DOCUMENT_TOO_LARGE",
+  "errors": []
+}
+```
+
+**415 `DOCUMENT_FORMAT_NOT_SUPPORTED` (`UnsupportedDocument`)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:document-format-not-supported",
+  "title": "Document format not supported",
+  "status": 415,
+  "detail": "Document content is not a PDF",
+  "instance": "/api/v1/supplier-registrations/f42d5ae0-9203-465d-ac1a-f96e205e9529/fiscal-document",
+  "code": "DOCUMENT_FORMAT_NOT_SUPPORTED",
+  "errors": []
+}
+```
+
+**422 `SIGNATURE_VERIFICATION_FAILED` (`SignatureVerificationFailed`)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:signature-verification-failed",
+  "title": "Signature verification failed",
+  "status": 422,
+  "detail": "Seal does not match the signed content and certificate",
+  "instance": "/api/v1/applicant-identifications",
+  "code": "SIGNATURE_VERIFICATION_FAILED",
+  "errors": []
+}
+```
+
+**500 `INTERNAL_ERROR` (`InternalError`)**
 
 ```json
 {
@@ -47,6 +224,20 @@ Ejemplo del contrato (500 `INTERNAL_ERROR`):
   "detail": "Unexpected error",
   "instance": "/api/v1/applicant-identifications",
   "code": "INTERNAL_ERROR",
+  "errors": []
+}
+```
+
+**401 `REGISTRATION_TOKEN_INVALID` (`InvalidRegistrationToken`)**
+
+```json
+{
+  "type": "urn:fredkorlabs:registration:problem:registration-token-invalid",
+  "title": "Invalid registration token",
+  "status": 401,
+  "detail": "Registration token is missing or invalid",
+  "instance": "/api/v1/supplier-registrations/existence",
+  "code": "REGISTRATION_TOKEN_INVALID",
   "errors": []
 }
 ```
@@ -97,7 +288,14 @@ Presentar antes de ejecutar la firma inicial. Versión 1.0.
 | 200 | Operación completada correctamente. | `RegistrationNoticeResponse` | — |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `RegistrationNoticeResponse`):
+
+```json
+{
+  "version": "1.0",
+  "text": "Al registrarse en el Sistema de Compras de \"Fredkor Labs\" MANIFIESTA SU CONFORMIDAD Y ACEPTACIÓN para:\n\nQue los actos pertinentes al sistema, desde su inicio hasta su conclusión, se realicen a través de medios de comunicación electrónica usando su correo electrónico;\n\nQue se dé por notificado de las actuaciones electrónicas que emita la empresa, en el mismo día en que consulta el Sistema de Compras de Fredkor Labs, y\n\nQue en el supuesto de que por causas imputables a la empresa se encuentre imposibilitado para consultar el sistema, o abrir los documentos electrónicos que contengan la información depositada en dicho sistema, en los días quince y último de cada mes o bien, el día hábil siguiente si alguno de éstos fuera inhábil, lo hará del conocimiento de la empresa a más tardar dentro de los tres días hábiles siguientes a aquél en que ocurra dicho impedimento, por medios de comunicación electrónica."
+}
+```
 
 `RegistrationNoticeResponse`:
 
@@ -128,7 +326,13 @@ La aceptación no crea expediente. Hora del backend. Si falla, no habilita firma
 
 No admite propiedades no definidas.
 
-El contrato no define ejemplo de petición.
+Ejemplo del contrato:
+
+```json
+{
+  "version": "1.0"
+}
+```
 
 **Respuestas**
 
@@ -138,7 +342,15 @@ El contrato no define ejemplo de petición.
 | 400 | Datos de entrada inválidos. | `ProblemResponse` | `VALIDATION_ERROR` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `NoticeAcceptanceResponse`):
+
+```json
+{
+  "version": "1.0",
+  "acceptedAt": "2026-10-19T17:55:00Z",
+  "acceptanceId": "example-acceptance"
+}
+```
 
 `NoticeAcceptanceResponse`:
 
@@ -194,7 +406,29 @@ No admite propiedades no definidas.
 
 No admite propiedades no definidas.
 
-El contrato no define ejemplo de petición.
+Ejemplo del contrato:
+
+```json
+{
+  "noticeAcceptanceId": "example-acceptance",
+  "signatureResult": {
+    "resultado": true,
+    "fechaVigencia": "2030-01-01T00:00:00Z",
+    "mensaje": "OK",
+    "cadenaOriginal": "Temporal",
+    "certificado": "MIIDJTCCAg2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMRwwGgYDVQQDDBNBVVRPUklEQUQgREUgUFJVRUJBMB4XDTI2MDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowgY0xITAfBgNVBAMMGEVNUFJFU0EgRUpFTVBMTyBTQSBERSBDVjEhMB8GA1UEKQwYRU1QUkVTQSBFSkVNUExPIFNBIERFIENWMSEwHwYDVQQKDBhFTVBSRVNBIEVKRU1QTE8gU0EgREUgQ1YxCzAJBgNVBAYMAk1YMRUwEwYDVQQtDAxBQUEwMTAxMDFBQUEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC+GFx6x6dup/z5b/Fg/EmrkOLpO3ERfbhDYGamBML7c+sfyRCKjxtJnGx+C3UhVkB92XqgAtGzSf5EkQCH0NCKMsvDSFBUk1PUAl/MX6QrLGnMzlemricivG7A9OOAGWwGSsugytAaFrbAtbKGRPKAyHoLTQmYsKDyc4HbX51OwEMwa77HvkRBDylIPD0hHCN+V+3lT7/Biu3LCc1utMbxyIa49NrIBs3a6LCtvuGCaA+6uyDVba2dfsHqA+vgTDgV+E+1bPmb9j7A3/mFeCBAHYOLjaHLAQa2TKvbpUD3hOcdP3Qnn8xPjUp9CvVIntZLSy+CPv9mmhksDL2drBtTAgMBAAEwDQYJKoZIhvcNAQELBQADggEBACRV7742zVVFYN1uCksMsQU3Xq9Lyw3OF1zg92IxmxqwogBNbuQmakt8ppL8sEnlqJL/XrUgRFyH/HlI/7XUAIT3uW/pXRqmoUoVgNclOpvyqUh5XHdGI80ulQBBmCjR+lIiwx4oC0Oyx1aW+ppoDmEex5pslmlkuJ7Gi+X//nrMtI2PYvadC8p+2f5y8zQnjPi84DoX/bmJr8yfwmi0B0q6pMOl7mvUtOsnlHg/G2iu2QtmuwRN60N0z8UfnOWUIOHIk90/9QV3XvCFeOBaQ7/g4MTWTqeIhlVA6DgHqZRZvWDn9bkkEoju+hhsCO4y/MnCO2wxLIQZEC6jq/iTsSM=",
+    "cadenaFirma": "a7OmRR4Wpx2PIP3P0yVakjNMGUps33lTjfGzXznoA5AjmDGfk/SYqHXK3MT9JYkFphxjghbon1Cs2D6qr6UBSurxHW1qnMix5GpAU9Ijwwa18wtcNuqsCmIgoUssq4WUHRS/0TMag8WA+FN98Df5/YtGM7Xm8x0ttaXElVqyGFF7kdIJZfBQc155h5wZ/Yd9U+Fk1olGYhbwxIRCjxmsAdJMgw6Rj3/TkWlvLloJQwFzWLZ9++yzpewZ0btf2AlnMNfhZyPz6DdpTw6NU4PI/hOeTHY4A5kdCKsMUJsmchy0CMj1KEoNrgVrZ86o5fMFsr6Q5srrEKPL0O+NpqMRGQ==",
+    "rfc": "AAA010101AAA",
+    "curp": null,
+    "razonSocial": "RAZON SOCIAL PKI",
+    "numeroSerie": 30001000000500003416,
+    "tipoCertificado": 1,
+    "certificadoPem": "-----BEGIN CERTIFICATE-----\r\nMIIDJTCCAg2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAeMRwwGgYDVQQDDBNBVVRP\r\nUklEQUQgREUgUFJVRUJBMB4XDTI2MDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFow\r\ngY0xITAfBgNVBAMMGEVNUFJFU0EgRUpFTVBMTyBTQSBERSBDVjEhMB8GA1UEKQwY\r\nRU1QUkVTQSBFSkVNUExPIFNBIERFIENWMSEwHwYDVQQKDBhFTVBSRVNBIEVKRU1Q\r\nTE8gU0EgREUgQ1YxCzAJBgNVBAYMAk1YMRUwEwYDVQQtDAxBQUEwMTAxMDFBQUEw\r\nggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC+GFx6x6dup/z5b/Fg/Emr\r\nkOLpO3ERfbhDYGamBML7c+sfyRCKjxtJnGx+C3UhVkB92XqgAtGzSf5EkQCH0NCK\r\nMsvDSFBUk1PUAl/MX6QrLGnMzlemricivG7A9OOAGWwGSsugytAaFrbAtbKGRPKA\r\nyHoLTQmYsKDyc4HbX51OwEMwa77HvkRBDylIPD0hHCN+V+3lT7/Biu3LCc1utMbx\r\nyIa49NrIBs3a6LCtvuGCaA+6uyDVba2dfsHqA+vgTDgV+E+1bPmb9j7A3/mFeCBA\r\nHYOLjaHLAQa2TKvbpUD3hOcdP3Qnn8xPjUp9CvVIntZLSy+CPv9mmhksDL2drBtT\r\nAgMBAAEwDQYJKoZIhvcNAQELBQADggEBACRV7742zVVFYN1uCksMsQU3Xq9Lyw3O\r\nF1zg92IxmxqwogBNbuQmakt8ppL8sEnlqJL/XrUgRFyH/HlI/7XUAIT3uW/pXRqm\r\noUoVgNclOpvyqUh5XHdGI80ulQBBmCjR+lIiwx4oC0Oyx1aW+ppoDmEex5pslmlk\r\nuJ7Gi+X//nrMtI2PYvadC8p+2f5y8zQnjPi84DoX/bmJr8yfwmi0B0q6pMOl7mvU\r\ntOsnlHg/G2iu2QtmuwRN60N0z8UfnOWUIOHIk90/9QV3XvCFeOBaQ7/g4MTWTqeI\r\nhlVA6DgHqZRZvWDn9bkkEoju+hhsCO4y/MnCO2wxLIQZEC6jq/iTsSM=\r\n-----END CERTIFICATE-----\r\n",
+    "isVigente": true,
+    "origen": "COMPONENTE"
+  }
+}
+```
 
 **Respuestas**
 
@@ -205,7 +439,21 @@ El contrato no define ejemplo de petición.
 | 422 | El sello no corresponde a contenido y certificado. | `ProblemResponse` | `SIGNATURE_VERIFICATION_FAILED` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `ApplicantIdentificationResponse`):
+
+```json
+{
+  "identity": {
+    "rfc": "AAA010101AAA",
+    "legalName": "EMPRESA EJEMPLO SA DE CV",
+    "taxRegime": "LEGAL_ENTITY",
+    "taxRegimeId": 1,
+    "username": "aaa010101aaa"
+  },
+  "registrationToken": "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJBQUEwMTAxMDFBQUEiLCJqdGkiOiIzZjFjMmI5ZS02ZDRhLTRmMGUtOWI4YS0yYzdkNWUxZjBhMzQiLCJpYXQiOjE3OTI0MzI1NjAsImV4cCI6MTc5MjQzNjE2MCwiaXNzIjoic3VwcGxpZXItcmVnaXN0cmF0aW9uIiwiYXVkIjoic3VwcGxpZXItcmVnaXN0cmF0aW9uLWFwaSJ9.firma-RS256-de-ejemplo",
+  "tokenExpiresAt": "2026-10-19T18:56:00Z"
+}
+```
 
 `ApplicantIdentificationResponse`:
 
@@ -295,7 +543,7 @@ Ejemplo del contrato (201, `SupplierRegistrationResponse`):
   "status": "IN_PROGRESS",
   "identity": {
     "rfc": "AAA010101AAA",
-    "legalName": "Empresa de ejemplo",
+    "legalName": "EMPRESA EJEMPLO SA DE CV",
     "taxRegime": "LEGAL_ENTITY",
     "taxRegimeId": 1,
     "username": "aaa010101aaa"
@@ -455,9 +703,9 @@ Exige nueva identificación del mismo RFC. Recupera el mismo expediente y siempr
 
 **Parámetros**
 
-| Nombre | En | Tipo | Obligatorio | Descripción |
-| :--- | :--- | :--- | :--- | :--- |
-| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | — |
+| Nombre | En | Tipo | Obligatorio | Ejemplo | Descripción |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | `f42d5ae0-9203-465d-ac1a-f96e205e9529` | — |
 
 **Respuestas**
 
@@ -479,7 +727,7 @@ Ejemplo del contrato (200, `SupplierRegistrationResponse`):
   "status": "IN_PROGRESS",
   "identity": {
     "rfc": "AAA010101AAA",
-    "legalName": "Empresa de ejemplo",
+    "legalName": "EMPRESA EJEMPLO SA DE CV",
     "taxRegime": "LEGAL_ENTITY",
     "taxRegimeId": 1,
     "username": "aaa010101aaa"
@@ -639,9 +887,9 @@ Invocado por Siguiente. Valida datos, teléfonos y cédula previamente asociada,
 
 **Parámetros**
 
-| Nombre | En | Tipo | Obligatorio | Descripción |
-| :--- | :--- | :--- | :--- | :--- |
-| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | — |
+| Nombre | En | Tipo | Obligatorio | Ejemplo | Descripción |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | `f42d5ae0-9203-465d-ac1a-f96e205e9529` | — |
 
 **Petición** (`application/json`)
 
@@ -675,7 +923,35 @@ No admite propiedades no definidas.
 
 No admite propiedades no definidas.
 
-El contrato no define ejemplo de petición.
+Ejemplo del contrato:
+
+```json
+{
+  "origin": "NATIONAL",
+  "countryId": 151,
+  "nationality": "Mexicana",
+  "foreignFiscalCode": null,
+  "legalOwnershipId": 1,
+  "sectorId": 5,
+  "subsectorId": 21,
+  "businessActivityId": 1,
+  "stratificationId": 2,
+  "primaryActivityId": 3,
+  "workerCountRangeId": 4,
+  "annualSalesRangeId": 2,
+  "website": "https://empresa.com",
+  "phones": [
+    {
+      "number": "5512345678",
+      "extension": "12"
+    },
+    {
+      "number": "0012345678",
+      "extension": null
+    }
+  ]
+}
+```
 
 **Respuestas**
 
@@ -723,9 +999,9 @@ Requiere Datos Generales en COMPLETED (con PENDING, incluida la cédula eliminad
 
 **Parámetros**
 
-| Nombre | En | Tipo | Obligatorio | Descripción |
-| :--- | :--- | :--- | :--- | :--- |
-| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | — |
+| Nombre | En | Tipo | Obligatorio | Ejemplo | Descripción |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | `f42d5ae0-9203-465d-ac1a-f96e205e9529` | — |
 
 **Petición** (`application/json`)
 
@@ -738,7 +1014,20 @@ Requiere Datos Generales en COMPLETED (con PENDING, incluida la cédula eliminad
 
 No admite propiedades no definidas.
 
-El contrato no define ejemplo de petición.
+Ejemplo del contrato:
+
+```json
+{
+  "participationTypes": [
+    "GOODS_AND_SERVICES_SUPPLIER",
+    "PUBLIC_WORKS_CONTRACTOR"
+  ],
+  "specificItemIds": [
+    1,
+    2
+  ]
+}
+```
 
 **Respuestas**
 
@@ -788,9 +1077,9 @@ Guarda y asocia inmediatamente el PDF de máximo 5 MiB (5,242,880 bytes) al expe
 
 **Parámetros**
 
-| Nombre | En | Tipo | Obligatorio | Descripción |
-| :--- | :--- | :--- | :--- | :--- |
-| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | — |
+| Nombre | En | Tipo | Obligatorio | Ejemplo | Descripción |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | `f42d5ae0-9203-465d-ac1a-f96e205e9529` | — |
 
 **Petición** (`multipart/form-data`)
 
@@ -848,9 +1137,9 @@ Solo para el expediente correspondiente a la identificación aceptada. Presenta 
 
 **Parámetros**
 
-| Nombre | En | Tipo | Obligatorio | Descripción |
-| :--- | :--- | :--- | :--- | :--- |
-| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | — |
+| Nombre | En | Tipo | Obligatorio | Ejemplo | Descripción |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | `f42d5ae0-9203-465d-ac1a-f96e205e9529` | — |
 
 **Respuestas**
 
@@ -875,9 +1164,9 @@ Requiere advertencia y confirmación. En una transacción de BD retira la refere
 
 **Parámetros**
 
-| Nombre | En | Tipo | Obligatorio | Descripción |
-| :--- | :--- | :--- | :--- | :--- |
-| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | — |
+| Nombre | En | Tipo | Obligatorio | Ejemplo | Descripción |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `registrationId` | path | `RegistrationId` (string, uuid) | Sí | `f42d5ae0-9203-465d-ac1a-f96e205e9529` | — |
 
 **Respuestas**
 
@@ -911,7 +1200,22 @@ Catálogo completo en items, ordenado por id, sin paginación (ADR-0020). El fro
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `CatalogOptionListResponse`):
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "description": "PERSONA MORAL"
+    },
+    {
+      "id": 2,
+      "description": "PERSONA FÍSICA"
+    }
+  ]
+}
+```
 
 `CatalogOptionListResponse`:
 
@@ -948,7 +1252,34 @@ Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `CountryOptionListResponse`):
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "description": "AFGANISTÁN",
+      "countryCode": "AF"
+    },
+    {
+      "id": 2,
+      "description": "ISLAS ÅLAND",
+      "countryCode": "AX"
+    },
+    {
+      "id": 3,
+      "description": "ALBANIA",
+      "countryCode": "AL"
+    },
+    {
+      "id": 151,
+      "description": "MÉXICO",
+      "countryCode": "MX"
+    }
+  ]
+}
+```
 
 `CountryOptionListResponse`:
 
@@ -980,11 +1311,11 @@ Titularidad jurídica filtrada en backend según domain/catalogs.md (ADR-0020). 
 
 **Parámetros**
 
-| Nombre | En | Tipo | Obligatorio | Descripción |
-| :--- | :--- | :--- | :--- | :--- |
-| `origin` | query | `Origin` (`NATIONAL`, `FOREIGN`) | Sí | Origen seleccionado en Datos Generales. |
-| `countryCode` | query | string | Sí | Clave del país seleccionado (countryCode del catálogo de países). Una clave que no existe en el catálogo (comparación exacta) responde VALIDATION_ERROR con parameter countryCode. |
-| `taxRegime` | query | `TaxRegime` (`LEGAL_ENTITY`, `INDIVIDUAL`) | No | Obligatorio con origin=NATIONAL; no se permite con origin=FOREIGN. |
+| Nombre | En | Tipo | Obligatorio | Ejemplo | Descripción |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `origin` | query | `Origin` (`NATIONAL`, `FOREIGN`) | Sí | `NATIONAL` | Origen seleccionado en Datos Generales. |
+| `countryCode` | query | string | Sí | `MX` | Clave del país seleccionado (countryCode del catálogo de países). Una clave que no existe en el catálogo (comparación exacta) responde VALIDATION_ERROR con parameter countryCode. |
+| `taxRegime` | query | `TaxRegime` (`LEGAL_ENTITY`, `INDIVIDUAL`) | No | `LEGAL_ENTITY` | Obligatorio con origin=NATIONAL; no se permite con origin=FOREIGN. |
 
 **Respuestas**
 
@@ -995,7 +1326,35 @@ Titularidad jurídica filtrada en backend según domain/catalogs.md (ADR-0020). 
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `LegalOwnershipOptionListResponse`):
+
+```json
+{
+  "items": [
+    {
+      "key": "MX00001",
+      "id": 1,
+      "description": "1.- SOCIEDAD ANÓNIMA (S.A.)",
+      "countryCode": "MX",
+      "taxRegime": "LEGAL_ENTITY"
+    },
+    {
+      "key": "MX00002",
+      "id": 2,
+      "description": "1.1.- SOCIEDAD ANÓNIMA DE CAPITAL VARIABLE ( S.A. DE C.V.)",
+      "countryCode": "MX",
+      "taxRegime": "LEGAL_ENTITY"
+    },
+    {
+      "key": "MX00003",
+      "id": 3,
+      "description": "2.- SOCIEDAD DE RESPONSABILIDAD LIMITADA (S. DE R.L.)",
+      "countryCode": "MX",
+      "taxRegime": "LEGAL_ENTITY"
+    }
+  ]
+}
+```
 
 `LegalOwnershipOptionListResponse`:
 
@@ -1035,7 +1394,34 @@ Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `CatalogOptionListResponse`):
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "description": "11 AGRICULTURA, CRÍA Y EXPLOTACIÓN DE ANIMALES, APROVECHAMIENTO FORESTAL, PESCA Y CAZA"
+    },
+    {
+      "id": 2,
+      "description": "21 MINERÍA"
+    },
+    {
+      "id": 3,
+      "description": "22 GENERACIÓN, TRANSMISIÓN, DISTRIBUCIÓN Y COMERCIALIZACIÓN DE ENERGÍA ELÉCTRICA, SUMINISTRO DE AGUA Y DE GAS NATURAL POR DUCTOS AL CONSUMIDOR FINAL"
+    },
+    {
+      "id": 4,
+      "description": "23 CONSTRUCCIÓN"
+    },
+    {
+      "id": 5,
+      "description": "31-33 INDUSTRIAS MANUFACTURERAS"
+    }
+  ]
+}
+```
 
 `CatalogOptionListResponse`:
 
@@ -1066,9 +1452,9 @@ Subsectores del sector indicado, ordenados por id (ADR-0020). Un sector inexiste
 
 **Parámetros**
 
-| Nombre | En | Tipo | Obligatorio | Descripción |
-| :--- | :--- | :--- | :--- | :--- |
-| `sectorId` | path | `CatalogId` (integer) | Sí | Sector seleccionado. |
+| Nombre | En | Tipo | Obligatorio | Ejemplo | Descripción |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `sectorId` | path | `CatalogId` (integer) | Sí | `5` | Sector seleccionado. |
 
 **Respuestas**
 
@@ -1079,7 +1465,34 @@ Subsectores del sector indicado, ordenados por id (ADR-0020). Un sector inexiste
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `CatalogOptionListResponse`):
+
+```json
+{
+  "items": [
+    {
+      "id": 13,
+      "description": "311 INDUSTRIA ALIMENTARIA"
+    },
+    {
+      "id": 14,
+      "description": "312 INDUSTRIA DE LAS BEBIDAS Y DEL TABACO"
+    },
+    {
+      "id": 15,
+      "description": "313 FABRICACIÓN DE INSUMOS TEXTILES Y ACABADO DE TEXTILES"
+    },
+    {
+      "id": 16,
+      "description": "314 FABRICACIÓN DE PRODUCTOS TEXTILES, EXCEPTO PRENDAS DE VESTIR"
+    },
+    {
+      "id": 17,
+      "description": "315 FABRICACIÓN DE PRENDAS DE VESTIR"
+    }
+  ]
+}
+```
 
 `CatalogOptionListResponse`:
 
@@ -1116,7 +1529,26 @@ Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `CatalogOptionListResponse`):
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "description": "INDUSTRIAL"
+    },
+    {
+      "id": 2,
+      "description": "COMERCIAL"
+    },
+    {
+      "id": 3,
+      "description": "DE SERVICIOS"
+    }
+  ]
+}
+```
 
 `CatalogOptionListResponse`:
 
@@ -1153,7 +1585,34 @@ Registros activos de estratificación, ordenados por id, sin asociación ni filt
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `CatalogOptionListResponse`):
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "description": "COOPERATIVAS"
+    },
+    {
+      "id": 2,
+      "description": "GRANDE"
+    },
+    {
+      "id": 3,
+      "description": "MEDIANA"
+    },
+    {
+      "id": 4,
+      "description": "MICRO"
+    },
+    {
+      "id": 6,
+      "description": "PEQUEÑA"
+    }
+  ]
+}
+```
 
 `CatalogOptionListResponse`:
 
@@ -1190,7 +1649,46 @@ Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `CatalogOptionListResponse`):
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "description": "RECURSOS NATURALES"
+    },
+    {
+      "id": 2,
+      "description": "CONSTRUCCIÓN"
+    },
+    {
+      "id": 3,
+      "description": "FABRICACIÓN PRODUCCIÓN O ELABORACIÓN"
+    },
+    {
+      "id": 4,
+      "description": "COMERCIO AL POR MAYOR"
+    },
+    {
+      "id": 5,
+      "description": "TRANSPORTE"
+    },
+    {
+      "id": 6,
+      "description": "COMUNICACIÓN"
+    },
+    {
+      "id": 7,
+      "description": "SERVICIOS"
+    },
+    {
+      "id": 8,
+      "description": "COMERCIO AL POR MENOR"
+    }
+  ]
+}
+```
 
 `CatalogOptionListResponse`:
 
@@ -1227,7 +1725,42 @@ Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `CatalogOptionListResponse`):
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "description": "0"
+    },
+    {
+      "id": 2,
+      "description": "1-10"
+    },
+    {
+      "id": 3,
+      "description": "11-30"
+    },
+    {
+      "id": 4,
+      "description": "31-50"
+    },
+    {
+      "id": 5,
+      "description": "51-100"
+    },
+    {
+      "id": 6,
+      "description": "101-251"
+    },
+    {
+      "id": 7,
+      "description": "MÁS DE 251"
+    }
+  ]
+}
+```
 
 `CatalogOptionListResponse`:
 
@@ -1264,7 +1797,30 @@ Catálogo completo en items, ordenado por id, sin paginación (ADR-0020).
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `CatalogOptionListResponse`):
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "description": "$0 - $4 MILLONES"
+    },
+    {
+      "id": 2,
+      "description": "$4 - $100 MILLONES"
+    },
+    {
+      "id": 3,
+      "description": "$100 - $250 MILLONES"
+    },
+    {
+      "id": 4,
+      "description": "MÁS DE $250 MILLONES"
+    }
+  ]
+}
+```
 
 `CatalogOptionListResponse`:
 
@@ -1301,7 +1857,60 @@ Devuelve el árbol CUCoP completo ya jerarquizado, en una sola consulta sin pagi
 | 401 | Token de registro ausente, inválido, vencido a los 60 minutos o sin contexto en el backend. | `ProblemResponse` | `REGISTRATION_TOKEN_INVALID` |
 | 500 | Fallo técnico; respuesta genérica sin detalles internos. | `ProblemResponse` | `INTERNAL_ERROR` |
 
-El contrato no define ejemplo de respuesta.
+Ejemplo del contrato (200, `CucopCatalogResponse`):
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "key": "2000",
+      "description": "MATERIALES Y SUMINISTROS",
+      "level": 1,
+      "items": [
+        {
+          "id": 1,
+          "key": "2100",
+          "description": "MATERIALES DE ADMINISTRACION, EMISION DE DOCUMENTOS Y ARTICULOS OFICIALES",
+          "level": 2,
+          "items": [
+            {
+              "id": 1,
+              "key": "2110",
+              "description": "MATERIALES, UTILES Y EQUIPOS MENORES DE OFICINA",
+              "level": 3,
+              "items": [
+                {
+                  "id": 1,
+                  "key": "21101",
+                  "description": "MATERIALES Y ÚTILES DE OFICINA",
+                  "level": 4,
+                  "items": []
+                }
+              ]
+            },
+            {
+              "id": 2,
+              "key": "2120",
+              "description": "MATERIALES Y UTILES DE IMPRESION Y REPRODUCCION",
+              "level": 3,
+              "items": [
+                {
+                  "id": 2,
+                  "key": "21201",
+                  "description": "MATERIALES Y ÚTILES DE IMPRESIÓN Y REPRODUCCIÓN",
+                  "level": 4,
+                  "items": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
 
 `CucopCatalogResponse`:
 
