@@ -42,6 +42,8 @@ classDiagram
         +start() SupplierRegistration
         +resume()
         +saveGeneralData()
+        +associateFiscalDocument()
+        +dissociateFiscalDocument()
         +saveCucopParticipation()
     }
     class SupplierRegistrationId {
@@ -504,6 +506,8 @@ JPA, cascadas ni serialización del contrato web.
 | :--- | :--- | :--- |
 | `SupplierRegistration.start` | Crear con identidad aceptada, aviso y estado IN_PROGRESS. | INV-09 a INV-11 |
 | Reanudar | Mantener RFC e ID; actualizar nombre, última aceptación y referencias históricas de evidencia sin alterar datos ni progreso. | INV-06, INV-08, INV-11 a INV-13, INV-36 |
+| `SupplierRegistration.associateFiscalDocument` | Asociar de inmediato la cédula ya validada y conservada, con el expediente IN_PROGRESS y sin otra cédula asociada; no completa Datos Generales. | INV-27, INV-28 |
+| `SupplierRegistration.dissociateFiscalDocument` | Retirar la cédula asociada con el expediente IN_PROGRESS y dejar Datos Generales PENDING, sin modificar sus datos ni CUCoP. | INV-29, INV-37 |
 | `SupplierRegistration.saveGeneralData` | Validar datos, teléfonos, catálogos y cédula; sustituir la sección como unidad válida. | INV-16 a INV-29, INV-34, INV-37 |
 | `SupplierRegistration.saveCucopParticipation` | Exigir Datos Generales guardados y participación válida; conservar específicas seleccionadas. | INV-30 a INV-34 |
 | `SupplierRegistration.complete` | Finalizar cuando se definan todas las reglas de la etapa posterior. | INV-38, INV-39 |

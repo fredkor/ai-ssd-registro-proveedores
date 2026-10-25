@@ -3,6 +3,16 @@
 Cada entrada registra un cambio aprobado sobre `specs/`: fecha, descripción, motivo, archivos,
 compatibilidad del contrato y commits previstos. Lo crea y mantiene `/cambio-spec`.
 
+## 2026-10-25 — Operaciones de la cédula en el modelo de dominio
+
+- **Descripción:** el modelo de dominio lista `associateFiscalDocument` y `dissociateFiscalDocument`
+  en las operaciones del agregado (§7) y en el diagrama de clases (§2.1).
+- **Motivo:** divergencia E2 de la revisión de diagramas. Las operaciones existen con pruebas
+  (US10 CA-001, CA-004, CA-007), y §4 y el ciclo de vida las describen, pero faltaban en §7.
+- **Archivos:** `specs/architecture/domain-model.md` §2.1 y §7.
+- **Contrato:** sin cambios.
+- **Commits:** `design:` (este cambio). Sin commit de código: la implementación ya existe.
+
 ## 2026-10-25 — Verificación de US03 CA-001 y US05 CA-007
 
 - **Descripción:** la verificación prevista de US03 CA-001 y US05 CA-007 pasa a ser de interfaz.
